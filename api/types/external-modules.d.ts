@@ -1,0 +1,11 @@
+declare module 'archiver';
+declare module 'bcrypt';
+declare module 'cors';
+declare module 'json2csv';
+declare module 'jsonwebtoken';
+declare module 'luxon';
+declare module 'multer';
+declare module 'nodemailer';
+declare module 'pdfkit';
+declare module 'unzipper';
+declare module 'xml2js';

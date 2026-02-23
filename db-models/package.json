@@ -1,0 +1,41 @@
+{
+  "name": "newsnexus10db",
+  "version": "1.0.0",
+  "description": "A TypeScript Sequelize SQLite module for the NewsNexus10Db and microservices suite of applications",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "keywords": [
+    "sequelize",
+    "sqlite",
+    "database",
+    "news",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "sequelize": "^6.35.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "overrides": {
+    "minimatch": "^10.2.2",
+    "tar": "^7.5.9",
+    "glob": "^11.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
