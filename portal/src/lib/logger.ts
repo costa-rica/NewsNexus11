@@ -12,7 +12,7 @@ const isProduction = environment === "production";
 const appName =
   process.env.NEXT_PUBLIC_NAME_APP ||
   process.env.NAME_APP ||
-  "NewsNexus10Portal";
+  "NewsNexus11Portal";
 const logDir =
   process.env.NEXT_PUBLIC_PATH_TO_LOGS || process.env.PATH_TO_LOGS || "./logs";
 const maxSize = process.env.LOG_MAX_SIZE
@@ -29,7 +29,7 @@ const logFormat = winston.format.combine(
   winston.format.printf(({ timestamp, level, message, ...meta }) => {
     const metaStr = Object.keys(meta).length ? " " + JSON.stringify(meta) : "";
     return `[${timestamp}] [${level.toUpperCase()}] [${appName}] ${message}${metaStr}`;
-  })
+  }),
 );
 
 // Create logger instance
@@ -52,7 +52,7 @@ if (isProduction) {
           maxFiles: maxFiles,
           tailable: true,
           handleExceptions: true,
-        })
+        }),
       );
     } catch (error) {
       console.error("Failed to initialize file transport for logger:", error);
@@ -60,7 +60,7 @@ if (isProduction) {
       logger.add(
         new winston.transports.Console({
           format: winston.format.simple(),
-        })
+        }),
       );
     }
   }
@@ -80,9 +80,9 @@ if (isProduction) {
             hour12: false,
           });
           return `${time} ${level} [${appName}] ${message}${metaStr}`;
-        })
+        }),
       ),
-    })
+    }),
   );
 }
 

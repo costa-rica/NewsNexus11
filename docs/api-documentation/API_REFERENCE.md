@@ -1,4 +1,4 @@
-# NewsNexus10API Reference
+# NewsNexus11API Reference
 
 This API is a Node.js/Express JavaScript API that provides a RESTful interface for interacting with the SQLite database using Sequelize ORM.
 
@@ -20,6 +20,7 @@ Each resource has its own documentation under the [`/endpoints`](./endpoints) fo
 - [admin-db](./endpoints/admin-db.md)
 
 ### Analysis
+
 - [llm01](./endpoints/analysis/llm01.md)
 - [llm02](./endpoints/analysis/llm02.md)
 - [llm04](./endpoints/analysis/llm04.md)
@@ -28,6 +29,7 @@ Each resource has its own documentation under the [`/endpoints`](./endpoints) fo
 - [approved-articles](./endpoints/analysis/approved-articles.md)
 
 ### News Organizations
+
 - [automations](./endpoints/news-orgs/automations.md)
 - [g-news](./endpoints/news-orgs/g-news.md)
 - [google-rss](./endpoints/news-orgs/google-rss.md)

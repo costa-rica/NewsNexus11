@@ -38,32 +38,32 @@
  * - HIGH: Clear attack patterns, injection attempts
  * - CRITICAL: Successful exploitation attempts (should never occur if defenses work)
  */
-export type SecuritySeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type SecuritySeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 /**
  * Security event types for categorization
  */
 export type SecurityEventType =
-	| 'INVALID_INPUT'           // Failed validation (email format, password strength)
-	| 'SUSPICIOUS_PATTERN'      // Input contains attack patterns (SQL, XSS, command injection)
-	| 'RATE_LIMIT_EXCEEDED'     // Too many requests from same IP
-	| 'AUTHENTICATION_FAILURE'  // Failed login attempt
-	| 'INVALID_TOKEN'           // Invalid or expired reset token
-	| 'MALFORMED_REQUEST';      // Invalid request structure
+  | "INVALID_INPUT" // Failed validation (email format, password strength)
+  | "SUSPICIOUS_PATTERN" // Input contains attack patterns (SQL, XSS, command injection)
+  | "RATE_LIMIT_EXCEEDED" // Too many requests from same IP
+  | "AUTHENTICATION_FAILURE" // Failed login attempt
+  | "INVALID_TOKEN" // Invalid or expired reset token
+  | "MALFORMED_REQUEST"; // Invalid request structure
 
 /**
  * Structure of a security event log entry
  */
 interface SecurityEvent {
-	timestamp: string;
-	app: string;
-	type: SecurityEventType;
-	severity: SecuritySeverity;
-	message: string;
-	ip?: string;
-	userAgent?: string;
-	endpoint?: string;
-	details?: Record<string, unknown>;
+  timestamp: string;
+  app: string;
+  type: SecurityEventType;
+  severity: SecuritySeverity;
+  message: string;
+  ip?: string;
+  userAgent?: string;
+  endpoint?: string;
+  details?: Record<string, unknown>;
 }
 
 /**
@@ -100,27 +100,29 @@ interface SecurityEvent {
  *   endpoint: '/users/login'
  * });
  */
-export function logSecurityEvent(event: Omit<SecurityEvent, 'timestamp' | 'app'>): void {
-	// SECURITY: Detect and prevent logging of sensitive data
-	const sanitizedDetails = sanitizeLogDetails(event.details);
+export function logSecurityEvent(
+  event: Omit<SecurityEvent, "timestamp" | "app">,
+): void {
+  // SECURITY: Detect and prevent logging of sensitive data
+  const sanitizedDetails = sanitizeLogDetails(event.details);
 
-	const logEntry: SecurityEvent = {
-		timestamp: new Date().toISOString(),
-		app: 'NewsNexus10Portal',
-		...event,
-		// Mark IP as client-side if not provided (can't get real IP from client)
-		ip: event.ip || 'client-side',
-		details: sanitizedDetails,
-	};
+  const logEntry: SecurityEvent = {
+    timestamp: new Date().toISOString(),
+    app: "NewsNexus11Portal",
+    ...event,
+    // Mark IP as client-side if not provided (can't get real IP from client)
+    ip: event.ip || "client-side",
+    details: sanitizedDetails,
+  };
 
-	// SECURITY: Use console.warn for security events (shows in PM2 logs with [SECURITY] prefix)
-	// This makes them easy to filter: pm2 logs NewsNexus10Portal | grep SECURITY
-	console.warn('[SECURITY]', JSON.stringify(logEntry));
+  // SECURITY: Use console.warn for security events (shows in PM2 logs with [SECURITY] prefix)
+  // This makes them easy to filter: pm2 logs NewsNexus11Portal | grep SECURITY
+  console.warn("[SECURITY]", JSON.stringify(logEntry));
 
-	// OPTIONAL: In production, also send critical events to monitoring service
-	// if (process.env.NODE_ENV === 'production' && event.severity === 'CRITICAL') {
-	//   sendToMonitoring(logEntry);
-	// }
+  // OPTIONAL: In production, also send critical events to monitoring service
+  // if (process.env.NODE_ENV === 'production' && event.severity === 'CRITICAL') {
+  //   sendToMonitoring(logEntry);
+  // }
 }
 
 /**
@@ -132,40 +134,42 @@ export function logSecurityEvent(event: Omit<SecurityEvent, 'timestamp' | 'app'>
  * @param details - Raw details object
  * @returns Sanitized details with sensitive fields redacted
  */
-function sanitizeLogDetails(details?: Record<string, unknown>): Record<string, unknown> | undefined {
-	if (!details) return undefined;
+function sanitizeLogDetails(
+  details?: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  if (!details) return undefined;
 
-	const sensitiveFields = [
-		'password',
-		'newPassword',
-		'oldPassword',
-		'token',
-		'resetToken',
-		'accessToken',
-		'refreshToken',
-		'secret',
-		'apiKey',
-		'creditCard',
-		'ssn',
-		'cvv',
-	];
+  const sensitiveFields = [
+    "password",
+    "newPassword",
+    "oldPassword",
+    "token",
+    "resetToken",
+    "accessToken",
+    "refreshToken",
+    "secret",
+    "apiKey",
+    "creditCard",
+    "ssn",
+    "cvv",
+  ];
 
-	const sanitized: Record<string, unknown> = {};
+  const sanitized: Record<string, unknown> = {};
 
-	for (const [key, value] of Object.entries(details)) {
-		// Check if field name contains sensitive keywords (case-insensitive)
-		const isSensitive = sensitiveFields.some(
-			(field) => key.toLowerCase().includes(field.toLowerCase())
-		);
+  for (const [key, value] of Object.entries(details)) {
+    // Check if field name contains sensitive keywords (case-insensitive)
+    const isSensitive = sensitiveFields.some((field) =>
+      key.toLowerCase().includes(field.toLowerCase()),
+    );
 
-		if (isSensitive) {
-			sanitized[key] = '[REDACTED]';
-		} else {
-			sanitized[key] = value;
-		}
-	}
+    if (isSensitive) {
+      sanitized[key] = "[REDACTED]";
+    } else {
+      sanitized[key] = value;
+    }
+  }
 
-	return sanitized;
+  return sanitized;
 }
 
 /**
@@ -177,27 +181,24 @@ function sanitizeLogDetails(details?: Record<string, unknown>): Record<string, u
  * @returns Recommended severity level
  */
 export function getValidationSeverity(errorMessage: string): SecuritySeverity {
-	const message = errorMessage.toLowerCase();
+  const message = errorMessage.toLowerCase();
 
-	// HIGH severity: Clear attack patterns
-	if (
-		message.includes('invalid characters') ||
-		message.includes('contains invalid') ||
-		message.includes('too long')
-	) {
-		return 'HIGH';
-	}
+  // HIGH severity: Clear attack patterns
+  if (
+    message.includes("invalid characters") ||
+    message.includes("contains invalid") ||
+    message.includes("too long")
+  ) {
+    return "HIGH";
+  }
 
-	// MEDIUM severity: Suspicious but could be user error
-	if (
-		message.includes('format') ||
-		message.includes('invalid')
-	) {
-		return 'MEDIUM';
-	}
+  // MEDIUM severity: Suspicious but could be user error
+  if (message.includes("format") || message.includes("invalid")) {
+    return "MEDIUM";
+  }
 
-	// LOW severity: Simple validation failures
-	return 'LOW';
+  // LOW severity: Simple validation failures
+  return "LOW";
 }
 
 /**
@@ -207,21 +208,21 @@ export function getValidationSeverity(errorMessage: string): SecuritySeverity {
  * @returns true if appears to be automated, false otherwise
  */
 export function isAutomatedUserAgent(userAgent?: string): boolean {
-	if (!userAgent) return false;
+  if (!userAgent) return false;
 
-	const automatedPatterns = [
-		'curl',
-		'wget',
-		'python-requests',
-		'postman',
-		'insomnia',
-		'bot',
-		'crawler',
-		'spider',
-		'scraper',
-	];
+  const automatedPatterns = [
+    "curl",
+    "wget",
+    "python-requests",
+    "postman",
+    "insomnia",
+    "bot",
+    "crawler",
+    "spider",
+    "scraper",
+  ];
 
-	return automatedPatterns.some((pattern) =>
-		userAgent.toLowerCase().includes(pattern)
-	);
+  return automatedPatterns.some((pattern) =>
+    userAgent.toLowerCase().includes(pattern),
+  );
 }
