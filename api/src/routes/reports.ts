@@ -25,7 +25,7 @@ const fs = require("fs");
 const path = require("path");
 const { Op } = require("sequelize");
 const { DateTime } = require("luxon");
-const logger = require("../modules/logger");
+import logger from "../modules/logger";
 
 // 🔹 GET /reports/table
 router.get(

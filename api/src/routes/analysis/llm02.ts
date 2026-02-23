@@ -17,7 +17,7 @@ const {
   ArticleEntityWhoCategorizedArticleContracts02,
 } = require("@newsnexus/db-models");
 const { authenticateToken } = require("../../modules/userAuthentication");
-const logger = require("../../modules/logger");
+import logger from "../../modules/logger";
 const sequelizeAny = sequelize as any;
 
 // 🔹 GET /analysis/llm02/no-article-approved-rows

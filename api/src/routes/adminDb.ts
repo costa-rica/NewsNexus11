@@ -120,7 +120,7 @@ if (!fs.existsSync(uploadTempDir)) {
 const upload = multer({
   dest: uploadTempDir,
 }); // Temporary storage for file uploads
-const logger = require("../modules/logger");
+import logger from "../modules/logger";
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

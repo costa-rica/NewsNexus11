@@ -33,7 +33,7 @@ const {
   sqlQueryArticlesAndAiScores,
   sqlQueryArticleDetails,
 } = require("../modules/queriesSql");
-const logger = require("../modules/logger");
+import logger from "../modules/logger";
 
 // NOTE: ---- > will need to refactor because sqlQueryArticles is changed
 // 🔹 POST /articles: filtered list of articles

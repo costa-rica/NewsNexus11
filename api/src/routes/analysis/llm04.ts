@@ -11,7 +11,7 @@ const {
   ArticleApproved,
   ArticleIsRelevant,
 } = require("@newsnexus/db-models");
-const logger = require("../../modules/logger");
+import logger from "../../modules/logger";
 
 // 🔹 GET /analysis/llm04/approved
 router.get(

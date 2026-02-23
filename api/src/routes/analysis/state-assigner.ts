@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 
 const router = express.Router();
 const { authenticateToken } = require("../../modules/userAuthentication");
-const logger = require("../../modules/logger");
+import logger from "../../modules/logger";
 const {
   ArticleStateContract,
   ArticleStateContract02,

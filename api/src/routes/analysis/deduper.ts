@@ -12,7 +12,7 @@ const {
   makeArticleApprovedsTableDictionary,
   createDeduperAnalysis,
 } = require("../../modules/analysis/deduper");
-const logger = require("../../modules/logger");
+import logger from "../../modules/logger";
 
 // 🔹 POST /deduper/report-checker-table
 router.post(

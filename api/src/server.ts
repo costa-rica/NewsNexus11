@@ -1,11 +1,13 @@
 import app, { initializeDatabase, mountLegacyRouters } from "./app";
 import { env } from "./config/env";
+import { runOnStartUp } from "./modules/onStartUp";
 
 const port = env.port;
 
 async function startServer(): Promise<void> {
   try {
     await initializeDatabase();
+    await runOnStartUp();
     mountLegacyRouters();
     app.listen(port, "0.0.0.0", () => {
       // eslint-disable-next-line no-console

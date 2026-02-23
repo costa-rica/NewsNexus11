@@ -17,7 +17,7 @@ const {
 } = require("@newsnexus/db-models");
 const { scrapeArticle } = require("../../modules/analysis/scraper");
 const { authenticateToken } = require("../../modules/userAuthentication");
-const logger = require("../../modules/logger");
+import logger from "../../modules/logger";
 /**
  * Helper function to save AI response to file (optional/precautionary)
  * Errors are logged but don't affect the main flow
