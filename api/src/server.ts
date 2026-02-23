@@ -1,9 +1,21 @@
-import app from './app';
-import { env } from './config/env';
+import app, { initializeDatabase, mountLegacyRouters } from "./app";
+import { env } from "./config/env";
 
 const port = env.port;
 
-app.listen(port, '0.0.0.0', () => {
-  // eslint-disable-next-line no-console
-  console.log(`Server running on http://0.0.0.0:${port}`);
-});
+async function startServer(): Promise<void> {
+  try {
+    await initializeDatabase();
+    mountLegacyRouters();
+    app.listen(port, "0.0.0.0", () => {
+      // eslint-disable-next-line no-console
+      console.log(`Server running on http://0.0.0.0:${port}`);
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("Failed to initialize database during startup:", error);
+    process.exit(1);
+  }
+}
+
+void startServer();

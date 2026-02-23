@@ -3,9 +3,12 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import morgan from "morgan";
 import path from "path";
+import { mkdir } from "node:fs/promises";
 import { env } from "./config/env";
 
 const app = express();
+let databaseInitialization: Promise<void> | null = null;
+let legacyRoutersMounted = false;
 
 app.use(
   cors({
@@ -22,7 +25,11 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true, service: "newsnexus11api" });
 });
 
-function mountLegacyRouters(): void {
+export function mountLegacyRouters(): void {
+  if (legacyRoutersMounted) {
+    return;
+  }
+
   const legacyRoutersEnabled = env.loadLegacyRouters;
   if (!legacyRoutersEnabled) {
     app.get("/", (_req, res) => {
@@ -31,14 +38,9 @@ function mountLegacyRouters(): void {
         legacyRoutersEnabled: false,
       });
     });
+    legacyRoutersMounted = true;
     return;
   }
-
-  // @newsnexus/db-models exports model classes that must be initialized before first query.
-  // Keep this lazy so smoke tests with legacy routers disabled avoid DB boot side effects.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { initModels } = require("@newsnexus/db-models");
-  initModels();
 
   const mounts: Array<{ prefix: string; modulePath: string }> = [
     { prefix: "/", modulePath: "./routes/index" },
@@ -87,8 +89,34 @@ function mountLegacyRouters(): void {
       );
     }
   });
+
+  legacyRoutersMounted = true;
 }
 
-mountLegacyRouters();
+export async function initializeDatabase(): Promise<void> {
+  if (!env.loadLegacyRouters) {
+    return;
+  }
+
+  if (databaseInitialization) {
+    return databaseInitialization;
+  }
+
+  databaseInitialization = (async () => {
+    const dbDir = process.env.PATH_DATABASE;
+    if (dbDir && dbDir.trim() !== "") {
+      await mkdir(dbDir, { recursive: true });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { initModels, sequelize } = require("@newsnexus/db-models");
+
+    initModels();
+    await sequelize.authenticate();
+    await sequelize.sync();
+  })();
+
+  return databaseInitialization;
+}
 
 export default app;

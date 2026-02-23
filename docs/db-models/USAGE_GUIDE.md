@@ -1,107 +1,106 @@
-# Database Overview
+# Database Usage Guide
 
-This document provides a comprehensive overview of the NewsNexus11Db database schema. All tables use SQLite as the underlying database engine and are managed through Sequelize ORM.
+This guide explains how to use `@newsnexus/db-models` inside the NewsNexus11 monorepo. The package provides Sequelize models for SQLite, model associations, and TypeScript declarations.
 
-## NewsNexus11Db Description
+## Package Description
 
-- One class per table (`src/models/<Name>.ts`) with strong typings.
-- Centralized initialization and associations.
-- Emit `.d.ts` so downstream apps (API, mobile) get type-safe imports.
-- dist/ is the output directory for compiled JavaScript files.
-- src/ is the source directory for TypeScript files.
-- All tables have an updatedAt and createdAt field.
+- Package name: `@newsnexus/db-models`
+- Monorepo directory: `db-models/`
+- Source files: `db-models/src/`
+- Build output: `db-models/dist/`
+- One model class per table, with centralized initialization and associations
+- Models include `createdAt` and `updatedAt` timestamps
 
-## Database / Project Architecture
+## Project Structure
 
-### Project Structure
-
-```
-NewsNexus11Db/
-├── src/                          # TypeScript source files
-│   ├── index.ts                  # Main entry point
-│   └── models/                   # Sequelize model definitions
-│       ├── _connection.ts        # Database connection setup
-│       ├── _index.ts            # Model registry and exports
-│       ├── _associations.ts     # All model relationships
-│       ├── Article.ts           # Core article model
-│       ├── User.ts              # User management
-│       └── [ other models...] # Complete model suite
-├── dist/                        # Compiled JavaScript output
-│   ├── index.js                 # Compiled entry point
-│   ├── index.d.ts               # TypeScript declarations
-│   └── models/                  # Compiled models with .d.ts files
-├── docs/                        # Documentation
-└── package.json                 # Project configuration
+```text
+db-models/
+├── src/
+│   ├── index.ts
+│   └── models/
+│       ├── _connection.ts
+│       ├── _index.ts
+│       ├── _associations.ts
+│       └── <ModelName>.ts
+├── dist/
+├── docs/
+└── package.json
 ```
 
-### Using This Package in Your Application
+## Using This Package in an App
 
-**IMPORTANT: Models must be initialized before use.**
+Initialize the database before mounting routes or serving requests. In NewsNexus11 API, this happens during startup before `app.listen(...)`.
 
-When consuming this package in a microservice or application, you MUST call `initModels()` at the very start of your application, before importing any other modules that use the database models.
+### Required startup sequence
 
-#### Initialization Pattern
+1. Load environment variables.
+2. Import `initModels` and `sequelize` from `@newsnexus/db-models`.
+3. Call `initModels()`.
+4. Call `await sequelize.authenticate()`.
+5. Call `await sequelize.sync()`.
+6. Mount DB-dependent routes.
+7. Start the HTTP server.
+
+### Initialization pattern
 
 ```javascript
 require("dotenv").config();
 
-// Step 1: Initialize models FIRST, before any other imports
 const { initModels, sequelize } = require("@newsnexus/db-models");
-initModels();
 
-// Step 2: Now import other modules that use the models
-const { myFunction } = require("./modules/myModule");
-const { anotherFunction } = require("./modules/anotherModule");
+async function bootstrap() {
+  initModels();
+  await sequelize.authenticate();
+  await sequelize.sync();
 
-// Step 3: (Optional) Sync database schema if tables don't exist
-async function main() {
-  await sequelize.sync(); // Creates tables if they don't exist
-
-  // Your application logic here
+  // mount routes and then start server
 }
 
-main();
+bootstrap();
 ```
 
-#### Why This Order Matters
+## Why Order Matters
 
-- `initModels()` calls all model initialization functions (e.g., `initArticle()`, `initUser()`, etc.)
-- It then calls `applyAssociations()` to set up all model relationships
-- Models are unusable until this initialization completes
-- If you try to use models before calling `initModels()`, you'll get errors like:
-  - `TypeError: Cannot read properties of undefined (reading 'constructor')`
-  - `TypeError: Cannot read properties of undefined (reading 'sequelize')`
+- `initModels()` initializes model definitions and applies associations.
+- `sequelize.sync()` creates missing tables.
+- If requests run before `sync`, you can get runtime errors such as `no such table`.
+- If the DB file path is invalid or not writable, SQLite can fail with `SQLITE_CANTOPEN` or `EPERM`.
 
-#### Environment Variables
+## Environment Variables
 
-The package inherits environment variables from the consuming application. No `.env` file is needed in the package itself.
+The package reads environment variables from the consuming app.
 
-Required environment variables:
+Required:
 
-- `PATH_DATABASE`: Directory path for the database file (e.g., `/Users/nick/_databases/NewsNexus10/`)
-- `NAME_DB`: Database filename (e.g., `newsnexus10.db`)
+- `PATH_DATABASE`: directory for the SQLite database file
+- `NAME_DB`: SQLite filename
 
-#### Creating Database Schema
+Example:
 
-If your database is new or missing tables, use `sequelize.sync()`:
+- `PATH_DATABASE=/Users/nick/Documents/_databases/NewsNexus11/`
+- `NAME_DB=NewsNexus11.db`
+
+Filesystem requirement:
+
+1. `PATH_DATABASE` must exist or be creatable by the app process.
+2. The process must have read/write permissions to that directory.
+3. The DB file will be created at `PATH_DATABASE/NAME_DB` if it does not exist.
+
+## Creating or Updating Schema
 
 ```javascript
-// Creates all tables based on model definitions
 await sequelize.sync();
-
-// Or with options:
-await sequelize.sync({ alter: true }); // Updates existing tables to match models
-await sequelize.sync({ force: true }); // WARNING: Drops all tables first
+await sequelize.sync({ alter: true }); // non-destructive schema adjustment
+await sequelize.sync({ force: true }); // destructive: drops and recreates tables
 ```
 
-#### Using Models
+Use `force: true` only for local resets or controlled migrations.
 
-After initialization, import and use models normally:
+## Using Models
 
 ```javascript
 const { Article, NewsApiRequest, User } = require("@newsnexus/db-models");
 
-// Query examples
 const articles = await Article.findAll({ limit: 10 });
 const request = await NewsApiRequest.findOne({ where: { id: 1 } });
 ```
@@ -153,7 +152,7 @@ export function initExample() {
 ## Example src/models/\_index.ts
 
 ```ts
-// SAMPLE of different proejctsrc/models/_index.ts
+// sample of src/models/_index.ts
 import { sequelize } from "./_connection";
 
 import { initExample, Example } from "./Example";
@@ -173,15 +172,10 @@ export function initModels() {
 
 // 👇 Export named items for consumers
 export { sequelize, Example };
-
-// 👇 Export named items for consumers
-export { sequelize, Example };
 ```
 
-### Database Configuration
+## Database Configuration
 
-- **Database Type**: SQLite (via Sequelize ORM)
-- **Environment Variables**:
-  - `PATH_DATABASE`: Directory path for database file
-  - `NAME_DB`: Database filename
-- **No .env file required**: Inherits environment from importing application
+- Database engine: SQLite (through Sequelize ORM)
+- Environment variables: `PATH_DATABASE`, `NAME_DB`
+- No package-local `.env` required
