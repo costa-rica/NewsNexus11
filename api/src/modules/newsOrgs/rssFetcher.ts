@@ -1,6 +1,9 @@
-import { parseStringPromise } from 'xml2js';
-import logger from '../logger';
-import { normalizeExternalError, normalizeExternalJsonResponse } from './responseNormalizers';
+import { parseStringPromise } from "xml2js";
+import logger from "../logger";
+import {
+  normalizeExternalError,
+  normalizeExternalJsonResponse,
+} from "./responseNormalizers";
 
 export type RssItem = {
   title?: string;
@@ -12,11 +15,11 @@ export type RssItem = {
 };
 
 export type FetchRssItemsResult =
-  | { status: 'success'; items: RssItem[] }
-  | { status: 'error'; items: RssItem[]; error: string; statusCode?: number };
+  | { status: "success"; items: RssItem[] }
+  | { status: "error"; items: RssItem[]; error: string; statusCode?: number };
 
 function stripHtml(input: string): string {
-  return input.replace(/<[^>]*>/g, '').trim();
+  return input.replace(/<[^>]*>/g, "").trim();
 }
 
 function extractAnchorText(input: string): string | null {
@@ -26,9 +29,10 @@ function extractAnchorText(input: string): string | null {
 
 function mapItems(items: any[]): RssItem[] {
   return items.map((item) => {
-    const descriptionRaw = item.description?.[0] || '';
+    const descriptionRaw = item.description?.[0] || "";
     const anchorText = extractAnchorText(descriptionRaw);
-    const description = anchorText || stripHtml(descriptionRaw) || descriptionRaw;
+    const description =
+      anchorText || stripHtml(descriptionRaw) || descriptionRaw;
 
     return {
       title: item.title?.[0],
@@ -36,7 +40,7 @@ function mapItems(items: any[]): RssItem[] {
       link: item.link?.[0],
       pubDate: item.pubDate?.[0],
       source: item.source?.[0]?._ || item.source?.[0],
-      content: item['content:encoded']?.[0],
+      content: item["content:encoded"]?.[0],
     };
   });
 }
@@ -49,18 +53,23 @@ export async function fetchRssItems(url: string): Promise<FetchRssItemsResult> {
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'NewsNexus10API/1.0',
+        "User-Agent": "NewsNexus11API/1.0",
       },
     });
 
     clearTimeout(timeout);
 
     if (!response.ok) {
-      const normalizedFailure = normalizeExternalJsonResponse(response.status, '');
-      const errorMessage = normalizedFailure.error || `RSS request failed with status ${response.status}`;
+      const normalizedFailure = normalizeExternalJsonResponse(
+        response.status,
+        "",
+      );
+      const errorMessage =
+        normalizedFailure.error ||
+        `RSS request failed with status ${response.status}`;
       logger.error(errorMessage);
       return {
-        status: 'error',
+        status: "error",
         items: [],
         error: errorMessage,
         statusCode: response.status,
@@ -70,16 +79,21 @@ export async function fetchRssItems(url: string): Promise<FetchRssItemsResult> {
     const xml = await response.text();
     const normalized = normalizeExternalJsonResponse(response.status, xml);
 
-    const parsed = await parseStringPromise(normalized.payload || '', { explicitArray: true });
+    const parsed = await parseStringPromise(normalized.payload || "", {
+      explicitArray: true,
+    });
     const items = parsed?.rss?.channel?.[0]?.item || [];
 
     if (!items || items.length === 0) {
-      return { status: 'success', items: [] };
+      return { status: "success", items: [] };
     }
 
-    return { status: 'success', items: mapItems(items) };
+    return { status: "success", items: mapItems(items) };
   } catch (error) {
-    const normalizedError = normalizeExternalError<RssItem>(error, 'Unknown RSS fetch error');
+    const normalizedError = normalizeExternalError<RssItem>(
+      error,
+      "Unknown RSS fetch error",
+    );
     logger.error(`RSS request error: ${normalizedError.error}`);
     return normalizedError;
   }

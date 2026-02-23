@@ -4,10 +4,10 @@ const {
   ArticleReportContract,
   ArticleStateContract,
   State,
-} = require("newsnexus10db");
-import ExcelJS from 'exceljs';
-import path from 'path';
-import logger from '../logger';
+} = require("@newsnexus/db-models");
+import ExcelJS from "exceljs";
+import path from "path";
+import logger from "../logger";
 
 type ApprovedArticleDictionaryRow = {
   headlineForPdfReport: string | null;
@@ -48,7 +48,10 @@ async function makeArticleApprovedsTableDictionary(): Promise<
       ],
     });
 
-    const articleApprovedsTableDictionary: Record<string, ApprovedArticleDictionaryRow> = {};
+    const articleApprovedsTableDictionary: Record<
+      string,
+      ApprovedArticleDictionaryRow
+    > = {};
 
     for (const articleApproved of articleApproveds) {
       const articleId = articleApproved.articleId;
@@ -95,7 +98,7 @@ async function makeArticleApprovedsTableDictionary(): Promise<
 async function createDeduperAnalysis(
   reportArticleDictionary: Record<string, any>,
   articleIdToRefNumberMap: Record<string, string>,
-  spacerRow = false
+  spacerRow = false,
 ): Promise<string> {
   try {
     if (
@@ -136,7 +139,7 @@ async function createDeduperAnalysis(
         const maxEmbeddingA = a[1].maxEmbedding || 0;
         const maxEmbeddingB = b[1].maxEmbedding || 0;
         return maxEmbeddingB - maxEmbeddingA; // Descending order
-      }
+      },
     );
 
     // Process each articleId in sorted order
@@ -201,7 +204,7 @@ async function createDeduperAnalysis(
     const outputDir = process.env.PATH_TO_UTILITIES_ANALYSIS_SPREADSHEETS;
     if (!outputDir) {
       throw new Error(
-        "Environment variable PATH_TO_UTILITIES_ANALYSIS_SPREADSHEETS is not set"
+        "Environment variable PATH_TO_UTILITIES_ANALYSIS_SPREADSHEETS is not set",
       );
     }
 
@@ -219,7 +222,4 @@ async function createDeduperAnalysis(
   }
 }
 
-export {
-  makeArticleApprovedsTableDictionary,
-  createDeduperAnalysis,
-};
+export { makeArticleApprovedsTableDictionary, createDeduperAnalysis };

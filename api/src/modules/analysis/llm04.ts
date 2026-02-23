@@ -1,5 +1,5 @@
-import { sequelize } from 'newsnexus10db';
-import { QueryTypes } from 'sequelize';
+import { sequelize } from "@newsnexus/db-models";
+import { QueryTypes } from "sequelize";
 
 const sequelizeAny = sequelize as any;
 
@@ -136,6 +136,4 @@ async function sqlQueryArticlesApprovedChatGptWithStatesApprovedReportContract()
   return Array.from(articlesMap.values());
 }
 
-export {
-  sqlQueryArticlesApprovedChatGptWithStatesApprovedReportContract,
-};
+export { sqlQueryArticlesApprovedChatGptWithStatesApprovedReportContract };

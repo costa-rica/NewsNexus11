@@ -2,17 +2,20 @@ import {
   Article,
   ArticleApproved,
   ArticleEntityWhoCategorizedArticleContract,
-} from 'newsnexus10db';
+} from "@newsnexus/db-models";
 
-export async function createFilteredArticlesArray(entityWhoCategorizesId: number): Promise<any[]> {
-  const existingContracts = await ArticleEntityWhoCategorizedArticleContract.findAll({
-    where: { entityWhoCategorizesId },
-    attributes: ['articleId'],
-    raw: true,
-  });
+export async function createFilteredArticlesArray(
+  entityWhoCategorizesId: number,
+): Promise<any[]> {
+  const existingContracts =
+    await ArticleEntityWhoCategorizedArticleContract.findAll({
+      where: { entityWhoCategorizesId },
+      attributes: ["articleId"],
+      raw: true,
+    });
 
   const alreadyProcessedIds = new Set(
-    existingContracts.map((entry: any) => entry.articleId)
+    existingContracts.map((entry: any) => entry.articleId),
   );
 
   const allArticles = await Article.findAll({
@@ -24,7 +27,7 @@ export async function createFilteredArticlesArray(entityWhoCategorizesId: number
   });
 
   const filteredArticles = allArticles.filter(
-    (article: any) => !alreadyProcessedIds.has(article.id)
+    (article: any) => !alreadyProcessedIds.has(article.id),
   );
 
   return filteredArticles;

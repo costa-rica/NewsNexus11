@@ -1,12 +1,12 @@
-import fs from 'fs';
-import path from 'path';
-import { Parser } from 'json2csv';
-import PDFDocument from 'pdfkit';
-import archiver from 'archiver';
-import ExcelJS from 'exceljs';
-import { Report } from 'newsnexus10db';
-import { convertJavaScriptDateToTimezoneString } from './common';
-import logger from './logger';
+import fs from "fs";
+import path from "path";
+import { Parser } from "json2csv";
+import PDFDocument from "pdfkit";
+import archiver from "archiver";
+import ExcelJS from "exceljs";
+import { Report } from "@newsnexus/db-models";
+import { convertJavaScriptDateToTimezoneString } from "./common";
+import logger from "./logger";
 
 type ReportRow = {
   refNumber: string | number;
@@ -20,20 +20,20 @@ type ReportRow = {
 
 async function createXlsxForReport(
   dataArray: ReportRow[],
-  excelFilename: string | false = false
+  excelFilename: string | false = false,
 ): Promise<string> {
   logger.info(` 🔹 createXlsxForReport`);
   const outputDir = process.env.PATH_PROJECT_RESOURCES_REPORTS;
   if (!outputDir) {
     throw new Error(
-      "PATH_PROJECT_RESOURCES_REPORTS environment variable not set."
+      "PATH_PROJECT_RESOURCES_REPORTS environment variable not set.",
     );
   }
   try {
     const javascriptDate = new Date();
     const dateParts = convertJavaScriptDateToTimezoneString(
       javascriptDate,
-      "America/New_York"
+      "America/New_York",
     );
     const fileName =
       excelFilename ||
@@ -104,13 +104,13 @@ function createCsvForReport(dataArray: ReportRow[]): string {
   const outputDir = process.env.PATH_PROJECT_RESOURCES_REPORTS;
   if (!outputDir) {
     throw new Error(
-      "PATH_PROJECT_RESOURCES_REPORTS environment variable not set."
+      "PATH_PROJECT_RESOURCES_REPORTS environment variable not set.",
     );
   }
 
   const nowET = convertJavaScriptDateToTimezoneString(
     new Date(),
-    "America/New_York"
+    "America/New_York",
   ).dateString;
   // const timestamp = nowET.replace(/[-:]/g, "").replace("T", "-").slice(2, 8);
   const timestamp = nowET.replace(/[-:]/g, "").slice(2, 8);
@@ -131,7 +131,7 @@ function createReportPdfFiles(dataArray: ReportRow[]): string {
   const outputDir = process.env.PATH_PROJECT_RESOURCES_REPORTS;
   if (!outputDir) {
     throw new Error(
-      "PATH_PROJECT_RESOURCES_REPORTS environment variable not set."
+      "PATH_PROJECT_RESOURCES_REPORTS environment variable not set.",
     );
   }
 
@@ -163,7 +163,10 @@ function createReportPdfFiles(dataArray: ReportRow[]): string {
       },
       { label: "Headline", value: article.headline },
       { label: "Publication", value: article.publication },
-      { label: "Date", value: new Date(article.datePublished).toLocaleDateString() },
+      {
+        label: "Date",
+        value: new Date(article.datePublished).toLocaleDateString(),
+      },
       { label: "State", value: article.state },
       { label: "Text", value: article.text },
     ];
@@ -185,12 +188,12 @@ function createReportPdfFiles(dataArray: ReportRow[]): string {
 
 function createReportZipFile(
   csvFilename: string,
-  zipFilename: string
+  zipFilename: string,
 ): Promise<string> {
   const outputDir = process.env.PATH_PROJECT_RESOURCES_REPORTS;
   if (!outputDir) {
     throw new Error(
-      "PATH_PROJECT_RESOURCES_REPORTS environment variable not set."
+      "PATH_PROJECT_RESOURCES_REPORTS environment variable not set.",
     );
   }
 

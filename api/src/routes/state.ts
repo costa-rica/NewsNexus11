@@ -1,8 +1,8 @@
-import express from 'express';
-import { ArticleStateContract, State } from 'newsnexus10db';
-import { checkBodyReturnMissing } from '../modules/common';
-import { authenticateToken } from '../modules/userAuthentication';
-import logger from '../modules/logger';
+import express from "express";
+import { ArticleStateContract, State } from "@newsnexus/db-models";
+import { checkBodyReturnMissing } from "../modules/common";
+import { authenticateToken } from "../modules/userAuthentication";
+import logger from "../modules/logger";
 
 const router = express.Router();
 
@@ -10,29 +10,31 @@ type SaveStateBody = {
   stateIdArray?: unknown;
 };
 
-router.get('/', async (_req, res) => {
+router.get("/", async (_req, res) => {
   const statesArray = await State.findAll();
   res.json({ statesArray });
 });
 
-router.post('/:articleId', authenticateToken, async (req, res) => {
-  logger.info('- starting /state/:articleId');
+router.post("/:articleId", authenticateToken, async (req, res) => {
+  logger.info("- starting /state/:articleId");
   const articleIdParam = Array.isArray(req.params.articleId)
     ? req.params.articleId[0]
     : req.params.articleId;
   const articleId = Number(articleIdParam);
   const body = req.body as SaveStateBody;
   const { stateIdArray } = body;
-  const { isValid, missingKeys } = checkBodyReturnMissing(req.body, ['stateIdArray']);
+  const { isValid, missingKeys } = checkBodyReturnMissing(req.body, [
+    "stateIdArray",
+  ]);
 
   if (!isValid) {
-    return res.status(400).json({ error: `Missing ${missingKeys.join(', ')}` });
+    return res.status(400).json({ error: `Missing ${missingKeys.join(", ")}` });
   }
   if (!Number.isFinite(articleId)) {
-    return res.status(400).json({ error: 'Invalid articleId' });
+    return res.status(400).json({ error: "Invalid articleId" });
   }
   if (!Array.isArray(stateIdArray)) {
-    return res.status(400).json({ error: 'stateIdArray must be an array' });
+    return res.status(400).json({ error: "stateIdArray must be an array" });
   }
 
   await ArticleStateContract.destroy({

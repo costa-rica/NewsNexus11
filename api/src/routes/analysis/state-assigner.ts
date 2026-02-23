@@ -1,5 +1,5 @@
-import express from 'express';
-import type { Request, Response } from 'express';
+import express from "express";
+import type { Request, Response } from "express";
 
 const router = express.Router();
 const { authenticateToken } = require("../../modules/userAuthentication");
@@ -9,7 +9,7 @@ const {
   ArticleStateContract02,
   ArtificialIntelligence,
   EntityWhoCategorizedArticle,
-} = require("newsnexus10db");
+} = require("@newsnexus/db-models");
 const {
   sqlQueryArticlesWithStateAssignments,
 } = require("../../modules/analysis/state-assigner-sql");
@@ -82,7 +82,7 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
     }
 
     logger.info(
-      `Request parameters - includeNullState: ${includeNullState ?? false}, targetArticleThresholdDaysOld: ${targetArticleThresholdDaysOld ?? "not provided"}`
+      `Request parameters - includeNullState: ${includeNullState ?? false}, targetArticleThresholdDaysOld: ${targetArticleThresholdDaysOld ?? "not provided"}`,
     );
 
     // Query database for articles with state assignments
@@ -95,7 +95,7 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
     const formattedArticles = formatArticlesWithStateAssignments(rawResults);
 
     logger.info(
-      `Successfully retrieved ${formattedArticles.length} articles with state assignments`
+      `Successfully retrieved ${formattedArticles.length} articles with state assignments`,
     );
 
     // Fetch semantic scores for articles
@@ -116,18 +116,20 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
             semanticScorerEntity.EntityWhoCategorizedArticles[0].id;
 
           // Extract article IDs
-          const articleIds = formattedArticles.map((article: any) => article.id);
+          const articleIds = formattedArticles.map(
+            (article: any) => article.id,
+          );
 
           // Fetch AI scores
           const aiScores = await sqlQueryArticlesAndAiScores(
             articleIds,
-            entityWhoCategorizedArticleId
+            entityWhoCategorizedArticleId,
           );
 
           // Map scores back to articles
           articlesWithSemanticScores = formattedArticles.map((article: any) => {
             const aiScore = aiScores.find(
-              (score: any) => score.articleId === article.id
+              (score: any) => score.articleId === article.id,
             );
             return {
               ...article,
@@ -137,17 +139,17 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
           });
 
           logger.info(
-            `Added semantic scores for ${articlesWithSemanticScores.length} articles`
+            `Added semantic scores for ${articlesWithSemanticScores.length} articles`,
           );
         } else {
           logger.warn(
-            "NewsNexusSemanticScorer02 AI entity not found or has no EntityWhoCategorizedArticle"
+            "NewsNexusSemanticScorer02 AI entity not found or has no EntityWhoCategorizedArticle",
           );
         }
       } catch (scoreError: any) {
         logger.error(
           "Error fetching semantic scores, returning articles without scores:",
-          scoreError
+          scoreError,
         );
         // Continue with articles without scores rather than failing the entire request
       }
@@ -172,41 +174,41 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
 
           // Extract article IDs
           const articleIds = articlesWithSemanticScores.map(
-            (article: any) => article.id
+            (article: any) => article.id,
           );
 
           // Fetch location classifier scores
           const locationScores = await sqlQueryArticlesAndAiScores(
             articleIds,
-            entityWhoCategorizedArticleId
+            entityWhoCategorizedArticleId,
           );
 
           // Map scores back to articles
           articlesWithAllAiScores = articlesWithSemanticScores.map(
             (article: any) => {
               const locationScore = locationScores.find(
-                (score: any) => score.articleId === article.id
+                (score: any) => score.articleId === article.id,
               );
               return {
                 ...article,
                 locationClassifierScore: locationScore?.keywordRating || null,
                 locationClassifierScoreLabel: locationScore?.keyword || null,
               };
-            }
+            },
           );
 
           logger.info(
-            `Added location classifier scores for ${articlesWithAllAiScores.length} articles`
+            `Added location classifier scores for ${articlesWithAllAiScores.length} articles`,
           );
         } else {
           logger.warn(
-            "NewsNexusClassifierLocationScorer01 AI entity not found or has no EntityWhoCategorizedArticle"
+            "NewsNexusClassifierLocationScorer01 AI entity not found or has no EntityWhoCategorizedArticle",
           );
         }
       } catch (scoreError: any) {
         logger.error(
           "Error fetching location classifier scores, returning articles without location scores:",
-          scoreError
+          scoreError,
         );
         // Continue with articles without location scores rather than failing the entire request
       }
@@ -254,11 +256,13 @@ router.post(
 
     try {
       const { articleId } = req.params;
-      const normalizedArticleId = Array.isArray(articleId) ? articleId[0] : articleId;
+      const normalizedArticleId = Array.isArray(articleId)
+        ? articleId[0]
+        : articleId;
       const { action, stateId } = req.body || {};
 
       logger.info(
-        `articleId: ${normalizedArticleId}, action: ${action}, stateId: ${stateId}`
+        `articleId: ${normalizedArticleId}, action: ${action}, stateId: ${stateId}`,
       );
 
       // Validate articleId
@@ -315,7 +319,7 @@ router.post(
               articleId: parsedArticleId,
               stateId: stateId,
             },
-          }
+          },
         );
 
         // Check if row already exists in ArticleStateContracts
@@ -344,7 +348,7 @@ router.post(
         });
 
         logger.info(
-          `Article ${parsedArticleId} state ${stateId} approved by human`
+          `Article ${parsedArticleId} state ${stateId} approved by human`,
         );
       } else if (action === "reject") {
         // Update ArticleStateContract02 to set isHumanApproved = false
@@ -355,7 +359,7 @@ router.post(
               articleId: parsedArticleId,
               stateId: stateId,
             },
-          }
+          },
         );
 
         // Delete row in ArticleStateContracts if it exists
@@ -367,7 +371,7 @@ router.post(
         });
 
         logger.info(
-          `Article ${parsedArticleId} state ${stateId} rejected by human`
+          `Article ${parsedArticleId} state ${stateId} rejected by human`,
         );
       }
 
@@ -398,7 +402,7 @@ router.post(
     } catch (error: any) {
       logger.error(
         "Error in POST /analysis/state-assigner/human-verify/:articleId:",
-        error
+        error,
       );
       res.status(500).json({
         error: {
@@ -410,7 +414,7 @@ router.post(
         },
       });
     }
-  }
+  },
 );
 
 export = router;

@@ -1,5 +1,5 @@
-import express from 'express';
-import type { Request, Response } from 'express';
+import express from "express";
+import type { Request, Response } from "express";
 
 const router = express.Router();
 const {
@@ -13,7 +13,7 @@ const {
   ArtificialIntelligence,
   ArticleReviewed,
   EntityWhoCategorizedArticle,
-} = require("newsnexus10db");
+} = require("@newsnexus/db-models");
 const { authenticateToken } = require("../modules/userAuthentication");
 const {
   createNewsApiRequestsArray,
@@ -58,7 +58,7 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
 
   logger.info(
     "- articlesArray.length (before filtering):",
-    articlesArray.length
+    articlesArray.length,
   );
 
   // Create Article - State Map for modifing the articlesArray
@@ -188,81 +188,95 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
 });
 
 // 🔹 GET /articles/approved
-router.get("/approved", authenticateToken, async (req: Request, res: Response) => {
-  logger.info("- GET /articles/approved");
-  const startTime = Date.now();
-  const articlesArray =
-    await sqlQueryArticlesWithStatesApprovedReportContract();
+router.get(
+  "/approved",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    logger.info("- GET /articles/approved");
+    const startTime = Date.now();
+    const articlesArray =
+      await sqlQueryArticlesWithStatesApprovedReportContract();
 
-  logger.info(
-    `- articlesArray.length (before filtering): ${articlesArray.length}`
-  );
-
-  const approvedArticlesArray = articlesArray.filter((article: any) =>
-    article.ArticleApproveds?.some(
-      (entry: any) => entry.isApproved === true || entry.isApproved === 1
-    )
-  );
-
-  const approvedArticlesArrayModified = approvedArticlesArray.map((article: any) => {
-    const isSubmitted =
-      article.ArticleReportContracts.length > 0 ? "Yes" : "No";
-    const articleHasBeenAcceptedByAll = article.ArticleReportContracts.every(
-      (contract: any) => contract.articleAcceptedByCpsc === 1
+    logger.info(
+      `- articlesArray.length (before filtering): ${articlesArray.length}`,
     );
-    let stateAbbreviation = "";
-    if (article.States?.length === 1) {
-      stateAbbreviation = article.States[0].abbreviation;
-    } else if (article.States?.length > 1) {
-      stateAbbreviation = article.States.map((state: any) => state.abbreviation).join(", ");
-    }
-    return {
-      ...article,
-      isSubmitted,
-      articleHasBeenAcceptedByAll,
-      stateAbbreviation,
-    };
-  });
 
-  logger.info(
-    `- approvedArticlesArrayModified.length (after filtering): ${approvedArticlesArrayModified.length}`
-  );
+    const approvedArticlesArray = articlesArray.filter((article: any) =>
+      article.ArticleApproveds?.some(
+        (entry: any) => entry.isApproved === true || entry.isApproved === 1,
+      ),
+    );
 
-  const timeToRenderResponseFromApiInSeconds = (Date.now() - startTime) / 1000;
-  res.json({
-    articlesArray: approvedArticlesArrayModified,
-    timeToRenderResponseFromApiInSeconds,
-  });
-});
+    const approvedArticlesArrayModified = approvedArticlesArray.map(
+      (article: any) => {
+        const isSubmitted =
+          article.ArticleReportContracts.length > 0 ? "Yes" : "No";
+        const articleHasBeenAcceptedByAll =
+          article.ArticleReportContracts.every(
+            (contract: any) => contract.articleAcceptedByCpsc === 1,
+          );
+        let stateAbbreviation = "";
+        if (article.States?.length === 1) {
+          stateAbbreviation = article.States[0].abbreviation;
+        } else if (article.States?.length > 1) {
+          stateAbbreviation = article.States.map(
+            (state: any) => state.abbreviation,
+          ).join(", ");
+        }
+        return {
+          ...article,
+          isSubmitted,
+          articleHasBeenAcceptedByAll,
+          stateAbbreviation,
+        };
+      },
+    );
+
+    logger.info(
+      `- approvedArticlesArrayModified.length (after filtering): ${approvedArticlesArrayModified.length}`,
+    );
+
+    const timeToRenderResponseFromApiInSeconds =
+      (Date.now() - startTime) / 1000;
+    res.json({
+      articlesArray: approvedArticlesArrayModified,
+      timeToRenderResponseFromApiInSeconds,
+    });
+  },
+);
 
 // 🔹 POST /articles/update-approved
-router.post("/update-approved", authenticateToken, async (req: Request, res: Response) => {
-  const { articleId, contentToUpdate } = req.body;
-  logger.info(`articleId: ${articleId}`);
-  logger.info(`contentToUpdate: ${contentToUpdate}`);
+router.post(
+  "/update-approved",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const { articleId, contentToUpdate } = req.body;
+    logger.info(`articleId: ${articleId}`);
+    logger.info(`contentToUpdate: ${contentToUpdate}`);
 
-  const articleApprovedArrayOriginal = await ArticleApproved.findAll({
-    where: { articleId },
-  });
-
-  let articleApprovedArrayModified = [];
-  if (articleApprovedArrayOriginal.length > 0) {
-    await ArticleApproved.update(
-      {
-        textForPdfReport: contentToUpdate,
-      },
-      {
-        where: { articleId },
-      }
-    );
-
-    articleApprovedArrayModified = await ArticleApproved.findAll({
+    const articleApprovedArrayOriginal = await ArticleApproved.findAll({
       where: { articleId },
     });
-  }
 
-  return res.json({ result: true, articleApprovedArrayModified });
-});
+    let articleApprovedArrayModified = [];
+    if (articleApprovedArrayOriginal.length > 0) {
+      await ArticleApproved.update(
+        {
+          textForPdfReport: contentToUpdate,
+        },
+        {
+          where: { articleId },
+        },
+      );
+
+      articleApprovedArrayModified = await ArticleApproved.findAll({
+        where: { articleId },
+      });
+    }
+
+    return res.json({ result: true, articleApprovedArrayModified });
+  },
+);
 
 // 🔹 POST /articles/update-approved-all/:articleId
 router.post(
@@ -307,7 +321,7 @@ router.post(
         });
         logger.info(
           `Updated Articles table for articleId ${articleId}:`,
-          articleUpdateFields
+          articleUpdateFields,
         );
       }
 
@@ -340,7 +354,7 @@ router.post(
           });
           logger.info(
             `Updated ArticleApproved table for articleId ${articleId}:`,
-            approvedUpdateFields
+            approvedUpdateFields,
           );
         }
       }
@@ -352,7 +366,7 @@ router.post(
           where: { articleId },
         });
         logger.info(
-          `Deleted existing ArticleStateContract records for articleId ${articleId}`
+          `Deleted existing ArticleStateContract records for articleId ${articleId}`,
         );
 
         // Create new ArticleStateContract records
@@ -364,7 +378,7 @@ router.post(
         }
         logger.info(
           `Created new ArticleStateContract records for articleId ${articleId} with stateIds:`,
-          newStateIdsArray
+          newStateIdsArray,
         );
       }
 
@@ -395,7 +409,7 @@ router.post(
         message: error.message,
       });
     }
-  }
+  },
 );
 
 // 🔹 POST /articles/user-toggle-is-not-relevant/:articleId
@@ -432,288 +446,310 @@ router.post(
       articleIsRelevant = false;
     }
     res.json({ result: true, status, articleIsRelevant });
-  }
+  },
 );
 
 // 🔹 GET /articles/get-approved/:articleId
-router.get("/get-approved/:articleId", authenticateToken, async (req: Request, res: Response) => {
-  const { articleId } = req.params;
-  const articleApproved = await ArticleApproved.findOne({
-    where: { articleId },
-    include: [
-      {
-        model: Article,
-        include: [
-          {
-            model: State,
-            through: { attributes: [] }, // omit ArticleStateContract from result
-          },
-          {
-            model: ArticleIsRelevant,
-          },
-        ],
-      },
-    ],
-  });
-
-  // Check if record exists AND isApproved is true
-  if (
-    !articleApproved ||
-    (articleApproved.isApproved !== true && articleApproved.isApproved !== 1)
-  ) {
-    return res.json({
-      articleIsApproved: false,
-      article: {},
+router.get(
+  "/get-approved/:articleId",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const { articleId } = req.params;
+    const articleApproved = await ArticleApproved.findOne({
+      where: { articleId },
+      include: [
+        {
+          model: Article,
+          include: [
+            {
+              model: State,
+              through: { attributes: [] }, // omit ArticleStateContract from result
+            },
+            {
+              model: ArticleIsRelevant,
+            },
+          ],
+        },
+      ],
     });
-  }
 
-  res.json({
-    articleIsApproved: true,
-    article: articleApproved.Article,
-    content: articleApproved.textForPdfReport,
-    States: articleApproved.Article.States,
-  });
-});
+    // Check if record exists AND isApproved is true
+    if (
+      !articleApproved ||
+      (articleApproved.isApproved !== true && articleApproved.isApproved !== 1)
+    ) {
+      return res.json({
+        articleIsApproved: false,
+        article: {},
+      });
+    }
+
+    res.json({
+      articleIsApproved: true,
+      article: articleApproved.Article,
+      content: articleApproved.textForPdfReport,
+      States: articleApproved.Article.States,
+    });
+  },
+);
 
 // 🔹 POST /articles/approve/:articleId
-router.post("/approve/:articleId", authenticateToken, async (req: Request, res: Response) => {
-  const { articleId } = req.params;
-  const {
-    // isApproved,
-    headlineForPdfReport,
-    approvedStatus,
-  } = req.body;
-  const user = req.user;
-  if (!user) {
-    return res.status(401).json({
-      result: false,
-      message: "Authentication required",
-    });
-  }
-
-  logger.info(`articleId ${articleId}: ${headlineForPdfReport}`);
-  logger.info(`approvedStatus: ${approvedStatus}`);
-
-  const articleApprovedExists = await ArticleApproved.findOne({
-    where: { articleId },
-  });
-
-  if (approvedStatus === "Approve") {
-    if (articleApprovedExists) {
-      // Update existing record to approved
-      await ArticleApproved.update(
-        {
-          isApproved: true,
-          userId: user.id,
-          ...req.body,
-        },
-        { where: { articleId } }
-      );
-      logger.info(
-        `---- > updated existing record to approved for articleId ${articleId}`
-      );
-    } else {
-      // Create new approval record
-      await ArticleApproved.create({
-        articleId: articleId,
-        userId: user.id,
-        isApproved: true,
-        ...req.body,
+router.post(
+  "/approve/:articleId",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const { articleId } = req.params;
+    const {
+      // isApproved,
+      headlineForPdfReport,
+      approvedStatus,
+    } = req.body;
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({
+        result: false,
+        message: "Authentication required",
       });
-      logger.info(
-        `---- > created new approval record for articleId ${articleId}`
-      );
     }
-  } else if (approvedStatus === "Un-approve") {
-    logger.info("---- > received Un-approve");
-    if (articleApprovedExists) {
-      // Update existing record to unapproved instead of deleting
-      await ArticleApproved.update(
-        {
-          isApproved: false,
+
+    logger.info(`articleId ${articleId}: ${headlineForPdfReport}`);
+    logger.info(`approvedStatus: ${approvedStatus}`);
+
+    const articleApprovedExists = await ArticleApproved.findOne({
+      where: { articleId },
+    });
+
+    if (approvedStatus === "Approve") {
+      if (articleApprovedExists) {
+        // Update existing record to approved
+        await ArticleApproved.update(
+          {
+            isApproved: true,
+            userId: user.id,
+            ...req.body,
+          },
+          { where: { articleId } },
+        );
+        logger.info(
+          `---- > updated existing record to approved for articleId ${articleId}`,
+        );
+      } else {
+        // Create new approval record
+        await ArticleApproved.create({
+          articleId: articleId,
           userId: user.id,
-        },
-        { where: { articleId } }
-      );
-      logger.info(
-        `---- > updated record to unapproved for articleId ${articleId}, userId: ${user.id}`
-      );
-    } else {
-      logger.info(
-        `---- > no approval record exists for articleId ${articleId}, cannot unapprove`
-      );
+          isApproved: true,
+          ...req.body,
+        });
+        logger.info(
+          `---- > created new approval record for articleId ${articleId}`,
+        );
+      }
+    } else if (approvedStatus === "Un-approve") {
+      logger.info("---- > received Un-approve");
+      if (articleApprovedExists) {
+        // Update existing record to unapproved instead of deleting
+        await ArticleApproved.update(
+          {
+            isApproved: false,
+            userId: user.id,
+          },
+          { where: { articleId } },
+        );
+        logger.info(
+          `---- > updated record to unapproved for articleId ${articleId}, userId: ${user.id}`,
+        );
+      } else {
+        logger.info(
+          `---- > no approval record exists for articleId ${articleId}, cannot unapprove`,
+        );
+      }
     }
-  }
 
-  const statusMessage =
-    approvedStatus === "Approve"
-      ? `articleId ${articleId} is approved`
-      : `articleId ${articleId} is unapproved`;
+    const statusMessage =
+      approvedStatus === "Approve"
+        ? `articleId ${articleId} is approved`
+        : `articleId ${articleId} is unapproved`;
 
-  res.json({ result: true, status: statusMessage });
-});
+    res.json({ result: true, status: statusMessage });
+  },
+);
 
 // 🔹 GET /articles/summary-statistics
-router.get("/summary-statistics", authenticateToken, async (_req: Request, res: Response) => {
-  // Article count AND Article count since last Thursday at 20h
-  const articlesArray = await sqlQueryArticles({});
-  let articlesCount = articlesArray.length;
-  let articlesSinceLastThursday20hEst = 0;
-  const lastThursday20hEst = getLastThursdayAt20hInNyTimeZone();
+router.get(
+  "/summary-statistics",
+  authenticateToken,
+  async (_req: Request, res: Response) => {
+    // Article count AND Article count since last Thursday at 20h
+    const articlesArray = await sqlQueryArticles({});
+    let articlesCount = articlesArray.length;
+    let articlesSinceLastThursday20hEst = 0;
+    const lastThursday20hEst = getLastThursdayAt20hInNyTimeZone();
 
-  articlesArray.map((article: any) => {
-    const articleCreatedAtDate = new Date(article.createdAt);
-    if (articleCreatedAtDate >= lastThursday20hEst) {
-      articlesSinceLastThursday20hEst++;
-    }
-  });
+    articlesArray.map((article: any) => {
+      const articleCreatedAtDate = new Date(article.createdAt);
+      if (articleCreatedAtDate >= lastThursday20hEst) {
+        articlesSinceLastThursday20hEst++;
+      }
+    });
 
-  // Article count with states
-  const articlesArrayIncludeStates = await sqlQueryArticlesWithStates();
-  const articlesArrayWithStatesSubset = articlesArrayIncludeStates.filter(
-    (article: any) => article.stateId
-  );
-  const uniqueArticleIdsWithStatesSubset = [
-    ...new Set(
-      articlesArrayWithStatesSubset.map((article: any) => article.articleId)
-    ),
-  ];
+    // Article count with states
+    const articlesArrayIncludeStates = await sqlQueryArticlesWithStates();
+    const articlesArrayWithStatesSubset = articlesArrayIncludeStates.filter(
+      (article: any) => article.stateId,
+    );
+    const uniqueArticleIdsWithStatesSubset = [
+      ...new Set(
+        articlesArrayWithStatesSubset.map((article: any) => article.articleId),
+      ),
+    ];
 
-  // Approved articles
-  const articlesArrayApproved = await sqlQueryArticlesApproved();
+    // Approved articles
+    const articlesArrayApproved = await sqlQueryArticlesApproved();
 
-  const uniqueArticleIdsApprovedSubset = [
-    ...new Set(articlesArrayApproved.map((article: any) => article.articleId)),
-  ];
+    const uniqueArticleIdsApprovedSubset = [
+      ...new Set(
+        articlesArrayApproved.map((article: any) => article.articleId),
+      ),
+    ];
 
-  const articlesInReportArray = await sqlQueryArticlesReport();
+    const articlesInReportArray = await sqlQueryArticlesReport();
 
-  // Get all articleIds from articles in report
-  const articleIdsInReport: Array<number | string> = [];
-  articlesInReportArray.map((article: any) => {
-    if (article.reportId) {
-      articleIdsInReport.push(article.articleId);
-    }
-  });
+    // Get all articleIds from articles in report
+    const articleIdsInReport: Array<number | string> = [];
+    articlesInReportArray.map((article: any) => {
+      if (article.reportId) {
+        articleIdsInReport.push(article.articleId);
+      }
+    });
 
-  let approvedButNotInReport: any[] = [];
-  articlesArrayApproved.map((article: any) => {
-    if (!articleIdsInReport.includes(article.articleId)) {
-      approvedButNotInReport.push(article);
-    }
-  });
+    let approvedButNotInReport: any[] = [];
+    articlesArrayApproved.map((article: any) => {
+      if (!articleIdsInReport.includes(article.articleId)) {
+        approvedButNotInReport.push(article);
+      }
+    });
 
-  res.json({
-    summaryStatistics: {
-      articlesCount,
-      articlesSinceLastThursday20hEst,
-      articleHasStateCount: uniqueArticleIdsWithStatesSubset.length,
-      articleIsApprovedCount: uniqueArticleIdsApprovedSubset.length,
-      approvedButNotInReportCount: approvedButNotInReport.length,
-    },
-  });
-});
+    res.json({
+      summaryStatistics: {
+        articlesCount,
+        articlesSinceLastThursday20hEst,
+        articleHasStateCount: uniqueArticleIdsWithStatesSubset.length,
+        articleIsApprovedCount: uniqueArticleIdsApprovedSubset.length,
+        approvedButNotInReportCount: approvedButNotInReport.length,
+      },
+    });
+  },
+);
 
 // 🔹 POST /articles/add-article
-router.post("/add-article", authenticateToken, async (req: Request, res: Response) => {
-  const {
-    publicationName,
-    author,
-    title,
-    description,
-    content,
-    url,
-    publishedDate,
-    stateObjArray,
-    isApproved,
-    kmNotes,
-  } = req.body;
-
-  logger.info(`publicationName: ${publicationName}`);
-  logger.info(`author: ${author}`);
-  logger.info(`title: ${title}`);
-  logger.info(`description: ${description}`);
-  logger.info(`content: ${content}`);
-  logger.info(`url: ${url}`);
-  logger.info(`publishedDate: ${publishedDate}`);
-  logger.info(`stateObjArray: ${stateObjArray}`);
-  logger.info(`isApproved: ${isApproved}`);
-  logger.info(`kmNotes: ${kmNotes}`);
-
-  const user = req.user;
-  if (!user) {
-    return res.status(401).json({
-      result: false,
-      message: "Authentication required",
-    });
-  }
-
-  const entityWhoFoundArticleObj = await EntityWhoFoundArticle.findOne({
-    where: { userId: user.id },
-  });
-  if (!entityWhoFoundArticleObj) {
-    return res.status(404).json({
-      result: false,
-      message: `No EntityWhoFoundArticle found for userId ${user.id}`,
-    });
-  }
-
-  const newArticle = await Article.create({
-    publicationName,
-    author,
-    title,
-    description,
-    url,
-    publishedDate,
-    entityWhoFoundArticleId: entityWhoFoundArticleObj.id,
-  });
-
-  logger.info(`stateObjArray: ${stateObjArray}`);
-
-  for (let stateObj of stateObjArray) {
-    await ArticleStateContract.create({
-      articleId: newArticle.id,
-      stateId: stateObj.id,
-    });
-  }
-
-  if (isApproved) {
-    await ArticleApproved.create({
-      userId: user.id,
-      articleId: newArticle.id,
+router.post(
+  "/add-article",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const {
+      publicationName,
+      author,
+      title,
+      description,
+      content,
+      url,
+      publishedDate,
+      stateObjArray,
       isApproved,
-      headlineForPdfReport: title,
-      publicationNameForPdfReport: publicationName,
-      publicationDateForPdfReport: publishedDate,
-      textForPdfReport: content,
-      urlForPdfReport: url,
       kmNotes,
-    });
-  }
+    } = req.body;
 
-  res.json({ result: true, newArticle });
-});
+    logger.info(`publicationName: ${publicationName}`);
+    logger.info(`author: ${author}`);
+    logger.info(`title: ${title}`);
+    logger.info(`description: ${description}`);
+    logger.info(`content: ${content}`);
+    logger.info(`url: ${url}`);
+    logger.info(`publishedDate: ${publishedDate}`);
+    logger.info(`stateObjArray: ${stateObjArray}`);
+    logger.info(`isApproved: ${isApproved}`);
+    logger.info(`kmNotes: ${kmNotes}`);
+
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({
+        result: false,
+        message: "Authentication required",
+      });
+    }
+
+    const entityWhoFoundArticleObj = await EntityWhoFoundArticle.findOne({
+      where: { userId: user.id },
+    });
+    if (!entityWhoFoundArticleObj) {
+      return res.status(404).json({
+        result: false,
+        message: `No EntityWhoFoundArticle found for userId ${user.id}`,
+      });
+    }
+
+    const newArticle = await Article.create({
+      publicationName,
+      author,
+      title,
+      description,
+      url,
+      publishedDate,
+      entityWhoFoundArticleId: entityWhoFoundArticleObj.id,
+    });
+
+    logger.info(`stateObjArray: ${stateObjArray}`);
+
+    for (let stateObj of stateObjArray) {
+      await ArticleStateContract.create({
+        articleId: newArticle.id,
+        stateId: stateObj.id,
+      });
+    }
+
+    if (isApproved) {
+      await ArticleApproved.create({
+        userId: user.id,
+        articleId: newArticle.id,
+        isApproved,
+        headlineForPdfReport: title,
+        publicationNameForPdfReport: publicationName,
+        publicationDateForPdfReport: publishedDate,
+        textForPdfReport: content,
+        urlForPdfReport: url,
+        kmNotes,
+      });
+    }
+
+    res.json({ result: true, newArticle });
+  },
+);
 
 // 🔹 DELETE /articles/:articleId - Delete Article
-router.delete("/:articleId", authenticateToken, async (req: Request, res: Response) => {
-  const { articleId } = req.params;
-  await Article.destroy({
-    where: { id: articleId },
-  });
-  await ArticleApproved.destroy({
-    where: { articleId },
-  });
-  await ArticleIsRelevant.destroy({
-    where: { articleId },
-  });
-  await ArticleStateContract.destroy({
-    where: { articleId },
-  });
-  await ArticleContent.destroy({
-    where: { articleId },
-  });
-  res.json({ result: true, status: `articleId ${articleId} deleted` });
-});
+router.delete(
+  "/:articleId",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const { articleId } = req.params;
+    await Article.destroy({
+      where: { id: articleId },
+    });
+    await ArticleApproved.destroy({
+      where: { articleId },
+    });
+    await ArticleIsRelevant.destroy({
+      where: { articleId },
+    });
+    await ArticleStateContract.destroy({
+      where: { articleId },
+    });
+    await ArticleContent.destroy({
+      where: { articleId },
+    });
+    res.json({ result: true, status: `articleId ${articleId} deleted` });
+  },
+);
 
 // 🔹 POST /articles/is-being-reviewed/:articleId
 router.post(
@@ -752,214 +788,227 @@ router.post(
         status: `articleId ${articleId} IS NOT being reviewed`,
       });
     }
-  }
+  },
 );
 // 🔹 POST /articles/with-ratings - Get articles with ratings
-router.post("/with-ratings", authenticateToken, async (req: Request, res: Response) => {
-  logger.info("- POST /articles/with-ratings");
-  const startTime = Date.now();
-  const {
-    returnOnlyThisPublishedDateOrAfter,
-    returnOnlyThisCreatedAtDateOrAfter,
-    semanticScorerEntityName,
-    returnOnlyIsNotApproved,
-    returnOnlyIsRelevant,
-  } = req.body;
+router.post(
+  "/with-ratings",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    logger.info("- POST /articles/with-ratings");
+    const startTime = Date.now();
+    const {
+      returnOnlyThisPublishedDateOrAfter,
+      returnOnlyThisCreatedAtDateOrAfter,
+      semanticScorerEntityName,
+      returnOnlyIsNotApproved,
+      returnOnlyIsRelevant,
+    } = req.body;
 
-  let semanticScorerEntityId;
+    let semanticScorerEntityId;
 
-  if (semanticScorerEntityName) {
-    const semanticScorerEntityObj = await ArtificialIntelligence.findOne({
-      where: { name: semanticScorerEntityName },
-    });
-    semanticScorerEntityId = semanticScorerEntityObj.id;
-  }
-
-  // try {
-  // 🔹 Step 1: Get full list of articles as base array
-  const whereClause: Record<string, unknown> = {};
-  if (returnOnlyThisPublishedDateOrAfter) {
-    whereClause.publishedDate = {
-      [require("sequelize").Op.gte]: new Date(
-        returnOnlyThisPublishedDateOrAfter
-      ),
-    };
-  }
-
-  if (returnOnlyThisCreatedAtDateOrAfter) {
-    whereClause.createdAt = {
-      [require("sequelize").Op.gte]: new Date(
-        returnOnlyThisCreatedAtDateOrAfter
-      ),
-    };
-  }
-
-  const articlesArray = await sqlQueryArticlesForWithRatingsRoute(
-    returnOnlyThisCreatedAtDateOrAfter,
-    returnOnlyThisPublishedDateOrAfter
-  );
-
-  // Step 2: Filter articles
-  // Filter in JavaScript based on related tables
-  const articlesArrayFilteredNoAi = articlesArray.filter((article: any) => {
-    // Filter out not approved if requested
-    if (
-      returnOnlyIsNotApproved &&
-      article.ArticleApproveds &&
-      article.ArticleApproveds.some(
-        (entry: any) => entry.isApproved === true || entry.isApproved === 1
-      )
-    ) {
-      return false;
+    if (semanticScorerEntityName) {
+      const semanticScorerEntityObj = await ArtificialIntelligence.findOne({
+        where: { name: semanticScorerEntityName },
+      });
+      semanticScorerEntityId = semanticScorerEntityObj.id;
     }
 
-    // Filter out not relevant if requested
-    if (
-      returnOnlyIsRelevant &&
-      article.ArticleIsRelevants &&
-      article.ArticleIsRelevants.some((entry: any) => entry.isRelevant !== null)
-    ) {
-      return false;
-    }
-    return true;
-  });
-
-  // Step 2.1: Get AI scores
-  const artificialIntelligenceObject01 = await ArtificialIntelligence.findOne({
-    where: { name: semanticScorerEntityName },
-    include: [EntityWhoCategorizedArticle],
-  });
-  if (!artificialIntelligenceObject01) {
-    return res.status(404).json({ message: "AI not found." });
-  }
-  const entityWhoCategorizedArticleId01 =
-    artificialIntelligenceObject01.EntityWhoCategorizedArticles[0].id;
-
-  if (!artificialIntelligenceObject01.EntityWhoCategorizedArticles?.length) {
-    return res
-      .status(500)
-      .json({ message: "No related EntityWhoCategorizedArticles found" });
-  }
-
-  const articlesIdArray = articlesArrayFilteredNoAi.map(
-    (article: any) => article.id
-  );
-
-  const articlesAndAiScores = await sqlQueryArticlesAndAiScores(
-    articlesIdArray,
-    entityWhoCategorizedArticleId01
-  );
-  const articlesArrayFilteredWithSemanticScorer = articlesArrayFilteredNoAi.map(
-    (article: any) => {
-      const aiScore = articlesAndAiScores.find(
-        (score: any) => score.articleId === article.id
-      );
-      return {
-        ...article,
-        semanticRatingMax: aiScore?.keywordRating,
-        semanticRatingMaxLabel: aiScore?.keyword,
+    // try {
+    // 🔹 Step 1: Get full list of articles as base array
+    const whereClause: Record<string, unknown> = {};
+    if (returnOnlyThisPublishedDateOrAfter) {
+      whereClause.publishedDate = {
+        [require("sequelize").Op.gte]: new Date(
+          returnOnlyThisPublishedDateOrAfter,
+        ),
       };
     }
-  );
 
-  // Step 2.2: Get zero shot Location Classifier scores
+    if (returnOnlyThisCreatedAtDateOrAfter) {
+      whereClause.createdAt = {
+        [require("sequelize").Op.gte]: new Date(
+          returnOnlyThisCreatedAtDateOrAfter,
+        ),
+      };
+    }
 
-  const artificialIntelligenceObject02 = await ArtificialIntelligence.findOne({
-    where: { name: "NewsNexusClassifierLocationScorer01" },
-    include: [EntityWhoCategorizedArticle],
-  });
-  if (!artificialIntelligenceObject02) {
-    return res.status(404).json({ message: "AI not found." });
-  }
-  const entityWhoCategorizedArticleId02 =
-    artificialIntelligenceObject02.EntityWhoCategorizedArticles[0].id;
-
-  const articlesAndLocationClassifierScoresArray =
-    await sqlQueryArticlesAndAiScores(
-      articlesIdArray,
-      entityWhoCategorizedArticleId02
+    const articlesArray = await sqlQueryArticlesForWithRatingsRoute(
+      returnOnlyThisCreatedAtDateOrAfter,
+      returnOnlyThisPublishedDateOrAfter,
     );
 
-  const articlesArrayWithBothAiScores =
-    articlesArrayFilteredWithSemanticScorer.map((article: any) => {
-      const locationClassifierScore =
-        articlesAndLocationClassifierScoresArray.find(
-          (score: any) => score.articleId === article.id
+    // Step 2: Filter articles
+    // Filter in JavaScript based on related tables
+    const articlesArrayFilteredNoAi = articlesArray.filter((article: any) => {
+      // Filter out not approved if requested
+      if (
+        returnOnlyIsNotApproved &&
+        article.ArticleApproveds &&
+        article.ArticleApproveds.some(
+          (entry: any) => entry.isApproved === true || entry.isApproved === 1,
+        )
+      ) {
+        return false;
+      }
+
+      // Filter out not relevant if requested
+      if (
+        returnOnlyIsRelevant &&
+        article.ArticleIsRelevants &&
+        article.ArticleIsRelevants.some(
+          (entry: any) => entry.isRelevant !== null,
+        )
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    // Step 2.1: Get AI scores
+    const artificialIntelligenceObject01 = await ArtificialIntelligence.findOne(
+      {
+        where: { name: semanticScorerEntityName },
+        include: [EntityWhoCategorizedArticle],
+      },
+    );
+    if (!artificialIntelligenceObject01) {
+      return res.status(404).json({ message: "AI not found." });
+    }
+    const entityWhoCategorizedArticleId01 =
+      artificialIntelligenceObject01.EntityWhoCategorizedArticles[0].id;
+
+    if (!artificialIntelligenceObject01.EntityWhoCategorizedArticles?.length) {
+      return res
+        .status(500)
+        .json({ message: "No related EntityWhoCategorizedArticles found" });
+    }
+
+    const articlesIdArray = articlesArrayFilteredNoAi.map(
+      (article: any) => article.id,
+    );
+
+    const articlesAndAiScores = await sqlQueryArticlesAndAiScores(
+      articlesIdArray,
+      entityWhoCategorizedArticleId01,
+    );
+    const articlesArrayFilteredWithSemanticScorer =
+      articlesArrayFilteredNoAi.map((article: any) => {
+        const aiScore = articlesAndAiScores.find(
+          (score: any) => score.articleId === article.id,
         );
+        return {
+          ...article,
+          semanticRatingMax: aiScore?.keywordRating,
+          semanticRatingMaxLabel: aiScore?.keyword,
+        };
+      });
+
+    // Step 2.2: Get zero shot Location Classifier scores
+
+    const artificialIntelligenceObject02 = await ArtificialIntelligence.findOne(
+      {
+        where: { name: "NewsNexusClassifierLocationScorer01" },
+        include: [EntityWhoCategorizedArticle],
+      },
+    );
+    if (!artificialIntelligenceObject02) {
+      return res.status(404).json({ message: "AI not found." });
+    }
+    const entityWhoCategorizedArticleId02 =
+      artificialIntelligenceObject02.EntityWhoCategorizedArticles[0].id;
+
+    const articlesAndLocationClassifierScoresArray =
+      await sqlQueryArticlesAndAiScores(
+        articlesIdArray,
+        entityWhoCategorizedArticleId02,
+      );
+
+    const articlesArrayWithBothAiScores =
+      articlesArrayFilteredWithSemanticScorer.map((article: any) => {
+        const locationClassifierScore =
+          articlesAndLocationClassifierScoresArray.find(
+            (score: any) => score.articleId === article.id,
+          );
+        return {
+          ...article,
+          locationClassifierScore: locationClassifierScore?.keywordRating,
+          locationClassifierScoreLabel: locationClassifierScore?.keyword,
+        };
+      });
+
+    // 🔹 Step 3: Build final article objects
+    const finalArticles = articlesArrayWithBothAiScores.map((article: any) => {
+      const statesStringCommaSeparated = article.States.map(
+        (state: any) => state.name,
+      ).join(", ");
+
+      let isRelevant = true;
+      if (
+        article.ArticleIsRelevants.every((entry: any) => entry.isRelevant === 0)
+      ) {
+        isRelevant = false;
+      }
+      const isApproved =
+        article.ArticleApproveds &&
+        article.ArticleApproveds.some(
+          (entry: any) => entry.isApproved === true || entry.isApproved === 1,
+        );
+
+      let requestQueryString = "";
+      if (article.NewsApiRequest?.andString)
+        requestQueryString += `AND ${article.NewsApiRequest.andString}`;
+      if (article.NewsApiRequest?.orString)
+        requestQueryString += ` OR ${article.NewsApiRequest.orString}`;
+      if (article.NewsApiRequest?.notString)
+        requestQueryString += ` NOT ${article.NewsApiRequest.notString}`;
+
+      let nameOfOrg = "";
+      if (article.NewsApiRequest?.NewsArticleAggregatorSource?.nameOfOrg) {
+        nameOfOrg =
+          article.NewsApiRequest.NewsArticleAggregatorSource.nameOfOrg;
+      }
+      const isBeingReviewed = article.ArticleRevieweds?.length > 0;
+
       return {
-        ...article,
-        locationClassifierScore: locationClassifierScore?.keywordRating,
-        locationClassifierScoreLabel: locationClassifierScore?.keyword,
+        id: article.id,
+        title: article.title,
+        description: article.description,
+        publishedDate: article.publishedDate,
+        publicationName: article.publicationName,
+        url: article.url,
+        States: article.States,
+        statesStringCommaSeparated,
+        isRelevant,
+        isApproved,
+        requestQueryString,
+        nameOfOrg,
+        semanticRatingMaxLabel: article.semanticRatingMaxLabel,
+        semanticRatingMax: article.semanticRatingMax,
+        locationClassifierScoreLabel: article.locationClassifierScoreLabel,
+        locationClassifierScore: article.locationClassifierScore,
+        isBeingReviewed,
+        stateAssignment: article.StateAssignment, // Add AI state assignment data
       };
     });
 
-  // 🔹 Step 3: Build final article objects
-  const finalArticles = articlesArrayWithBothAiScores.map((article: any) => {
-    const statesStringCommaSeparated = article.States.map(
-      (state: any) => state.name
-    ).join(", ");
-
-    let isRelevant = true;
-    if (article.ArticleIsRelevants.every((entry: any) => entry.isRelevant === 0)) {
-      isRelevant = false;
-    }
-    const isApproved =
-      article.ArticleApproveds &&
-      article.ArticleApproveds.some(
-        (entry: any) => entry.isApproved === true || entry.isApproved === 1
-      );
-
-    let requestQueryString = "";
-    if (article.NewsApiRequest?.andString)
-      requestQueryString += `AND ${article.NewsApiRequest.andString}`;
-    if (article.NewsApiRequest?.orString)
-      requestQueryString += ` OR ${article.NewsApiRequest.orString}`;
-    if (article.NewsApiRequest?.notString)
-      requestQueryString += ` NOT ${article.NewsApiRequest.notString}`;
-
-    let nameOfOrg = "";
-    if (article.NewsApiRequest?.NewsArticleAggregatorSource?.nameOfOrg) {
-      nameOfOrg = article.NewsApiRequest.NewsArticleAggregatorSource.nameOfOrg;
-    }
-    const isBeingReviewed = article.ArticleRevieweds?.length > 0;
-
-    return {
-      id: article.id,
-      title: article.title,
-      description: article.description,
-      publishedDate: article.publishedDate,
-      publicationName: article.publicationName,
-      url: article.url,
-      States: article.States,
-      statesStringCommaSeparated,
-      isRelevant,
-      isApproved,
-      requestQueryString,
-      nameOfOrg,
-      semanticRatingMaxLabel: article.semanticRatingMaxLabel,
-      semanticRatingMax: article.semanticRatingMax,
-      locationClassifierScoreLabel: article.locationClassifierScoreLabel,
-      locationClassifierScore: article.locationClassifierScore,
-      isBeingReviewed,
-      stateAssignment: article.StateAssignment, // Add AI state assignment data
-    };
-  });
-
-  const timeToRenderResponseFromApiInSeconds = (Date.now() - startTime) / 1000;
-  logger.info(
-    `timeToRenderResponseFromApiInSeconds: ${timeToRenderResponseFromApiInSeconds}`
-  );
-  res.json({
-    articleCount: finalArticles.length,
-    articlesArray: finalArticles,
-    // articlesArray: articlesArrayFilteredWithSemanticScorer,
-    timeToRenderResponseFromApiInSeconds,
-  });
-  // } catch (error) {
-  //   logger.error("❌ Error in /articles/with-ratings:", error);
-  //   res.status(500).json({ error: "Failed to fetch articles with ratings." });
-  // }
-});
+    const timeToRenderResponseFromApiInSeconds =
+      (Date.now() - startTime) / 1000;
+    logger.info(
+      `timeToRenderResponseFromApiInSeconds: ${timeToRenderResponseFromApiInSeconds}`,
+    );
+    res.json({
+      articleCount: finalArticles.length,
+      articlesArray: finalArticles,
+      // articlesArray: articlesArrayFilteredWithSemanticScorer,
+      timeToRenderResponseFromApiInSeconds,
+    });
+    // } catch (error) {
+    //   logger.error("❌ Error in /articles/with-ratings:", error);
+    //   res.status(500).json({ error: "Failed to fetch articles with ratings." });
+    // }
+  },
+);
 
 // 🔹 POST /articles/table-approved-by-request
 router.post(
@@ -997,12 +1046,13 @@ router.post(
           //   logger.info(request);
           // }
           return request.countOfApprovedArticles > 0;
-        }
+        },
       );
 
       // Sort by count descending
       const sortedRequestsArray = filteredRequestsArray.sort(
-        (a: any, b: any) => b.countOfApprovedArticles - a.countOfApprovedArticles
+        (a: any, b: any) =>
+          b.countOfApprovedArticles - a.countOfApprovedArticles,
       );
 
       // const outputFilePath = path.join(
@@ -1021,44 +1071,48 @@ router.post(
       logger.error("❌ Error in /articles/table-approved-by-request:", error);
       res.status(500).json({ error: "Failed to fetch request summary." });
     }
-  }
+  },
 );
 
 // GET /articles/test
-router.get("/test-sql", authenticateToken, async (_req: Request, res: Response) => {
-  const articlesArray = await sqlQueryArticlesForWithRatingsRoute(null, null);
-  const articleIdArray = articlesArray.map((article: any) => article.id);
+router.get(
+  "/test-sql",
+  authenticateToken,
+  async (_req: Request, res: Response) => {
+    const articlesArray = await sqlQueryArticlesForWithRatingsRoute(null, null);
+    const articleIdArray = articlesArray.map((article: any) => article.id);
 
-  // AI 01 : NewsNexusSemanticScorer02
-  // AI 02 : NewsNexusClassifierLocationScorer01
-  const artificialIntelligenceObject = await ArtificialIntelligence.findOne({
-    where: { name: "NewsNexusSemanticScorer02" },
-    include: [EntityWhoCategorizedArticle],
-  });
-  if (!artificialIntelligenceObject) {
-    return res.status(404).json({ error: "AI not found." });
-  }
-  const entityWhoCategorizedArticleId =
-    artificialIntelligenceObject.EntityWhoCategorizedArticles[0].id;
+    // AI 01 : NewsNexusSemanticScorer02
+    // AI 02 : NewsNexusClassifierLocationScorer01
+    const artificialIntelligenceObject = await ArtificialIntelligence.findOne({
+      where: { name: "NewsNexusSemanticScorer02" },
+      include: [EntityWhoCategorizedArticle],
+    });
+    if (!artificialIntelligenceObject) {
+      return res.status(404).json({ error: "AI not found." });
+    }
+    const entityWhoCategorizedArticleId =
+      artificialIntelligenceObject.EntityWhoCategorizedArticles[0].id;
 
-  const articlesAndAiScores = await sqlQueryArticlesAndAiScores(
-    articleIdArray,
-    entityWhoCategorizedArticleId
-  );
-  const articlesArrayModified = articlesArray.map((article: any) => {
-    const aiScore = articlesAndAiScores.find(
-      (score: any) => score.articleId === article.id
+    const articlesAndAiScores = await sqlQueryArticlesAndAiScores(
+      articleIdArray,
+      entityWhoCategorizedArticleId,
     );
-    return {
-      ...article,
-      // aiScore,
-      semanticRatingMax: aiScore?.keywordRating,
-      semanticRatingMaxLabel: aiScore?.keyword,
-    };
-  });
+    const articlesArrayModified = articlesArray.map((article: any) => {
+      const aiScore = articlesAndAiScores.find(
+        (score: any) => score.articleId === article.id,
+      );
+      return {
+        ...article,
+        // aiScore,
+        semanticRatingMax: aiScore?.keywordRating,
+        semanticRatingMaxLabel: aiScore?.keyword,
+      };
+    });
 
-  res.json({ articlesArrayModified });
-});
+    res.json({ articlesArrayModified });
+  },
+);
 
 // 🔹 GET /articles/article-details/:articleId
 router.get(
@@ -1069,7 +1123,9 @@ router.get(
 
     try {
       const { articleId } = req.params;
-      const normalizedArticleId = Array.isArray(articleId) ? articleId[0] : articleId;
+      const normalizedArticleId = Array.isArray(articleId)
+        ? articleId[0]
+        : articleId;
       logger.info(`articleId: ${normalizedArticleId}`);
 
       // Validate articleId is a number
@@ -1085,7 +1141,9 @@ router.get(
       }
 
       // Query database for article details
-      const rawResults = await sqlQueryArticleDetails(parseInt(normalizedArticleId, 10));
+      const rawResults = await sqlQueryArticleDetails(
+        parseInt(normalizedArticleId, 10),
+      );
 
       // Format results using helper function
       const articleDetails = formatArticleDetails(rawResults);
@@ -1102,7 +1160,9 @@ router.get(
         });
       }
 
-      logger.info(`Successfully retrieved article details for ID ${normalizedArticleId}`);
+      logger.info(
+        `Successfully retrieved article details for ID ${normalizedArticleId}`,
+      );
 
       // Return successful response
       res.status(200).json(articleDetails);
@@ -1118,7 +1178,7 @@ router.get(
         },
       });
     }
-  }
+  },
 );
 
 export = router;

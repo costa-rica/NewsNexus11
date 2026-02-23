@@ -6,9 +6,9 @@ import {
   NewsArticleAggregatorSource,
   WebsiteDomain,
   sequelize,
-} from 'newsnexus10db';
-import { Op, QueryTypes } from 'sequelize';
-import logger from './logger';
+} from "@newsnexus/db-models";
+import { Op, QueryTypes } from "sequelize";
+import logger from "./logger";
 
 type SemanticKeywordRatedArticleRow = {
   id: number;
@@ -70,9 +70,9 @@ type FormattedArticleDetails = {
 
 export async function createArticlesArrayWithSqlForSemanticKeywordsRating(
   entityWhoCategorizesId: number,
-  publishedDateAfter: string | null = null
+  publishedDateAfter: string | null = null,
 ): Promise<SemanticKeywordRatedArticleRow[]> {
-  let dateCondition = '';
+  let dateCondition = "";
   if (publishedDateAfter) {
     dateCondition = `AND a.publishedDate >= '${publishedDateAfter}'`;
   }
@@ -103,36 +103,41 @@ export async function createArticlesArrayWithSqlForSemanticKeywordsRating(
     WHERE 1=1 ${dateCondition}
   `;
 
-  const rawArticles = await sequelize.query<SemanticKeywordRatedArticleRow>(sql, {
-    type: QueryTypes.SELECT,
-  });
+  const rawArticles = await sequelize.query<SemanticKeywordRatedArticleRow>(
+    sql,
+    {
+      type: QueryTypes.SELECT,
+    },
+  );
   return rawArticles;
 }
 
-export async function createNewsApiRequestsArray(): Promise<NewsApiRequestFormattedRow[]> {
+export async function createNewsApiRequestsArray(): Promise<
+  NewsApiRequestFormattedRow[]
+> {
   const requestsArray = await NewsApiRequest.findAll({
     include: [
       {
         model: NewsArticleAggregatorSource,
-        attributes: ['nameOfOrg'],
+        attributes: ["nameOfOrg"],
       },
       {
         model: NewsApiRequestWebsiteDomainContract,
         include: [
           {
             model: WebsiteDomain,
-            attributes: ['name'],
+            attributes: ["name"],
           },
         ],
       },
     ],
   });
 
-  logger.info('requestsArray.length: ', requestsArray.length);
+  logger.info("requestsArray.length: ", requestsArray.length);
 
   const requestArrayFormatted = requestsArray.map((request: any) => {
     const domainNames = request.NewsApiRequestWebsiteDomainContracts.map(
-      (contract: any) => contract.WebsiteDomain?.name
+      (contract: any) => contract.WebsiteDomain?.name,
     ).filter(Boolean);
 
     return {
@@ -140,8 +145,8 @@ export async function createNewsApiRequestsArray(): Promise<NewsApiRequestFormat
       andString: request.andString,
       orString: request.orString,
       notString: request.notString,
-      nameOfOrg: request.NewsArticleAggregatorSource?.nameOfOrg || 'N/A',
-      includeOrExcludeDomainsString: domainNames.join(', '),
+      nameOfOrg: request.NewsArticleAggregatorSource?.nameOfOrg || "N/A",
+      includeOrExcludeDomainsString: domainNames.join(", "),
       createdAt: request.createdAt,
     };
   });
@@ -150,7 +155,7 @@ export async function createNewsApiRequestsArray(): Promise<NewsApiRequestFormat
 }
 
 export async function createArticlesApprovedArray(
-  dateRequestsLimit?: string | Date
+  dateRequestsLimit?: string | Date,
 ): Promise<ApprovedSummary> {
   let articles;
   if (dateRequestsLimit) {
@@ -182,7 +187,7 @@ export async function createArticlesApprovedArray(
     });
   }
 
-  logger.info('Approved articles count:', articles.length);
+  logger.info("Approved articles count:", articles.length);
 
   const requestIdArray: number[] = [];
   let manualFoundCount = 0;
@@ -199,7 +204,7 @@ export async function createArticlesApprovedArray(
 }
 
 export function formatArticleDetails(
-  rawResults: RawArticleDetailsRow[]
+  rawResults: RawArticleDetailsRow[],
 ): FormattedArticleDetails | null {
   if (!rawResults || rawResults.length === 0) {
     return null;

@@ -6,21 +6,25 @@ import {
   NewsApiRequestWebsiteDomainContract,
   NewsArticleAggregatorSource,
   WebsiteDomain,
-} from 'newsnexus10db';
-import { writeResponseDataFromNewsAggregator } from '../common';
-import logger from '../logger';
+} from "@newsnexus/db-models";
+import { writeResponseDataFromNewsAggregator } from "../common";
+import logger from "../logger";
 import {
   normalizeExternalJsonResponse,
   normalizeNewsDataIoResultsPayload,
-} from './responseNormalizers';
+} from "./responseNormalizers";
 
-export async function storeNewsDataIoArticles(requestResponseData: any, newsApiRequest: any) {
+export async function storeNewsDataIoArticles(
+  requestResponseData: any,
+  newsApiRequest: any,
+) {
   const newsApiSource = await NewsArticleAggregatorSource.findOne({
-    where: { nameOfOrg: 'NewsData.IO' },
+    where: { nameOfOrg: "NewsData.IO" },
     include: [{ model: EntityWhoFoundArticle }],
   });
 
-  const entityWhoFoundArticleId = (newsApiSource as any)?.EntityWhoFoundArticle?.id;
+  const entityWhoFoundArticleId = (newsApiSource as any)?.EntityWhoFoundArticle
+    ?.id;
 
   try {
     let countOfArticlesSavedToDbFromRequest = 0;
@@ -58,7 +62,7 @@ export async function storeNewsDataIoArticles(requestResponseData: any, newsApiR
         (newsApiSource as any).id,
         newsApiRequest,
         requestResponseData,
-        false
+        false,
       );
     }
   } catch (error) {
@@ -68,7 +72,7 @@ export async function storeNewsDataIoArticles(requestResponseData: any, newsApiR
         (newsApiSource as any).id,
         newsApiRequest,
         requestResponseData,
-        true
+        true,
       );
     }
   }
@@ -82,79 +86,88 @@ export async function makeNewsDataIoRequest(
   excludeWebsiteDomainObjArray: any[] = [],
   keywordsAnd: string | null,
   keywordsOr: string | null,
-  keywordsNot: string | null
+  keywordsNot: string | null,
 ) {
   function splitPreservingQuotes(str: string) {
     return str.match(/"[^"]+"|\S+/g)?.map((s) => s.trim()) || [];
   }
 
-  const andArray = splitPreservingQuotes(keywordsAnd || '');
-  const orArray = splitPreservingQuotes(keywordsOr || '');
-  const notArray = splitPreservingQuotes(keywordsNot || '');
+  const andArray = splitPreservingQuotes(keywordsAnd || "");
+  const orArray = splitPreservingQuotes(keywordsOr || "");
+  const notArray = splitPreservingQuotes(keywordsNot || "");
 
-  const includeSourcesArray = includeWebsiteDomainObjArray.splice(0, 4).map((obj) => obj.name);
-  const excludeSourcesArray = excludeWebsiteDomainObjArray.splice(0, 4).map((obj) => obj.name);
+  const includeSourcesArray = includeWebsiteDomainObjArray
+    .splice(0, 4)
+    .map((obj) => obj.name);
+  const excludeSourcesArray = excludeWebsiteDomainObjArray
+    .splice(0, 4)
+    .map((obj) => obj.name);
 
   if (!endDate) {
-    endDate = new Date().toISOString().split('T')[0];
+    endDate = new Date().toISOString().split("T")[0];
   }
   if (!startDate) {
     startDate = new Date(new Date().setDate(new Date().getDate() - 29))
       .toISOString()
-      .split('T')[0];
+      .split("T")[0];
   }
 
   const queryParams: string[] = [];
 
   if (includeSourcesArray.length > 0) {
-    queryParams.push(`domainurl=${includeSourcesArray.join(',')}`);
+    queryParams.push(`domainurl=${includeSourcesArray.join(",")}`);
   }
 
   if (excludeSourcesArray.length > 0) {
-    queryParams.push(`excludedomain=${excludeSourcesArray.join(',')}`);
+    queryParams.push(`excludedomain=${excludeSourcesArray.join(",")}`);
   }
 
-  const andPart = andArray.length > 0 ? andArray.join(' AND ') : '';
-  const orPart = orArray.length > 0 ? `(${orArray.join(' OR ')})` : '';
-  const notPart = notArray.length > 0 ? notArray.map((k) => `NOT ${k}`).join(' AND ') : '';
+  const andPart = andArray.length > 0 ? andArray.join(" AND ") : "";
+  const orPart = orArray.length > 0 ? `(${orArray.join(" OR ")})` : "";
+  const notPart =
+    notArray.length > 0 ? notArray.map((k) => `NOT ${k}`).join(" AND ") : "";
 
-  const fullQuery = [andPart, orPart, notPart].filter(Boolean).join(' AND ');
+  const fullQuery = [andPart, orPart, notPart].filter(Boolean).join(" AND ");
 
   if (fullQuery) {
     queryParams.push(`q=${encodeURIComponent(fullQuery)}`);
   }
 
-  queryParams.push('language=en');
+  queryParams.push("language=en");
   queryParams.push(`apiKey=${source.apiKey}`);
-  queryParams.push('removeduplicate=1');
-  queryParams.push('country=us');
-  queryParams.push('excludecategory=entertainment,politics,world');
+  queryParams.push("removeduplicate=1");
+  queryParams.push("country=us");
+  queryParams.push("excludecategory=entertainment,politics,world");
 
-  const requestUrl = `${source.url}latest?${queryParams.join('&')}`;
-  logger.info('- [makeNewsDataIoRequest] requestUrl', requestUrl);
-  let status = 'success';
+  const requestUrl = `${source.url}latest?${queryParams.join("&")}`;
+  logger.info("- [makeNewsDataIoRequest] requestUrl", requestUrl);
+  let status = "success";
   let requestResponseData: any = null;
   let newsApiRequest: any = null;
-  if (process.env.ACTIVATE_API_REQUESTS_TO_OUTSIDE_SOURCES === 'true') {
+  if (process.env.ACTIVATE_API_REQUESTS_TO_OUTSIDE_SOURCES === "true") {
     const response = await fetch(requestUrl);
     const rawPayload = await response.json();
-    const normalizedResponse = normalizeExternalJsonResponse(response.status, rawPayload);
+    const normalizedResponse = normalizeExternalJsonResponse(
+      response.status,
+      rawPayload,
+    );
     requestResponseData = normalizedResponse.payload || {};
-    const normalizedResults = normalizeNewsDataIoResultsPayload(requestResponseData);
+    const normalizedResults =
+      normalizeNewsDataIoResultsPayload(requestResponseData);
 
-    if (!normalizedResponse.ok || requestResponseData.status === 'error') {
-      status = 'error';
+    if (!normalizedResponse.ok || requestResponseData.status === "error") {
+      status = "error";
       writeResponseDataFromNewsAggregator(
         source.id,
-        { id: 'failed', url: requestUrl },
+        { id: "failed", url: requestUrl },
         requestResponseData,
-        true
+        true,
       );
       await handleErrorNewsDataIoRequest(requestResponseData);
     }
 
     if (!normalizedResults.ok) {
-      status = 'error';
+      status = "error";
     }
     newsApiRequest = await NewsApiRequest.create({
       newsArticleAggregatorSourceId: source.id,
@@ -173,14 +186,14 @@ export async function makeNewsDataIoRequest(
       await NewsApiRequestWebsiteDomainContract.create({
         newsApiRequestId: newsApiRequest.id,
         websiteDomainId: domain.websiteDomainId,
-        includedOrExcludedFromRequest: 'included',
+        includedOrExcludedFromRequest: "included",
       });
     }
     for (const domain of excludeWebsiteDomainObjArray) {
       await NewsApiRequestWebsiteDomainContract.create({
         newsApiRequestId: newsApiRequest.id,
         websiteDomainId: domain.websiteDomainId,
-        includedOrExcludedFromRequest: 'excluded',
+        includedOrExcludedFromRequest: "excluded",
       });
     }
   } else {
@@ -193,14 +206,14 @@ export async function makeNewsDataIoRequest(
 async function handleErrorNewsDataIoRequest(requestResponseData: any) {
   if (
     Array.isArray(requestResponseData.results?.message) &&
-    typeof requestResponseData.results.message[0]?.message === 'string' &&
+    typeof requestResponseData.results.message[0]?.message === "string" &&
     requestResponseData.results.message[0].message.includes(
-      'The domain you provided does not exist'
+      "The domain you provided does not exist",
     )
   ) {
     logger.info(
-      '- [makeNewsDataIoRequest] invalid domain: ',
-      requestResponseData.results?.message?.[0]?.invalid_domain
+      "- [makeNewsDataIoRequest] invalid domain: ",
+      requestResponseData.results?.message?.[0]?.invalid_domain,
     );
     await WebsiteDomain.update(
       {
@@ -210,24 +223,30 @@ async function handleErrorNewsDataIoRequest(requestResponseData: any) {
         where: {
           name: requestResponseData.results.message[0].invalid_domain,
         },
-      }
+      },
     );
   } else {
-    logger.info('Correctly handled invalid_domain with no message');
+    logger.info("Correctly handled invalid_domain with no message");
   }
 
   if (requestResponseData.results.message[0]?.suggestion) {
     logger.info(
-      '- [makeNewsDataIoRequest] suggestion: ',
-      requestResponseData.results.message[0].suggestion
+      "- [makeNewsDataIoRequest] suggestion: ",
+      requestResponseData.results.message[0].suggestion,
     );
     for (const msg of requestResponseData.results.message as any[]) {
       const invalidDomain = msg.invalid_domain;
       const suggestions = msg.suggestion;
 
       if (invalidDomain) {
-        logger.info('- [makeNewsDataIoRequest] Archiving invalid domain:', invalidDomain);
-        await WebsiteDomain.update({ isArchievedNewsDataIo: true }, { where: { name: invalidDomain } });
+        logger.info(
+          "- [makeNewsDataIoRequest] Archiving invalid domain:",
+          invalidDomain,
+        );
+        await WebsiteDomain.update(
+          { isArchievedNewsDataIo: true },
+          { where: { name: invalidDomain } },
+        );
       }
 
       if (Array.isArray(suggestions)) {
@@ -236,9 +255,15 @@ async function handleErrorNewsDataIoRequest(requestResponseData: any) {
             const websiteDomain = await WebsiteDomain.create({
               name: suggestion,
             });
-            logger.info('- [makeNewsDataIoRequest] Added suggestion:', (websiteDomain as any).name);
+            logger.info(
+              "- [makeNewsDataIoRequest] Added suggestion:",
+              (websiteDomain as any).name,
+            );
           } catch (err: any) {
-            logger.warn(`Failed to add suggestion ${suggestion}:`, err?.message);
+            logger.warn(
+              `Failed to add suggestion ${suggestion}:`,
+              err?.message,
+            );
           }
         }
       }

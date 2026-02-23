@@ -1,5 +1,5 @@
-import express from 'express';
-import type { Request, Response } from 'express';
+import express from "express";
+import type { Request, Response } from "express";
 
 const router = express.Router();
 const { authenticateToken } = require("../../modules/userAuthentication");
@@ -10,49 +10,58 @@ const {
   ArticlesApproved02,
   ArticleApproved,
   ArticleIsRelevant,
-} = require("newsnexus10db");
+} = require("@newsnexus/db-models");
 const logger = require("../../modules/logger");
 
 // 🔹 GET /analysis/llm04/approved
-router.get("/approved", authenticateToken, async (_req: Request, res: Response) => {
-  logger.info("- GET /analysis/llm04/approved");
-  const startTime = Date.now();
-  const articlesArray =
-    await sqlQueryArticlesApprovedChatGptWithStatesApprovedReportContract();
+router.get(
+  "/approved",
+  authenticateToken,
+  async (_req: Request, res: Response) => {
+    logger.info("- GET /analysis/llm04/approved");
+    const startTime = Date.now();
+    const articlesArray =
+      await sqlQueryArticlesApprovedChatGptWithStatesApprovedReportContract();
 
-  logger.info(
-    `- articlesArray.length (before filtering): ${articlesArray.length}`
-  );
+    logger.info(
+      `- articlesArray.length (before filtering): ${articlesArray.length}`,
+    );
 
-  const approvedArticlesArray = articlesArray.filter((article: any) =>
-    article.ArticlesApproved02?.some(
-      (entry: any) => entry.isApproved === true || entry.isApproved === 1
-    )
-  );
+    const approvedArticlesArray = articlesArray.filter((article: any) =>
+      article.ArticlesApproved02?.some(
+        (entry: any) => entry.isApproved === true || entry.isApproved === 1,
+      ),
+    );
 
-  const approvedArticlesArrayModified = approvedArticlesArray.map((article: any) => {
-    let stateAbbreviation = "";
-    if (article.States?.length === 1) {
-      stateAbbreviation = article.States[0].abbreviation;
-    } else if (article.States?.length > 1) {
-      stateAbbreviation = article.States.map((state: any) => state.abbreviation).join(", ");
-    }
-    return {
-      ...article,
-      stateAbbreviation,
-    };
-  });
+    const approvedArticlesArrayModified = approvedArticlesArray.map(
+      (article: any) => {
+        let stateAbbreviation = "";
+        if (article.States?.length === 1) {
+          stateAbbreviation = article.States[0].abbreviation;
+        } else if (article.States?.length > 1) {
+          stateAbbreviation = article.States.map(
+            (state: any) => state.abbreviation,
+          ).join(", ");
+        }
+        return {
+          ...article,
+          stateAbbreviation,
+        };
+      },
+    );
 
-  logger.info(
-    `- approvedArticlesArrayModified.length (after filtering): ${approvedArticlesArrayModified.length}`
-  );
+    logger.info(
+      `- approvedArticlesArrayModified.length (after filtering): ${approvedArticlesArrayModified.length}`,
+    );
 
-  const timeToRenderResponseFromApiInSeconds = (Date.now() - startTime) / 1000;
-  res.json({
-    articlesArray: approvedArticlesArrayModified,
-    timeToRenderResponseFromApiInSeconds,
-  });
-});
+    const timeToRenderResponseFromApiInSeconds =
+      (Date.now() - startTime) / 1000;
+    res.json({
+      articlesArray: approvedArticlesArrayModified,
+      timeToRenderResponseFromApiInSeconds,
+    });
+  },
+);
 
 // 🔹 GET /analysis/llm04/human-approved/:articleId
 router.get(
@@ -60,15 +69,17 @@ router.get(
   authenticateToken,
   async (req: Request, res: Response) => {
     logger.info("- GET /analysis/llm04/human-approved/:articleId");
-      const { articleId } = req.params;
-      const normalizedArticleId = Array.isArray(articleId) ? articleId[0] : articleId;
-      const authenticatedUser = req.user;
-      if (!authenticatedUser) {
-        return res.status(401).json({
-          error: "Authentication required",
-        });
-      }
-      const userId = authenticatedUser.id;
+    const { articleId } = req.params;
+    const normalizedArticleId = Array.isArray(articleId)
+      ? articleId[0]
+      : articleId;
+    const authenticatedUser = req.user;
+    if (!authenticatedUser) {
+      return res.status(401).json({
+        error: "Authentication required",
+      });
+    }
+    const userId = authenticatedUser.id;
 
     try {
       // 1. Look up ArticlesApproved02 records for this articleId
@@ -146,7 +157,7 @@ router.get(
         error: "Internal server error",
       });
     }
-  }
+  },
 );
 
 export = router;

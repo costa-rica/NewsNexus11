@@ -4,7 +4,7 @@ This file provides guidance to AGENT Code (AGENT.ai/code) when working with code
 
 ## Project Overview
 
-NewsNexus10Db is a TypeScript Sequelize SQLite database module designed for news aggregation and microservices architectures. It provides strongly-typed database models with comprehensive relationships for managing news articles, user workflows, and content categorization.
+NewsNexus11Db is a TypeScript Sequelize SQLite database module designed for news aggregation and microservices architectures. It provides strongly-typed database models with comprehensive relationships for managing news articles, user workflows, and content categorization.
 
 ## Development Commands
 
@@ -95,11 +95,11 @@ Complex many-to-many and foreign key relationships are centrally managed in `_as
 This module is designed to be imported into other applications:
 
 ```typescript
-import db from "newsnexus10db";
+import db from "@newsnexus/db-models";
 const { Article, User, sequelize } = db;
 
 // Initialize models in consuming app
-import { initModels } from "newsnexus10db";
+import { initModels } from "@newsnexus/db-models";
 initModels();
 sequelize.sync();
 ```

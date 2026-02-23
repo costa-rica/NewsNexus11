@@ -4,10 +4,10 @@ import {
   EntityWhoFoundArticle,
   NewsApiRequest,
   NewsArticleAggregatorSource,
-} from 'newsnexus10db';
-import logger from '../logger';
+} from "@newsnexus/db-models";
+import logger from "../logger";
 
-export const GOOGLE_NEWS_RSS_ORG_NAME = 'Google News RSS';
+export const GOOGLE_NEWS_RSS_ORG_NAME = "Google News RSS";
 
 export type GoogleRssStorageItem = {
   title?: string;
@@ -34,7 +34,9 @@ export async function ensureAggregatorSourceAndEntity(): Promise<EnsureAggregato
       isRss: true,
       isApi: false,
     });
-    logger.info(`Created NewsArticleAggregatorSource: ${GOOGLE_NEWS_RSS_ORG_NAME}`);
+    logger.info(
+      `Created NewsArticleAggregatorSource: ${GOOGLE_NEWS_RSS_ORG_NAME}`,
+    );
   }
 
   let entity = await EntityWhoFoundArticle.findOne({
@@ -45,7 +47,9 @@ export async function ensureAggregatorSourceAndEntity(): Promise<EnsureAggregato
     entity = await EntityWhoFoundArticle.create({
       newsArticleAggregatorSourceId: source.id,
     });
-    logger.info(`Created EntityWhoFoundArticle for: ${GOOGLE_NEWS_RSS_ORG_NAME}`);
+    logger.info(
+      `Created EntityWhoFoundArticle for: ${GOOGLE_NEWS_RSS_ORG_NAME}`,
+    );
   }
 
   return {
@@ -71,15 +75,15 @@ type StoreRequestAndArticlesResult = {
 };
 
 export async function storeRequestAndArticles(
-  params: StoreRequestAndArticlesInput
+  params: StoreRequestAndArticlesInput,
 ): Promise<StoreRequestAndArticlesResult> {
-  const requestDate = new Date().toISOString().split('T')[0];
+  const requestDate = new Date().toISOString().split("T")[0];
 
   const request = await NewsApiRequest.create({
     newsArticleAggregatorSourceId: params.newsArticleAggregatorSourceId,
     dateEndOfRequest: requestDate,
     countOfArticlesReceivedFromRequest: params.items.length,
-    status: 'success',
+    status: "success",
     url: params.requestUrl,
     andString: params.andString,
     orString: params.orString,
@@ -92,7 +96,7 @@ export async function storeRequestAndArticles(
 
   for (const item of params.items) {
     if (!item.link) {
-      logger.warn('Skipping article without link');
+      logger.warn("Skipping article without link");
       continue;
     }
 
@@ -113,9 +117,9 @@ export async function storeRequestAndArticles(
     }
 
     const article = await Article.create({
-      publicationName: item.source || 'Unknown',
-      title: item.title || '',
-      description: item.description || '',
+      publicationName: item.source || "Unknown",
+      title: item.title || "",
+      description: item.description || "",
       url: item.link,
       publishedDate,
       entityWhoFoundArticleId: params.entityWhoFoundArticleId,
@@ -128,7 +132,7 @@ export async function storeRequestAndArticles(
     if (item.content || item.description) {
       await ArticleContent.create({
         articleId: article.id,
-        content: item.content ?? item.description ?? '',
+        content: item.content ?? item.description ?? "",
       });
     }
   }
@@ -138,7 +142,7 @@ export async function storeRequestAndArticles(
   });
 
   logger.info(
-    `Stored ${savedCount} new articles for request ${request.id} (${params.items.length} received).`
+    `Stored ${savedCount} new articles for request ${request.id} (${params.items.length} received).`,
   );
 
   return {

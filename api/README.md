@@ -1,14 +1,15 @@
-# NewsNexus10API - Type Script
+# NewsNexus11API - Type Script
 
 ## Overview
 
-This project is the migration of the NewsNexus10API project to TypeScript
+This project is the migration of the NewsNexus11API project to TypeScript
 
 ## Tests
 
 Testing currently uses Jest, with Supertest for endpoint smoke checks.
 
 1. test suites currently in this repo
+
 - `tests/smoke/app.bootstrap.test.ts`
   - verifies app boot and basic health routes
   - checks `GET /health` returns `200`
@@ -24,15 +25,19 @@ Testing currently uses Jest, with Supertest for endpoint smoke checks.
   - checks that repeated failed calls are blocked with `429`
 
 2. run all tests
+
 - command: `npm test`
 
 3. run endpoint smoke tests only
+
 - command: `npm run test:endpoints`
 
 4. run smoke + middleware tests together
+
 - command: `npm test -- --testPathPatterns="tests/smoke|tests/middleware"`
 
 5. test file organization
+
 - all tests are stored under root `/tests`
 - helper utilities are under `/tests/helpers`
 - migration adds new domain tests incrementally (users, articles, reports, analysis, admin)
@@ -42,6 +47,7 @@ Testing currently uses Jest, with Supertest for endpoint smoke checks.
 The TypeScript migration is complete for the API source under `/src`.
 
 1. current status
+
 - all `src` runtime code is now TypeScript (`.ts`)
 - strict TypeScript mode is enabled in `tsconfig.json`
 - temporary migration compiler shims were removed (`allowJs`, `checkJs`)
@@ -50,10 +56,12 @@ The TypeScript migration is complete for the API source under `/src`.
 - migration analysis is in `docs/migration-to-ts/REFACTOR_TO_TS_ANALYSIS.md`
 
 2. validation gates used
+
 - build: `npm run build`
 - full tests: `npm test`
 - endpoint smoke tests: `npm run test:endpoints`
 
 3. current test baseline
+
 - `15` passing test suites
 - `64` passing tests

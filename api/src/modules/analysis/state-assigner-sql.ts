@@ -1,6 +1,6 @@
-import { sequelize } from 'newsnexus10db';
-import { QueryTypes } from 'sequelize';
-import logger from '../logger';
+import { sequelize } from "@newsnexus/db-models";
+import { QueryTypes } from "sequelize";
+import logger from "../logger";
 
 const sequelizeAny = sequelize as any;
 
@@ -36,7 +36,7 @@ async function sqlQueryArticlesWithStateAssignments({
     targetArticleThresholdDaysOld !== null
   ) {
     whereClauses.push(
-      `a."publishedDate" > date('now', '-${targetArticleThresholdDaysOld} days')`
+      `a."publishedDate" > date('now', '-${targetArticleThresholdDaysOld} days')`,
     );
   }
 
@@ -66,7 +66,7 @@ async function sqlQueryArticlesWithStateAssignments({
   `;
 
   logger.info(
-    `Executing sqlQueryArticlesWithStateAssignments with includeNullState: ${includeNullState}, targetArticleThresholdDaysOld: ${targetArticleThresholdDaysOld ?? "not provided"}`
+    `Executing sqlQueryArticlesWithStateAssignments with includeNullState: ${includeNullState}, targetArticleThresholdDaysOld: ${targetArticleThresholdDaysOld ?? "not provided"}`,
   );
 
   const results = await sequelizeAny.query(sql, {
@@ -79,6 +79,4 @@ async function sqlQueryArticlesWithStateAssignments({
   return results;
 }
 
-export {
-  sqlQueryArticlesWithStateAssignments,
-};
+export { sqlQueryArticlesWithStateAssignments };

@@ -1,6 +1,6 @@
-import { sequelize } from 'newsnexus10db';
-import logger from './logger';
-import { QueryTypes } from 'sequelize';
+import { sequelize } from "@newsnexus/db-models";
+import logger from "./logger";
+import { QueryTypes } from "sequelize";
 
 const sequelizeAny = sequelize as any;
 
@@ -442,7 +442,7 @@ async function sqlQueryArticlesWithStatesApprovedReportContract(): Promise<
 // async function sqlQueryArticlesForWithRatingsRouteNoAi(
 async function sqlQueryArticlesForWithRatingsRoute(
   returnOnlyThisCreatedAtDateOrAfter?: string | Date | null,
-  returnOnlyThisPublishedDateOrAfter?: string | Date | null
+  returnOnlyThisPublishedDateOrAfter?: string | Date | null,
 ): Promise<SqlQueryRow[]> {
   const replacements: SqlQueryReplacements = {};
   const whereClauses = [];
@@ -455,7 +455,7 @@ async function sqlQueryArticlesForWithRatingsRoute(
 
   if (returnOnlyThisPublishedDateOrAfter) {
     whereClauses.push(
-      `a."publishedDate" >= :returnOnlyThisPublishedDateOrAfter`
+      `a."publishedDate" >= :returnOnlyThisPublishedDateOrAfter`,
     );
     replacements.returnOnlyThisPublishedDateOrAfter =
       returnOnlyThisPublishedDateOrAfter;
@@ -608,15 +608,18 @@ async function sqlQueryArticlesForWithRatingsRoute(
         ArticleApproveds: [],
         ArticleRevieweds: [],
         // Add StateAssignment object if data exists
-        StateAssignment: saPromptId !== null && saPromptId !== undefined ? {
-          promptId: saPromptId,
-          isHumanApproved: Boolean(saIsHumanApproved), // Convert 0/1 to boolean
-          isDeterminedToBeError: Boolean(saIsDeterminedToBeError), // Convert 0/1 to boolean
-          occuredInTheUS: Boolean(saOccuredInTheUS), // Convert 0/1 to boolean
-          reasoning: saReasoning,
-          stateId: saStateId,
-          stateName: saStateName,
-        } : null,
+        StateAssignment:
+          saPromptId !== null && saPromptId !== undefined
+            ? {
+                promptId: saPromptId,
+                isHumanApproved: Boolean(saIsHumanApproved), // Convert 0/1 to boolean
+                isDeterminedToBeError: Boolean(saIsDeterminedToBeError), // Convert 0/1 to boolean
+                occuredInTheUS: Boolean(saOccuredInTheUS), // Convert 0/1 to boolean
+                reasoning: saReasoning,
+                stateId: saStateId,
+                stateName: saStateName,
+              }
+            : null,
       };
     }
 
@@ -631,7 +634,7 @@ async function sqlQueryArticlesForWithRatingsRoute(
     }
     if (
       !articleMap[id].ArticleIsRelevants.some(
-        (ar: any) => ar.id === row["ArticleIsRelevant.id"]
+        (ar: any) => ar.id === row["ArticleIsRelevant.id"],
       )
     ) {
       articleMap[id].ArticleIsRelevants.push({
@@ -672,10 +675,10 @@ async function sqlQueryArticlesForWithRatingsRoute(
 
 async function sqlQueryArticlesAndAiScores(
   articlesIdArray: Array<number | string>,
-  entityWhoCategorizedArticleId: number | string
+  entityWhoCategorizedArticleId: number | string,
 ): Promise<SqlQueryRow[]> {
   const whereClause = `WHERE aewcac."articleId" IN (${articlesIdArray.join(
-    ","
+    ",",
   )}) AND aewcac."entityWhoCategorizesId" = ${entityWhoCategorizedArticleId}`;
   const sql = `
     SELECT
@@ -756,7 +759,7 @@ async function sqlQueryArticlesIsRelevant(): Promise<SqlQueryRow[]> {
 }
 
 async function sqlQueryArticlesApprovedForComponent(
-  userId: number | string
+  userId: number | string,
 ): Promise<SqlQueryRow[]> {
   const sql = `
     SELECT
@@ -787,7 +790,7 @@ async function sqlQueryArticlesApprovedForComponent(
 }
 
 async function sqlQueryArticleDetails(
-  articleId: number | string
+  articleId: number | string,
 ): Promise<SqlQueryRow[]> {
   const sql = `
     SELECT

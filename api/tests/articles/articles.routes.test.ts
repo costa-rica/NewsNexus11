@@ -1,15 +1,15 @@
-import express from 'express';
-import request from 'supertest';
+import express from "express";
+import request from "supertest";
 
-jest.mock('../../src/modules/logger', () => ({
+jest.mock("../../src/modules/logger", () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
 }));
 
-jest.mock('../../src/modules/userAuthentication', () => ({
+jest.mock("../../src/modules/userAuthentication", () => ({
   authenticateToken: (req: any, _res: any, next: any) => {
-    req.user = { id: 1, email: 'tester@example.com' };
+    req.user = { id: 1, email: "tester@example.com" };
     next();
   },
 }));
@@ -20,13 +20,13 @@ const mockArticlesModule = {
   formatArticleDetails: jest.fn(),
 };
 
-jest.mock('../../src/modules/articles', () => mockArticlesModule);
+jest.mock("../../src/modules/articles", () => mockArticlesModule);
 
 const mockCommonModule = {
   getLastThursdayAt20hInNyTimeZone: jest.fn(),
 };
 
-jest.mock('../../src/modules/common', () => mockCommonModule);
+jest.mock("../../src/modules/common", () => mockCommonModule);
 
 const mockQueriesSqlModule = {
   sqlQueryArticles: jest.fn(),
@@ -40,9 +40,9 @@ const mockQueriesSqlModule = {
   sqlQueryArticleDetails: jest.fn(),
 };
 
-jest.mock('../../src/modules/queriesSql', () => mockQueriesSqlModule);
+jest.mock("../../src/modules/queriesSql", () => mockQueriesSqlModule);
 
-jest.mock('newsnexus10db', () => ({
+jest.mock("@newsnexus/db-models", () => ({
   Article: {},
   State: {},
   ArticleIsRelevant: {},
@@ -55,95 +55,104 @@ jest.mock('newsnexus10db', () => ({
   EntityWhoCategorizedArticle: {},
 }));
 
-const articlesRouter = require('../../src/routes/articles');
+const articlesRouter = require("../../src/routes/articles");
 
 function buildApp() {
   const app = express();
   app.use(express.json());
-  app.use('/articles', articlesRouter);
+  app.use("/articles", articlesRouter);
   return app;
 }
 
-describe('articles routes contract tests', () => {
+describe("articles routes contract tests", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test('POST /articles returns grouped article contract fields', async () => {
+  test("POST /articles returns grouped article contract fields", async () => {
     mockQueriesSqlModule.sqlQueryArticles.mockResolvedValue([
       {
         articleId: 10,
-        title: 'Article 10',
-        description: 'Desc',
-        publishedDate: '2026-02-20',
-        url: 'https://example.com/a10',
-        andString: 'injury',
-        orString: 'recall',
-        notString: 'sports',
+        title: "Article 10",
+        description: "Desc",
+        publishedDate: "2026-02-20",
+        url: "https://example.com/a10",
+        andString: "injury",
+        orString: "recall",
+        notString: "sports",
       },
     ]);
     mockQueriesSqlModule.sqlQueryArticlesWithStates.mockResolvedValue([
-      { articleId: 10, stateId: 1, stateName: 'Texas', abbreviation: 'TX' },
-      { articleId: 10, stateId: 2, stateName: 'California', abbreviation: 'CA' },
+      { articleId: 10, stateId: 1, stateName: "Texas", abbreviation: "TX" },
+      {
+        articleId: 10,
+        stateId: 2,
+        stateName: "California",
+        abbreviation: "CA",
+      },
     ]);
     mockQueriesSqlModule.sqlQueryArticlesIsRelevant.mockResolvedValue([]);
     mockQueriesSqlModule.sqlQueryArticlesApproved.mockResolvedValue([]);
 
     const app = buildApp();
-    const response = await request(app).post('/articles').send({});
+    const response = await request(app).post("/articles").send({});
 
     expect(response.status).toBe(200);
     expect(response.body.articlesArray).toHaveLength(1);
     expect(response.body.articlesArray[0]).toMatchObject({
       id: 10,
-      title: 'Article 10',
-      statesStringCommaSeparated: 'TX, CA',
+      title: "Article 10",
+      statesStringCommaSeparated: "TX, CA",
       articleIsApproved: false,
       ArticleIsRelevant: true,
     });
-    expect(response.body.articlesArray[0].keyword).toContain('AND injury');
-    expect(response.body.articlesArray[0].keyword).toContain('OR recall');
-    expect(response.body.articlesArray[0].keyword).toContain('NOT sports');
+    expect(response.body.articlesArray[0].keyword).toContain("AND injury");
+    expect(response.body.articlesArray[0].keyword).toContain("OR recall");
+    expect(response.body.articlesArray[0].keyword).toContain("NOT sports");
   });
 
-  test('GET /articles/approved returns only approved entries with derived fields', async () => {
-    mockQueriesSqlModule.sqlQueryArticlesWithStatesApprovedReportContract.mockResolvedValue([
-      {
-        id: 100,
-        States: [{ abbreviation: 'OH' }],
-        ArticleApproveds: [{ isApproved: true }],
-        ArticleReportContracts: [{ articleAcceptedByCpsc: 1 }],
-      },
-      {
-        id: 101,
-        States: [{ abbreviation: 'MI' }],
-        ArticleApproveds: [{ isApproved: false }],
-        ArticleReportContracts: [],
-      },
-    ]);
+  test("GET /articles/approved returns only approved entries with derived fields", async () => {
+    mockQueriesSqlModule.sqlQueryArticlesWithStatesApprovedReportContract.mockResolvedValue(
+      [
+        {
+          id: 100,
+          States: [{ abbreviation: "OH" }],
+          ArticleApproveds: [{ isApproved: true }],
+          ArticleReportContracts: [{ articleAcceptedByCpsc: 1 }],
+        },
+        {
+          id: 101,
+          States: [{ abbreviation: "MI" }],
+          ArticleApproveds: [{ isApproved: false }],
+          ArticleReportContracts: [],
+        },
+      ],
+    );
 
     const app = buildApp();
-    const response = await request(app).get('/articles/approved');
+    const response = await request(app).get("/articles/approved");
 
     expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('timeToRenderResponseFromApiInSeconds');
+    expect(response.body).toHaveProperty(
+      "timeToRenderResponseFromApiInSeconds",
+    );
     expect(response.body.articlesArray).toHaveLength(1);
     expect(response.body.articlesArray[0]).toMatchObject({
       id: 100,
-      isSubmitted: 'Yes',
+      isSubmitted: "Yes",
       articleHasBeenAcceptedByAll: true,
-      stateAbbreviation: 'OH',
+      stateAbbreviation: "OH",
     });
   });
 
-  test('GET /articles/summary-statistics returns expected counters', async () => {
+  test("GET /articles/summary-statistics returns expected counters", async () => {
     mockCommonModule.getLastThursdayAt20hInNyTimeZone.mockReturnValue(
-      new Date('2026-02-20T00:00:00.000Z')
+      new Date("2026-02-20T00:00:00.000Z"),
     );
     mockQueriesSqlModule.sqlQueryArticles.mockResolvedValue([
-      { articleId: 1, createdAt: '2026-02-19T00:00:00.000Z' },
-      { articleId: 2, createdAt: '2026-02-21T00:00:00.000Z' },
-      { articleId: 3, createdAt: '2026-02-22T00:00:00.000Z' },
+      { articleId: 1, createdAt: "2026-02-19T00:00:00.000Z" },
+      { articleId: 2, createdAt: "2026-02-21T00:00:00.000Z" },
+      { articleId: 3, createdAt: "2026-02-22T00:00:00.000Z" },
     ]);
     mockQueriesSqlModule.sqlQueryArticlesWithStates.mockResolvedValue([
       { articleId: 1, stateId: 10 },
@@ -162,7 +171,7 @@ describe('articles routes contract tests', () => {
     ]);
 
     const app = buildApp();
-    const response = await request(app).get('/articles/summary-statistics');
+    const response = await request(app).get("/articles/summary-statistics");
 
     expect(response.status).toBe(200);
     expect(response.body.summaryStatistics).toMatchObject({
@@ -174,30 +183,36 @@ describe('articles routes contract tests', () => {
     });
   });
 
-  test('GET /articles/article-details/:articleId rejects invalid id', async () => {
+  test("GET /articles/article-details/:articleId rejects invalid id", async () => {
     const app = buildApp();
-    const response = await request(app).get('/articles/article-details/not-a-number');
+    const response = await request(app).get(
+      "/articles/article-details/not-a-number",
+    );
 
     expect(response.status).toBe(400);
-    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
   });
 
-  test('GET /articles/article-details/:articleId returns formatted details', async () => {
-    mockQueriesSqlModule.sqlQueryArticleDetails.mockResolvedValue([{ articleId: 77 }]);
+  test("GET /articles/article-details/:articleId returns formatted details", async () => {
+    mockQueriesSqlModule.sqlQueryArticleDetails.mockResolvedValue([
+      { articleId: 77 },
+    ]);
     mockArticlesModule.formatArticleDetails.mockReturnValue({
       id: 77,
-      title: 'Article 77',
+      title: "Article 77",
       states: [],
     });
 
     const app = buildApp();
-    const response = await request(app).get('/articles/article-details/77');
+    const response = await request(app).get("/articles/article-details/77");
 
-    expect(mockQueriesSqlModule.sqlQueryArticleDetails).toHaveBeenCalledWith(77);
+    expect(mockQueriesSqlModule.sqlQueryArticleDetails).toHaveBeenCalledWith(
+      77,
+    );
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
       id: 77,
-      title: 'Article 77',
+      title: "Article 77",
     });
   });
 });

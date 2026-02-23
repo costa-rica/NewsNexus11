@@ -1,8 +1,8 @@
-import csvParser from 'csv-parser';
-import fs from 'fs';
-import path from 'path';
+import csvParser from "csv-parser";
+import fs from "fs";
+import path from "path";
 // const sequelize = require("../models/_connection"); // Import Sequelize instance
-import logger from './logger';
+import logger from "./logger";
 
 // Import models directly
 const {
@@ -34,11 +34,11 @@ const {
   ArticlesApproved02,
   ArticleStateContract02,
   Prompt,
-} = require("newsnexus10db");
+} = require("@newsnexus/db-models");
 
-import { promisify } from 'util';
-import archiver from 'archiver';
-import { Parser } from 'json2csv';
+import { promisify } from "util";
+import archiver from "archiver";
+import { Parser } from "json2csv";
 const mkdirAsync = promisify(fs.mkdir);
 const writeFileAsync = promisify(fs.writeFile);
 
@@ -73,19 +73,19 @@ const models: Record<string, any> = {
 };
 
 function coerceCsvValue(value: unknown): unknown {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return value;
   }
 
   const trimmed = value.trim();
-  if (trimmed === '') {
+  if (trimmed === "") {
     return null;
   }
 
   const lower = trimmed.toLowerCase();
-  if (lower === 'true') return true;
-  if (lower === 'false') return false;
-  if (lower === 'null') return null;
+  if (lower === "true") return true;
+  if (lower === "false") return false;
+  if (lower === "null") return null;
 
   if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
     const num = Number(trimmed);
@@ -142,7 +142,9 @@ async function readAndAppendDbTables(backupFolderPath: string) {
         await new Promise((resolve, reject) => {
           fs.createReadStream(filePath)
             .pipe(csvParser())
-            .on("data", (row: Record<string, any>) => records.push(coerceCsvRow(row)))
+            .on("data", (row: Record<string, any>) =>
+              records.push(coerceCsvRow(row)),
+            )
             // .on("data", (row) => {
             //   if (file === "Keyword.csv" && "isArchived" in row) {
             //     convertIsArchivedNotOneToFalse(row);
@@ -210,10 +212,7 @@ async function createDatabaseBackupZipFile(suffix = ""): Promise<string> {
       .replace(/[-T:.Z]/g, "")
       .slice(0, 15);
 
-    const backupDir = path.join(
-      backupsDir,
-      `db_backup_${timestamp}${suffix}`
-    );
+    const backupDir = path.join(backupsDir, `db_backup_${timestamp}${suffix}`);
     logger.info(`Backup directory: ${backupDir}`);
     await mkdirAsync(backupDir, { recursive: true });
 
@@ -266,7 +265,4 @@ function convertIsArchivedNotOneToFalse(row: Record<string, any>) {
   }
 }
 
-export {
-  readAndAppendDbTables,
-  createDatabaseBackupZipFile,
-};
+export { readAndAppendDbTables, createDatabaseBackupZipFile };

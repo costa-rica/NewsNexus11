@@ -5,50 +5,54 @@ import {
   NewsApiRequest,
   NewsApiRequestWebsiteDomainContract,
   NewsArticleAggregatorSource,
-} from 'newsnexus10db';
-import { writeResponseDataFromNewsAggregator } from '../common';
-import logger from '../logger';
+} from "@newsnexus/db-models";
+import { writeResponseDataFromNewsAggregator } from "../common";
+import logger from "../logger";
 import {
   normalizeExternalJsonResponse,
   normalizeNewsApiArticlesPayload,
-} from './responseNormalizers';
+} from "./responseNormalizers";
 
 export async function makeNewsApiRequest(
   source: any,
   keywordString: string,
   startDate?: string | null,
   endDate?: string | null,
-  max = 100
+  max = 100,
 ) {
   const token = source.apiKey;
   if (!endDate) {
-    endDate = new Date().toISOString().split('T')[0];
+    endDate = new Date().toISOString().split("T")[0];
   }
   if (!startDate) {
     startDate = new Date(new Date().setDate(new Date().getDate() - 29))
       .toISOString()
-      .split('T')[0];
+      .split("T")[0];
   }
 
-  logger.info('- keywordString :  ', keywordString);
+  logger.info("- keywordString :  ", keywordString);
   const urlNewsApi = `${source.url}everything?q=${encodeURIComponent(
-    keywordString
+    keywordString,
   )}&from=${startDate}&to=${endDate}&pageSize=${max}&language=en&apiKey=${token}`;
 
   const response = await fetch(urlNewsApi);
   const rawPayload = await response.json();
-  const normalizedResponse = normalizeExternalJsonResponse(response.status, rawPayload);
+  const normalizedResponse = normalizeExternalJsonResponse(
+    response.status,
+    rawPayload,
+  );
   const requestResponseData = normalizedResponse.payload || {};
 
-  let status = 'success';
-  const normalizedArticles = normalizeNewsApiArticlesPayload(requestResponseData);
+  let status = "success";
+  const normalizedArticles =
+    normalizeNewsApiArticlesPayload(requestResponseData);
   if (!normalizedResponse.ok || !normalizedArticles.ok) {
-    status = 'error';
+    status = "error";
     writeResponseDataFromNewsAggregator(
       source.id,
-      { id: 'failed', url: urlNewsApi },
+      { id: "failed", url: urlNewsApi },
       requestResponseData,
-      true
+      true,
     );
   }
 
@@ -56,7 +60,7 @@ export async function makeNewsApiRequest(
     newsArticleAggregatorSourceId: source.id,
     andString: keywordString,
     dateStartOfRequest: startDate,
-    dateEndOfRequest: new Date().toISOString().split('T')[0],
+    dateEndOfRequest: new Date().toISOString().split("T")[0],
     countOfArticlesReceivedFromRequest: requestResponseData.articles?.length,
     status,
     url: urlNewsApi,
@@ -65,13 +69,17 @@ export async function makeNewsApiRequest(
   return { requestResponseData, newsApiRequest };
 }
 
-export async function storeNewsApiArticles(requestResponseData: any, newsApiRequest: any) {
+export async function storeNewsApiArticles(
+  requestResponseData: any,
+  newsApiRequest: any,
+) {
   const newsApiSource = await NewsArticleAggregatorSource.findOne({
-    where: { nameOfOrg: 'NewsAPI' },
+    where: { nameOfOrg: "NewsAPI" },
     include: [{ model: EntityWhoFoundArticle }],
   });
 
-  const entityWhoFoundArticleId = (newsApiSource as any)?.EntityWhoFoundArticle?.id;
+  const entityWhoFoundArticleId = (newsApiSource as any)?.EntityWhoFoundArticle
+    ?.id;
 
   try {
     let countOfArticlesSavedToDbFromRequest = 0;
@@ -110,7 +118,7 @@ export async function storeNewsApiArticles(requestResponseData: any, newsApiRequ
         (newsApiSource as any).id,
         newsApiRequest,
         requestResponseData,
-        false
+        false,
       );
     }
   } catch (error) {
@@ -120,7 +128,7 @@ export async function storeNewsApiArticles(requestResponseData: any, newsApiRequ
         (newsApiSource as any).id,
         newsApiRequest,
         requestResponseData,
-        true
+        true,
       );
     }
   }
@@ -134,43 +142,48 @@ export async function makeNewsApiRequestDetailed(
   excludeWebsiteDomainObjArray: any[] = [],
   keywordsAnd: string | null,
   keywordsOr: string | null,
-  keywordsNot: string | null
+  keywordsNot: string | null,
 ) {
   function splitPreservingQuotes(str: string) {
     return str.match(/"[^"]+"|\S+/g)?.map((s) => s.trim()) || [];
   }
 
-  const andArray = splitPreservingQuotes(keywordsAnd || '');
-  const orArray = splitPreservingQuotes(keywordsOr || '');
-  const notArray = splitPreservingQuotes(keywordsNot || '');
+  const andArray = splitPreservingQuotes(keywordsAnd || "");
+  const orArray = splitPreservingQuotes(keywordsOr || "");
+  const notArray = splitPreservingQuotes(keywordsNot || "");
 
-  const includeSourcesArray = includeWebsiteDomainObjArray.map((obj) => obj.name);
-  const excludeSourcesArray = excludeWebsiteDomainObjArray.map((obj) => obj.name);
+  const includeSourcesArray = includeWebsiteDomainObjArray.map(
+    (obj) => obj.name,
+  );
+  const excludeSourcesArray = excludeWebsiteDomainObjArray.map(
+    (obj) => obj.name,
+  );
 
   if (!endDate) {
-    endDate = new Date().toISOString().split('T')[0];
+    endDate = new Date().toISOString().split("T")[0];
   }
   if (!startDate) {
     startDate = new Date(new Date().setDate(new Date().getDate() - 29))
       .toISOString()
-      .split('T')[0];
+      .split("T")[0];
   }
 
   const queryParams: string[] = [];
 
   if (includeSourcesArray.length > 0) {
-    queryParams.push(`domains=${includeSourcesArray.join(',')}`);
+    queryParams.push(`domains=${includeSourcesArray.join(",")}`);
   }
 
   if (excludeSourcesArray.length > 0) {
-    queryParams.push(`excludeDomains=${excludeSourcesArray.join(',')}`);
+    queryParams.push(`excludeDomains=${excludeSourcesArray.join(",")}`);
   }
 
-  const andPart = andArray.length > 0 ? andArray.join(' AND ') : '';
-  const orPart = orArray.length > 0 ? `(${orArray.join(' OR ')})` : '';
-  const notPart = notArray.length > 0 ? notArray.map((k) => `NOT ${k}`).join(' AND ') : '';
+  const andPart = andArray.length > 0 ? andArray.join(" AND ") : "";
+  const orPart = orArray.length > 0 ? `(${orArray.join(" OR ")})` : "";
+  const notPart =
+    notArray.length > 0 ? notArray.map((k) => `NOT ${k}`).join(" AND ") : "";
 
-  const fullQuery = [andPart, orPart, notPart].filter(Boolean).join(' AND ');
+  const fullQuery = [andPart, orPart, notPart].filter(Boolean).join(" AND ");
 
   if (fullQuery) {
     queryParams.push(`q=${encodeURIComponent(fullQuery)}`);
@@ -184,28 +197,32 @@ export async function makeNewsApiRequestDetailed(
     queryParams.push(`to=${endDate}`);
   }
 
-  queryParams.push('language=en');
+  queryParams.push("language=en");
   queryParams.push(`apiKey=${source.apiKey}`);
 
-  const requestUrl = `${source.url}everything?${queryParams.join('&')}`;
-  logger.info('- [makeNewsApiRequestDetailed] requestUrl', requestUrl);
-  let status = 'success';
+  const requestUrl = `${source.url}everything?${queryParams.join("&")}`;
+  logger.info("- [makeNewsApiRequestDetailed] requestUrl", requestUrl);
+  let status = "success";
   let requestResponseData: any = null;
   let newsApiRequest: any = null;
-  if (process.env.ACTIVATE_API_REQUESTS_TO_OUTSIDE_SOURCES === 'true') {
+  if (process.env.ACTIVATE_API_REQUESTS_TO_OUTSIDE_SOURCES === "true") {
     const response = await fetch(requestUrl);
     const rawPayload = await response.json();
-    const normalizedResponse = normalizeExternalJsonResponse(response.status, rawPayload);
+    const normalizedResponse = normalizeExternalJsonResponse(
+      response.status,
+      rawPayload,
+    );
     requestResponseData = normalizedResponse.payload || {};
 
-    const normalizedArticles = normalizeNewsApiArticlesPayload(requestResponseData);
+    const normalizedArticles =
+      normalizeNewsApiArticlesPayload(requestResponseData);
     if (!normalizedResponse.ok || !normalizedArticles.ok) {
-      status = 'error';
+      status = "error";
       writeResponseDataFromNewsAggregator(
         source.id,
-        { id: 'failed', url: requestUrl },
+        { id: "failed", url: requestUrl },
         requestResponseData,
-        true
+        true,
       );
     }
     newsApiRequest = await NewsApiRequest.create({
@@ -224,14 +241,14 @@ export async function makeNewsApiRequestDetailed(
       await NewsApiRequestWebsiteDomainContract.create({
         newsApiRequestId: newsApiRequest.id,
         websiteDomainId: domain.websiteDomainId,
-        includedOrExcludedFromRequest: 'included',
+        includedOrExcludedFromRequest: "included",
       });
     }
     for (const domain of excludeWebsiteDomainObjArray) {
       await NewsApiRequestWebsiteDomainContract.create({
         newsApiRequestId: newsApiRequest.id,
         websiteDomainId: domain.websiteDomainId,
-        includedOrExcludedFromRequest: 'excluded',
+        includedOrExcludedFromRequest: "excluded",
       });
     }
   } else {

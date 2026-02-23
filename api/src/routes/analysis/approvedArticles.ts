@@ -1,8 +1,8 @@
-import express from 'express';
-import { Article, ArticleApproved, State } from 'newsnexus10db';
-import { authenticateToken } from '../../modules/userAuthentication';
-import { getDateOfLastSubmittedReport } from '../../modules/reports';
-import logger from '../../modules/logger';
+import express from "express";
+import { Article, ArticleApproved, State } from "@newsnexus/db-models";
+import { authenticateToken } from "../../modules/userAuthentication";
+import { getDateOfLastSubmittedReport } from "../../modules/reports";
+import logger from "../../modules/logger";
 
 const router = express.Router();
 
@@ -12,11 +12,11 @@ type StateCountRow = {
   [key: string]: string | number;
 };
 
-router.get('/by-state', authenticateToken, async (_req, res) => {
+router.get("/by-state", authenticateToken, async (_req, res) => {
   try {
     const lastReportDate = await getDateOfLastSubmittedReport();
-    const currentMonth = new Date().toLocaleString('en-US', {
-      month: 'long',
+    const currentMonth = new Date().toLocaleString("en-US", {
+      month: "long",
     });
     const stateCountsThisMonth: Record<string, number> = {};
 
@@ -39,7 +39,7 @@ router.get('/by-state', authenticateToken, async (_req, res) => {
 
     for (const approved of approvedArticlesArray as any[]) {
       const article = approved.Article;
-      let stateName = 'Unassigned';
+      let stateName = "Unassigned";
 
       if (article && article.States && article.States.length > 0) {
         stateName = article.States[0].name;
@@ -49,8 +49,12 @@ router.get('/by-state', authenticateToken, async (_req, res) => {
 
       stateCounts[stateName] = (stateCounts[stateName] || 0) + 1;
 
-      if (lastReportDate && new Date(approved.createdAt) > new Date(lastReportDate)) {
-        stateCountsSinceLastReport[stateName] = (stateCountsSinceLastReport[stateName] || 0) + 1;
+      if (
+        lastReportDate &&
+        new Date(approved.createdAt) > new Date(lastReportDate)
+      ) {
+        stateCountsSinceLastReport[stateName] =
+          (stateCountsSinceLastReport[stateName] || 0) + 1;
       }
 
       const approvedDate = new Date(approved.createdAt);
@@ -60,29 +64,35 @@ router.get('/by-state', authenticateToken, async (_req, res) => {
         approvedDate.getFullYear() === now.getFullYear();
 
       if (sameMonth) {
-        stateCountsThisMonth[stateName] = (stateCountsThisMonth[stateName] || 0) + 1;
+        stateCountsThisMonth[stateName] =
+          (stateCountsThisMonth[stateName] || 0) + 1;
       }
     }
 
-    const sumOfApproved = Object.values(stateCounts).reduce((sum, val) => sum + val, 0);
-
-    const articleCountByStateArray: StateCountRow[] = Object.entries(stateCounts).map(
-      ([state, count]) => ({
-        State: state,
-        Count: count,
-        [currentMonth]: stateCountsThisMonth[state] || 0,
-        'Count since last report': stateCountsSinceLastReport[state] || 0,
-      })
+    const sumOfApproved = Object.values(stateCounts).reduce(
+      (sum, val) => sum + val,
+      0,
     );
 
+    const articleCountByStateArray: StateCountRow[] = Object.entries(
+      stateCounts,
+    ).map(([state, count]) => ({
+      State: state,
+      Count: count,
+      [currentMonth]: stateCountsThisMonth[state] || 0,
+      "Count since last report": stateCountsSinceLastReport[state] || 0,
+    }));
+
     articleCountByStateArray.push({
-      State: 'Total',
+      State: "Total",
       Count: sumOfApproved,
-      [currentMonth]: Object.values(stateCountsThisMonth).reduce((sum, val) => sum + val, 0),
-      'Count since last report': Object.values(stateCountsSinceLastReport).reduce(
+      [currentMonth]: Object.values(stateCountsThisMonth).reduce(
         (sum, val) => sum + val,
-        0
+        0,
       ),
+      "Count since last report": Object.values(
+        stateCountsSinceLastReport,
+      ).reduce((sum, val) => sum + val, 0),
     });
 
     const totalRow = articleCountByStateArray.pop();
@@ -96,7 +106,7 @@ router.get('/by-state', authenticateToken, async (_req, res) => {
     res.json({ articleCountByStateArray, unassignedArticlesArray });
   } catch (error) {
     logger.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
