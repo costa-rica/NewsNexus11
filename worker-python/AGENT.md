@@ -60,7 +60,7 @@ src/
 - Uses `subprocess` for asynchronous job execution in background threads
 - Captures exit codes and provides status polling via job ID
 - Supports job cancellation (terminate/kill processes)
-- Output streams to terminal for PM2 logging visibility (`pm2 logs`)
+- Output streams to terminal for logging visibility
 - In-memory job storage with sequential integer IDs (resets on service restart)
 - Jobs run the `analyze_fast` command from NewsNexusDeduper02
 
@@ -84,14 +84,12 @@ src/
 ## Production Environment
 
 - Deployed on Ubuntu VM behind reverse proxy
-- Managed by PM2 process manager
 - All News Nexus applications run on same server
 - SQLite database shared across applications
 
 ## Key Development Practices
 
 - Use Flask blueprints for modular routes
-- Configure logging for PM2 visibility
 - Implement proper error handling and job status tracking
 - Follow existing News Nexus naming conventions
 - Ensure idempotent job creation via reportId checking

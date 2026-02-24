@@ -24,7 +24,6 @@
  * - NEVER log complete request bodies (may contain PII)
  * - DO log validation failures and suspicious patterns
  * - DO log client IP addresses for blocking
- * - Logs go to stdout (captured by PM2 for monitoring)
  *
  * REFERENCE: docs/security-measures20251213/Security_Measures_01_Logging.md
  *
@@ -67,7 +66,7 @@ interface SecurityEvent {
 }
 
 /**
- * Logs a security event to stdout (captured by PM2)
+ * Logs a security event to stdout
  *
  * SECURITY: This function is safe to call from client components because:
  * - Client-side calls only log to browser console (not server logs)
@@ -115,8 +114,8 @@ export function logSecurityEvent(
     details: sanitizedDetails,
   };
 
-  // SECURITY: Use console.warn for security events (shows in PM2 logs with [SECURITY] prefix)
-  // This makes them easy to filter: pm2 logs NewsNexus11Portal | grep SECURITY
+  // SECURITY: Use console.warn for security events
+  // This makes them easy to filter: logs NewsNexus11Portal | grep SECURITY
   console.warn("[SECURITY]", JSON.stringify(logEntry));
 
   // OPTIONAL: In production, also send critical events to monitoring service

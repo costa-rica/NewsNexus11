@@ -3,7 +3,7 @@ from flask import Flask
 from .routes.index import bp_index
 from .routes.deduper import bp_deduper
 
-# load .env file -> needed for prod (Ubuntu/pm2 setup)
+# load .env file -> needed for prod (Ubuntu server setup)
 from pathlib import Path
 from dotenv import load_dotenv
 
