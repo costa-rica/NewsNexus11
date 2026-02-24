@@ -1,39 +1,34 @@
-# News Nexus Python Queuer 01
+# NewsNexus Python Queuer (FastAPI)
 
-This is the first version of the News Nexus Python Queuer. It is a simple program that will queue up Python micro services on the News Nexus platform.
+This is the new FastAPI-based worker service for NewsNexus11.
 
-## Project Structure
+## Current status
 
-```
-src/
-├── app.py              # Flask app initialization
-└── routes/             # Route blueprints
-    ├── deduper.py      # Deduper job management
-    └── index.py        # Basic routes
-```
+- FastAPI scaffold is initialized.
+- Flask legacy service was moved to `worker-python-flask/`.
+- Migration tasks are tracked in `docs/REQUIREMENTS_FASTAPI_TRANSITION_TODO.md`.
 
-## API
+## Quick start
 
-Routes see the docs [API Reference](docs/API_REFERENCE.md)
+1. Create or reuse a virtual environment.
+2. Install dependencies.
+3. Run the API with Uvicorn.
 
-- set off a job use GET `http://127.0.0.1:5000/deduper/jobs`
-
-## Queues
-
-Each route ( and therefore microservice) has its own queue.
-
-## .env
-
-```
-NAME_DB=newsnexus09.db
-PATH_DATABASE=/Users/nick/Documents/_databases/NewsNexus09/
-PATH_TO_PYTHON_VENV=/Users/nick/Documents/_environments/news_nexus
-PATH_TO_MICROSERVICE_DEDUPER=/Users/nick/Documents/NewsNexusDeduper02
-PATH_TO_MICROSERVICE_LOCATION_SCORER=/Users/nick/Documents/NewsNexusClassifierLocationScorer01
+```bash
+cd worker-python
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn src.main:app --reload --host 0.0.0.0 --port 5000
 ```
 
-## References
+## Endpoints currently implemented
 
-- [API Reference](docs/API_REFERENCE.md)
-- [Overview of News Nexus 09](docs/NEWS_NEXUS_09.md)
-- [Database schema and relationships](docs/DATABASE_OVERVIEW.md)
+- `GET /`
+- `GET /health`
+
+## Next work
+
+- Implement deduper queue endpoints in FastAPI.
+- Preserve request/response behavior needed by `api/` integration.
+- Add tests and production run configuration.
