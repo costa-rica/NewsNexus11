@@ -3,12 +3,27 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import morgan from "morgan";
 import path from "path";
+import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { env } from "./config/env";
 
 const app = express();
 let databaseInitialization: Promise<void> | null = null;
 let legacyRoutersMounted = false;
+
+function resolveAssetPath(distRelativePath: string, srcRelativePath: string): string {
+  const distPath = path.join(__dirname, distRelativePath);
+  if (existsSync(distPath)) {
+    return distPath;
+  }
+  return path.join(__dirname, srcRelativePath);
+}
+
+const publicPath = resolveAssetPath("public", "../src/public");
+const homeTemplatePath = resolveAssetPath(
+  "templates/index.html",
+  "../src/templates/index.html",
+);
 
 app.use(
   cors({
@@ -19,7 +34,11 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(publicPath));
+
+app.get("/", (_req, res) => {
+  res.sendFile(homeTemplatePath);
+});
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true, service: "newsnexus11api" });
@@ -32,12 +51,6 @@ export function mountLegacyRouters(): void {
 
   const legacyRoutersEnabled = env.loadLegacyRouters;
   if (!legacyRoutersEnabled) {
-    app.get("/", (_req, res) => {
-      res.status(200).json({
-        message: "NewsNexus11API bootstrap running",
-        legacyRoutersEnabled: false,
-      });
-    });
     legacyRoutersMounted = true;
     return;
   }

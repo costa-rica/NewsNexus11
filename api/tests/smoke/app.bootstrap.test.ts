@@ -18,11 +18,8 @@ describe("app bootstrap smoke tests", () => {
     const response = await request(app).get("/");
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(
-      expect.objectContaining({
-        message: expect.any(String),
-        legacyRoutersEnabled: false,
-      }),
-    );
+    expect(response.headers["content-type"]).toContain("text/html");
+    expect(response.text).toContain("<!DOCTYPE html>");
+    expect(response.text).toContain("API v10");
   });
 });
