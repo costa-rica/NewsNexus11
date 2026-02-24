@@ -1,0 +1,40 @@
+{
+  "endpoints": [
+    {
+      "path": "/",
+      "method": "GET",
+      "expected_status": 200,
+      "required_json_keys": []
+    },
+    {
+      "path": "/test",
+      "method": "POST",
+      "expected_status": 200,
+      "required_json_keys": []
+    },
+    {
+      "path": "/deduper/jobs",
+      "method": "GET",
+      "expected_status": 201,
+      "required_json_keys": ["jobId", "status"]
+    },
+    {
+      "path": "/deduper/jobs/{job_id}",
+      "method": "GET",
+      "expected_status": 200,
+      "required_json_keys": ["jobId", "status", "createdAt"]
+    },
+    {
+      "path": "/deduper/jobs/list",
+      "method": "GET",
+      "expected_status": 200,
+      "required_json_keys": ["jobs"]
+    },
+    {
+      "path": "/deduper/health",
+      "method": "GET",
+      "expected_status": 200,
+      "required_json_keys": ["status", "timestamp", "environment", "jobs"]
+    }
+  ]
+}

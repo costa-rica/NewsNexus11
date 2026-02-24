@@ -22,6 +22,22 @@ pip install -r requirements.txt
 uvicorn src.main:app --reload --host 0.0.0.0 --port 5000
 ```
 
+## Test setup
+
+Install dev dependencies:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Run tests:
+
+```bash
+make test
+make test-fast
+make test-contract
+```
+
 ## Endpoints currently implemented
 
 - `GET /`
@@ -29,6 +45,6 @@ uvicorn src.main:app --reload --host 0.0.0.0 --port 5000
 
 ## Next work
 
-- Implement deduper queue endpoints in FastAPI.
-- Preserve request/response behavior needed by `api/` integration.
-- Add tests and production run configuration.
+- Expand contract coverage for all edge cases in deduper routes.
+- Add stronger unit test coverage for subprocess lifecycle paths.
+- Finalize production run and deployment configuration.

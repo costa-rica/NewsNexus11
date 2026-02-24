@@ -11,30 +11,30 @@ Goal: replace the current Flask worker service with a FastAPI service while pres
 
 ## Python testing stack for this migration
 
-- [ ] Primary test runner: `pytest`
-- [ ] API integration tests: `fastapi.testclient.TestClient` (or `httpx` with ASGI transport)
-- [ ] Async behavior tests: `pytest-asyncio`
-- [ ] Mocking subprocess and env dependencies: `pytest-mock` or `unittest.mock`
-- [ ] Coverage and quality gate: `pytest-cov` with minimum threshold
+- [x] Primary test runner: `pytest`
+- [x] API integration tests: `fastapi.testclient.TestClient` (or `httpx` with ASGI transport)
+- [x] Async behavior tests: `pytest-asyncio`
+- [x] Mocking subprocess and env dependencies: `pytest-mock` or `unittest.mock`
+- [x] Coverage and quality gate: `pytest-cov` with minimum threshold
 - [ ] Optional contract test layer: snapshot/parity assertions comparing Flask vs FastAPI JSON schema/keys
 
 ## Test directory layout (worker-python)
 
-- [ ] Create `worker-python/tests/unit/` for job manager and service logic tests.
-- [ ] Create `worker-python/tests/integration/` for route-level FastAPI tests.
-- [ ] Create `worker-python/tests/contracts/` for Flask parity checks (status codes and required keys).
-- [ ] Create `worker-python/tests/fixtures/` for reusable payloads and response samples.
+- [x] Create `worker-python/tests/unit/` for job manager and service logic tests.
+- [x] Create `worker-python/tests/integration/` for route-level FastAPI tests.
+- [x] Create `worker-python/tests/contracts/` for Flask parity checks (status codes and required keys).
+- [x] Create `worker-python/tests/fixtures/` for reusable payloads and response samples.
 
 ## Standard terminal test commands
 
-- [ ] Add `make test` for full suite + coverage.
-- [ ] Add `make test-fast` for unit + integration quick checks.
-- [ ] Add `make test-contract` for parity checks.
-- [ ] Add `make test-unit` and `make test-integration` for focused runs.
+- [x] Add `make test` for full suite + coverage.
+- [x] Add `make test-fast` for unit + integration quick checks.
+- [x] Add `make test-contract` for parity checks.
+- [x] Add `make test-unit` and `make test-integration` for focused runs.
 
 ## Phase 1: inventory and parity contract
 
-- [ ] Freeze Flask API contract and runtime behavior.
+- [x] Freeze Flask API contract and runtime behavior.
 - [ ] Preserve these endpoints:
   - [ ] `GET /`
   - [ ] `GET /test`
@@ -45,28 +45,28 @@ Goal: replace the current Flask worker service with a FastAPI service while pres
   - [ ] `GET /deduper/jobs/list`
   - [ ] `GET /deduper/health`
   - [ ] `DELETE /deduper/clear-db-table`
-- [ ] Capture status codes and payload fields for each endpoint.
+- [x] Capture status codes and payload fields for each endpoint.
 - [ ] Confirm `api/` caller dependencies.
 - [ ] Identify all `api/` calls into worker endpoints and required response fields.
 - [ ] Define compatibility decisions.
-- [ ] Keep route paths unchanged for low-friction integration.
+- [x] Keep route paths unchanged for low-friction integration.
 - [ ] Keep JSON keys stable unless `api/` changes in same PR.
 
 Stop point A test gate:
-- [ ] Create parity matrix document from Flask behavior.
-- [ ] Add baseline contract tests that fail if required keys/status codes drift.
+- [x] Create parity matrix document from Flask behavior.
+- [x] Add baseline contract tests that fail if required keys/status codes drift.
 - [ ] Run: `pytest -q tests/contracts`
 
 ## Phase 2: FastAPI core implementation
 
-- [ ] Create app foundation (`src/main.py`, route modules, config).
-- [ ] Load environment variables from `.env`.
+- [x] Create app foundation (`src/main.py`, route modules, config).
+- [x] Load environment variables from `.env`.
 - [ ] Add Pydantic models for job responses and errors.
 - [ ] Standardize UTC timestamp fields.
-- [ ] Create job manager service module.
-- [ ] Encapsulate subprocess launch, lifecycle, cancellation, and status mapping.
-- [ ] Implement index routes (`/`, `/test`).
-- [ ] Implement full deduper route set with parity behavior.
+- [x] Create job manager service module.
+- [x] Encapsulate subprocess launch, lifecycle, cancellation, and status mapping.
+- [x] Implement index routes (`/`, `/test`).
+- [x] Implement full deduper route set with parity behavior.
 
 Stop point B test gate:
 - [ ] Unit test job manager lifecycle transitions.

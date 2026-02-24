@@ -8,8 +8,22 @@
 # Dependencies
 node_modules/
 venv/
+.venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Python tooling and test artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+*.egg-info/
+pip-wheel-metadata/
 
 # Build outputs
 dist/

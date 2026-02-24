@@ -1,0 +1,20 @@
+from fastapi.testclient import TestClient
+
+from src.main import app
+from src.services.job_manager import job_manager
+
+
+def _reset_jobs() -> None:
+    job_manager.jobs.clear()
+    job_manager.job_counter = 1
+
+
+import pytest
+
+
+@pytest.fixture
+def client() -> TestClient:
+    _reset_jobs()
+    with TestClient(app) as test_client:
+        yield test_client
+    _reset_jobs()
