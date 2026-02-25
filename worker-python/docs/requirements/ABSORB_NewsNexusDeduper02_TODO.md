@@ -88,31 +88,31 @@ Stop point 3 validation
 ## Phase 4: migrate processors as internal modules
 
 1. Load processor
-- [ ] Port report-based article ID loading.
-- [ ] Port CSV-based article ID loading.
-- [ ] Port batch insert behavior and sameArticleIdFlag logic.
+- [x] Port report-based article ID loading.
+- [x] Port CSV-based article ID loading.
+- [x] Port batch insert behavior and sameArticleIdFlag logic.
 
 2. States processor
-- [ ] Port state lookup and sameStateFlag calculation.
-- [ ] Port batch update and state summary stats.
+- [x] Port state lookup and sameStateFlag calculation.
+- [x] Port batch update and state summary stats.
 
 3. URL check processor
-- [ ] Port URL canonicalization rules and comparison behavior.
-- [ ] Port batch update and URL summary stats.
+- [x] Port URL canonicalization rules and comparison behavior.
+- [x] Port batch update and URL summary stats.
 
 4. Content hash processor
-- [ ] Port normalization, SHA-1, SimHash, and similarity scoring.
-- [ ] Keep cache behavior for repeated article IDs.
-- [ ] Preserve 0.0 to 1.0 continuous score behavior.
+- [x] Port normalization, SHA-1, SimHash, and similarity scoring.
+- [x] Keep cache behavior for repeated article IDs.
+- [x] Preserve 0.0 to 1.0 continuous score behavior.
 
 5. Embedding processor
-- [ ] Port model loading and embedding cache.
-- [ ] Port cosine similarity behavior and score clamping.
-- [ ] Add safeguards for environments where embedding model is unavailable.
+- [x] Port model loading and embedding cache.
+- [x] Port cosine similarity behavior and score clamping.
+- [x] Add safeguards for environments where embedding model is unavailable.
 
 Stop point 4 validation
-- [ ] Unit tests pass for each processor.
-- [ ] Golden-case fixtures confirm parity on known input pairs.
+- [x] Unit tests pass for each processor.
+- [x] Golden-case fixtures confirm parity on known input pairs.
 
 ## Phase 5: orchestrator and route integration
 

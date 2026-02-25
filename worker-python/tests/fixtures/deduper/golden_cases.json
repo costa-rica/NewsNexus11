@@ -1,0 +1,30 @@
+{
+  "url_cases": [
+    {
+      "new_url": "https://www.example.com/story?utm_source=x&id=1",
+      "approved_url": "http://example.com/story?id=1",
+      "expected_match": true
+    },
+    {
+      "new_url": "https://example.com/story-a",
+      "approved_url": "https://example.com/story-b",
+      "expected_match": false
+    }
+  ],
+  "content_cases": [
+    {
+      "headline_new": "Major update announced",
+      "text_new": "The city council approved the same budget today.",
+      "headline_approved": "Major update announced",
+      "text_approved": "The city council approved the same budget today.",
+      "expected": 1.0
+    },
+    {
+      "headline_new": "Sports event",
+      "text_new": "Team won game in overtime.",
+      "headline_approved": "Weather report",
+      "text_approved": "Heavy rain expected this weekend.",
+      "expected_max": 0.85
+    }
+  ]
+}
