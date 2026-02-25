@@ -116,7 +116,7 @@ Stop point 4 validation
 
 ## Phase 5: orchestrator and route integration
 
-- [ ] Implement internal pipeline orchestrator methods:
+- [x] Implement internal pipeline orchestrator methods:
   - [x] `run_load(report_id=None)`
   - [x] `run_states()`
   - [x] `run_url_check()`
@@ -135,14 +135,14 @@ Stop point 5 validation
 
 ## Phase 6: remove subprocess dependency path
 
-- [ ] Remove legacy subprocess invocation from `worker-python/src/services/job_manager.py`.
-- [ ] Keep job state transitions, cancellation, and health reporting intact.
-- [ ] If needed, run deduper pipelines in managed worker threads/tasks in-process.
-- [ ] Ensure `clear-db-table` uses internal service method, not shell command.
+- [x] Remove legacy subprocess invocation from `worker-python/src/services/job_manager.py`.
+- [x] Keep job state transitions, cancellation, and health reporting intact.
+- [x] If needed, run deduper pipelines in managed worker threads/tasks in-process.
+- [x] Ensure `clear-db-table` uses internal service method, not shell command.
 
 Stop point 6 validation
-- [ ] No references to `PATH_TO_MICROSERVICE_DEDUPER` remain in runtime path.
-- [ ] End-to-end deduper flow passes in local integration test.
+- [x] No references to `PATH_TO_MICROSERVICE_DEDUPER` remain in runtime path.
+- [x] End-to-end deduper flow passes in local integration test.
 
 ## Phase 7: performance, resilience, and observability
 
