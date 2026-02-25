@@ -154,6 +154,8 @@ def repo_and_config(tmp_path: Path):
         batch_size_url=2,
         batch_size_content_hash=2,
         batch_size_embedding=2,
+        cache_max_entries=10,
+        checkpoint_interval=1,
     )
 
     repository = DeduperRepository(config)
@@ -271,3 +273,24 @@ def test_embedding_processor_with_fake_model(repo_and_config, monkeypatch: pytes
 
     assert summary["status"] == "ok"
     assert summary["processed"] == 6
+
+
+@pytest.mark.unit
+def test_load_processor_cancellation_checkpoint(repo_and_config) -> None:
+    repository, config = repo_and_config
+    processor = LoadProcessor(repository, config)
+
+    with pytest.raises(Exception, match="cancelled"):
+        processor.execute(report_id=10, should_cancel=lambda: True)
+
+
+@pytest.mark.unit
+def test_content_hash_cache_bounded(repo_and_config) -> None:
+    repository, config = repo_and_config
+    config.cache_max_entries = 1
+    LoadProcessor(repository, config).execute(report_id=10)
+
+    processor = ContentHashProcessor(repository, config)
+    processor.execute()
+
+    assert len(processor.norm_cache) <= config.cache_max_entries

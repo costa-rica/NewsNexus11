@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from src.modules.deduper.config import DeduperConfig
+from src.modules.deduper.errors import DeduperProcessorError
 from src.modules.deduper.logging_adapter import get_deduper_logger
 from src.modules.deduper.repository import DeduperRepository
 from src.modules.deduper.utils.text_norm import (
@@ -21,7 +22,8 @@ class ContentHashProcessor:
         self.logger = get_deduper_logger(__name__)
         self.norm_cache: dict[int, str] = {}
 
-    def execute(self) -> dict[str, int]:
+    def execute(self, should_cancel=None) -> dict[str, int]:
+        cancel_check = should_cancel or (lambda: False)
         total_candidates = self.repository.get_analysis_records_for_content_hash_update()
         if not total_candidates:
             return {
@@ -35,8 +37,12 @@ class ContentHashProcessor:
 
         processed = 0
         batch_size = self.config.batch_size_content_hash
+        checkpoint_interval = self.config.checkpoint_interval
+        self.logger.info("event=content_hash_start total=%s", len(total_candidates))
 
         while True:
+            if processed % checkpoint_interval == 0 and cancel_check():
+                raise DeduperProcessorError("Content hash processor cancelled")
             records = self.repository.get_analysis_records_for_content_hash_update_with_contents(limit=batch_size)
             if not records:
                 break
@@ -58,6 +64,7 @@ class ContentHashProcessor:
 
         stats = self.repository.get_content_hash_processing_stats()
         stats["processed"] = processed
+        self.logger.info("event=content_hash_complete processed=%s", processed)
         return stats
 
     def _compare_content_with_details(
@@ -81,12 +88,12 @@ class ContentHashProcessor:
         norm1 = self.norm_cache.get(article_id_new)
         if norm1 is None:
             norm1 = prepare_content(headline_new, text_new)
-            self.norm_cache[article_id_new] = norm1
+            self._set_cache(article_id_new, norm1)
 
         norm2 = self.norm_cache.get(article_id_approved)
         if norm2 is None:
             norm2 = prepare_content(headline_approved, text_approved)
-            self.norm_cache[article_id_approved] = norm2
+            self._set_cache(article_id_approved, norm2)
 
         hash1 = sha1_from_normalized(norm1)
         hash2 = sha1_from_normalized(norm2)
@@ -102,3 +109,13 @@ class ContentHashProcessor:
 
         distance = hamming_distance(simhash1, simhash2)
         return similarity_from_hamming(distance)
+
+    def _set_cache(self, article_id: int, value: str) -> None:
+        if len(self.norm_cache) >= self.config.cache_max_entries:
+            self.logger.warning(
+                "event=content_hash_cache_reset size=%s max=%s",
+                len(self.norm_cache),
+                self.config.cache_max_entries,
+            )
+            self.norm_cache.clear()
+        self.norm_cache[article_id] = value

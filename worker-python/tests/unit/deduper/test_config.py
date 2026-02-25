@@ -23,6 +23,8 @@ def test_config_from_env_success(monkeypatch: pytest.MonkeyPatch) -> None:
     assert config.name_db == "news.db"
     assert config.enable_embedding is True
     assert config.sqlite_path == os.path.join("/tmp/db", "news.db")
+    assert config.cache_max_entries > 0
+    assert config.checkpoint_interval > 0
 
 
 @pytest.mark.unit

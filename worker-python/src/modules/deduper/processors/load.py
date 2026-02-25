@@ -15,7 +15,12 @@ class LoadProcessor:
         self.config = config
         self.logger = get_deduper_logger(__name__)
 
-    def execute(self, report_id: int | None = None) -> dict[str, int | bool]:
+    def execute(
+        self,
+        report_id: int | None = None,
+        should_cancel=None,
+    ) -> dict[str, int | bool]:
+        cancel_check = should_cancel or (lambda: False)
         if report_id is not None:
             new_article_ids = self.repository.get_article_ids_by_report_id(report_id)
         else:
@@ -37,9 +42,19 @@ class LoadProcessor:
         batch_size = self.config.batch_size_load
         batch: list[dict] = []
         processed = 0
+        checkpoint_interval = self.config.checkpoint_interval
+
+        self.logger.info(
+            "event=load_start report_id=%s new_articles=%s approved_articles=%s",
+            report_id,
+            len(new_article_ids),
+            len(approved_article_ids),
+        )
 
         for new_article_id in new_article_ids:
             for approved_article_id in approved_article_ids:
+                if processed % checkpoint_interval == 0 and cancel_check():
+                    raise DeduperProcessorError("Load processor cancelled")
                 batch.append(
                     {
                         "articleIdNew": new_article_id,
@@ -62,6 +77,8 @@ class LoadProcessor:
 
         if batch:
             self.repository.insert_article_duplicate_analysis_batch(batch)
+
+        self.logger.info("event=load_complete processed=%s", processed)
 
         return {
             "processed": processed,

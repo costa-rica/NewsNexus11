@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from src.modules.deduper.config import DeduperConfig
+from src.modules.deduper.logging_adapter import get_deduper_logger
 from src.modules.deduper.orchestrator import DeduperOrchestrator
 from src.modules.deduper.repository import DeduperRepository
 
@@ -46,6 +47,7 @@ class JobManager:
         self.jobs: dict[int, JobRecord] = {}
         self.job_counter = 1
         self.lock = threading.Lock()
+        self.logger = get_deduper_logger(__name__)
 
     def create_job(self, report_id: int | None = None) -> JobRecord:
         with self.lock:
@@ -58,6 +60,7 @@ class JobManager:
                 report_id=report_id,
             )
             self.jobs[job_id] = job
+            self._append_job_log(job, "job_created")
             return job
 
     def get_job(self, job_id: int) -> JobRecord | None:
@@ -83,6 +86,7 @@ class JobManager:
         try:
             job.status = JobStatus.RUNNING
             job.started_at = utc_now_iso()
+            self._append_job_log(job, "job_started")
             orchestrator, repository = self._create_orchestrator()
             try:
                 summary = orchestrator.run_analyze_fast(
@@ -99,16 +103,21 @@ class JobManager:
 
             if summary.status == "cancelled" or job.cancel_requested:
                 job.status = JobStatus.CANCELLED
+                self._append_job_log(job, "job_cancelled")
             elif summary.status == "completed":
                 job.status = JobStatus.COMPLETED
+                self._append_job_log(job, "job_completed")
             else:
                 job.status = JobStatus.FAILED
+                self._append_job_log(job, "job_failed")
 
         except Exception as exc:
             if job.cancel_requested:
                 job.status = JobStatus.CANCELLED
+                self._append_job_log(job, "job_cancelled")
             else:
                 job.status = JobStatus.FAILED
+                self._append_job_log(job, "job_failed")
             job.error = str(exc)
             job.completed_at = utc_now_iso()
 
@@ -129,6 +138,7 @@ class JobManager:
             job.cancel_requested = True
             job.status = JobStatus.CANCELLED
             job.completed_at = utc_now_iso()
+            self._append_job_log(job, "cancel_requested")
             return True, "Job cancelled successfully"
         except Exception as exc:
             return False, f"Failed to cancel job: {exc}"
@@ -175,6 +185,7 @@ class JobManager:
                     job.cancel_requested = True
                     job.status = JobStatus.CANCELLED
                     job.completed_at = utc_now_iso()
+                    self._append_job_log(job, "cancelled_by_clear")
                     cancelled_jobs.append(job.id)
                 except Exception:
                     # Preserve Flask behavior: continue cancelling other jobs.
@@ -192,6 +203,11 @@ class JobManager:
 
         response["cancelledJobs"] = cancelled_jobs
         return response
+
+    def _append_job_log(self, job: JobRecord, event: str) -> None:
+        message = f"{utc_now_iso()} event={event} job_id={job.id} report_id={job.report_id}"
+        job.logs.append(message)
+        self.logger.info(message)
 
 
 job_manager = JobManager()

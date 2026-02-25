@@ -71,6 +71,7 @@ def test_run_deduper_job_uses_in_process_orchestrator(monkeypatch: pytest.Monkey
     assert updated is not None
     assert updated.status == JobStatus.COMPLETED
     assert updated.exit_code == 0
+    assert any("event=job_completed" in line for line in updated.logs)
 
 
 @pytest.mark.unit

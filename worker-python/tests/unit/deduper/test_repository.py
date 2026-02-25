@@ -121,6 +121,8 @@ def repo(tmp_path: Path) -> DeduperRepository:
         batch_size_url=1000,
         batch_size_content_hash=1000,
         batch_size_embedding=100,
+        cache_max_entries=1000,
+        checkpoint_interval=100,
     )
 
     repository = DeduperRepository(config)

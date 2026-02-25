@@ -146,14 +146,14 @@ Stop point 6 validation
 
 ## Phase 7: performance, resilience, and observability
 
-- [ ] Add structured progress metrics per pipeline step.
-- [ ] Add bounded caches and memory safety checks for large runs.
-- [ ] Add timeout or cancellation checkpoints between step batches.
-- [ ] Add failure-resume strategy for partially completed pipelines.
+- [x] Add structured progress metrics per pipeline step.
+- [x] Add bounded caches and memory safety checks for large runs.
+- [x] Add timeout or cancellation checkpoints between step batches.
+- [x] Add failure-resume strategy for partially completed pipelines.
 
 Stop point 7 validation
-- [ ] Load test with representative article volume passes.
-- [ ] Cancellation and retry behavior validated.
+- [x] Load test with representative article volume passes.
+- [x] Cancellation and retry behavior validated.
 
 ## Phase 8: docs and operational readiness
 

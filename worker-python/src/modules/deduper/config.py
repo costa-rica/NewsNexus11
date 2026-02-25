@@ -44,6 +44,8 @@ class DeduperConfig:
     batch_size_url: int
     batch_size_content_hash: int
     batch_size_embedding: int
+    cache_max_entries: int
+    checkpoint_interval: int
 
     @property
     def sqlite_path(self) -> str:
@@ -77,5 +79,13 @@ class DeduperConfig:
             batch_size_embedding=_parse_positive_int(
                 os.getenv("DEDUPER_BATCH_SIZE_EMBEDDING", "100"),
                 "DEDUPER_BATCH_SIZE_EMBEDDING",
+            ),
+            cache_max_entries=_parse_positive_int(
+                os.getenv("DEDUPER_CACHE_MAX_ENTRIES", "10000"),
+                "DEDUPER_CACHE_MAX_ENTRIES",
+            ),
+            checkpoint_interval=_parse_positive_int(
+                os.getenv("DEDUPER_CHECKPOINT_INTERVAL", "250"),
+                "DEDUPER_CHECKPOINT_INTERVAL",
             ),
         )

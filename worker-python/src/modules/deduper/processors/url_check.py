@@ -5,6 +5,7 @@ from __future__ import annotations
 from urllib.parse import urlparse, urlunparse
 
 from src.modules.deduper.config import DeduperConfig
+from src.modules.deduper.errors import DeduperProcessorError
 from src.modules.deduper.logging_adapter import get_deduper_logger
 from src.modules.deduper.repository import DeduperRepository
 
@@ -15,7 +16,8 @@ class UrlCheckProcessor:
         self.config = config
         self.logger = get_deduper_logger(__name__)
 
-    def execute(self) -> dict[str, int]:
+    def execute(self, should_cancel=None) -> dict[str, int]:
+        cancel_check = should_cancel or (lambda: False)
         records = self.repository.get_analysis_records_for_url_update()
         if not records:
             return {"processed": 0, "url_match_count": 0, "url_no_match_count": 0}
@@ -23,8 +25,13 @@ class UrlCheckProcessor:
         batch_size = self.config.batch_size_url
         batch_updates: list[dict] = []
         processed = 0
+        checkpoint_interval = self.config.checkpoint_interval
+
+        self.logger.info("event=url_check_start total=%s", len(records))
 
         for record in records:
+            if processed % checkpoint_interval == 0 and cancel_check():
+                raise DeduperProcessorError("URL check processor cancelled")
             new_url = self.repository.get_article_url(record["articleIdNew"])
             approved_url = self.repository.get_article_url(record["articleIdApproved"])
             is_match = self._compare_urls(new_url, approved_url)
@@ -41,6 +48,7 @@ class UrlCheckProcessor:
 
         stats = self.repository.get_url_check_processing_stats()
         stats["processed"] = processed
+        self.logger.info("event=url_check_complete processed=%s", processed)
         return stats
 
     def _compare_urls(self, url1: str | None, url2: str | None) -> bool:

@@ -53,6 +53,8 @@ def get_job_status(job_id: int) -> JSONResponse:
         response["stderr"] = job.stderr
     if job.error is not None:
         response["error"] = job.error
+    if job.logs:
+        response["logs"] = job.logs
 
     return JSONResponse(response)
 

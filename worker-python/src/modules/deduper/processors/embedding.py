@@ -29,7 +29,8 @@ class EmbeddingProcessor:
         self.model: Any = None
         self.embedding_cache: dict[int, Any] = {}
 
-    def execute(self) -> dict[str, Any]:
+    def execute(self, should_cancel=None) -> dict[str, Any]:
+        cancel_check = should_cancel or (lambda: False)
         if not self.config.enable_embedding:
             return {"processed": 0, "status": "skipped", "reason": "embedding disabled"}
 
@@ -55,8 +56,12 @@ class EmbeddingProcessor:
         batch_size = self.config.batch_size_embedding
         updates: list[dict] = []
         processed = 0
+        checkpoint_interval = self.config.checkpoint_interval
+        self.logger.info("event=embedding_start total=%s", len(records))
 
         for record in records:
+            if processed % checkpoint_interval == 0 and cancel_check():
+                raise DeduperProcessorError("Embedding processor cancelled")
             new_content = self.repository.get_article_content(record["articleIdNew"])
             approved_content = self.repository.get_article_content(record["articleIdApproved"])
             similarity = self._calculate_semantic_similarity(
@@ -78,6 +83,7 @@ class EmbeddingProcessor:
         stats = self.repository.get_embedding_processing_stats()
         stats["processed"] = processed
         stats["status"] = "ok"
+        self.logger.info("event=embedding_complete processed=%s", processed)
         return stats
 
     def _load_model(self) -> None:
@@ -104,13 +110,13 @@ class EmbeddingProcessor:
         if not processed_text:
             embedding_dim = self.model.get_sentence_embedding_dimension()
             zero_embedding = np.zeros(embedding_dim, dtype=np.float32)
-            self.embedding_cache[article_id] = zero_embedding
+            self._set_cache(article_id, zero_embedding)
             return zero_embedding
 
         embedding = self.model.encode(
             [processed_text], normalize_embeddings=True, convert_to_numpy=True
         )[0]
-        self.embedding_cache[article_id] = embedding
+        self._set_cache(article_id, embedding)
         return embedding
 
     def _calculate_semantic_similarity(
@@ -126,3 +132,13 @@ class EmbeddingProcessor:
 
         similarity = float(np.dot(embedding1, embedding2))
         return max(0.0, min(1.0, similarity))
+
+    def _set_cache(self, article_id: int, value) -> None:
+        if len(self.embedding_cache) >= self.config.cache_max_entries:
+            self.logger.warning(
+                "event=embedding_cache_reset size=%s max=%s",
+                len(self.embedding_cache),
+                self.config.cache_max_entries,
+            )
+            self.embedding_cache.clear()
+        self.embedding_cache[article_id] = value

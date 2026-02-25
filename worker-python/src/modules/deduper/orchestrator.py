@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import time
 from typing import Any, Callable
 
 from src.modules.deduper.config import DeduperConfig
@@ -52,18 +53,46 @@ class DeduperOrchestrator:
         self,
         report_id: int | None = None,
         should_cancel: Callable[[], bool] | None = None,
+        clear_first: bool = True,
     ) -> PipelineSummary:
         summary = self.new_summary(PipelineRunMode.ANALYZE)
         summary.report_id = report_id
         summary.status = "running"
 
-        self.run_clear_table(skip_confirmation=True)
+        if clear_first:
+            self.run_clear_table(skip_confirmation=True)
         steps = [
-            (PipelineStep.LOAD, lambda: self.run_load(report_id=report_id)),
-            (PipelineStep.STATES, self.run_states),
-            (PipelineStep.URL_CHECK, self.run_url_check),
-            (PipelineStep.CONTENT_HASH, self.run_content_hash),
-            (PipelineStep.EMBEDDING, self.run_embedding),
+            (
+                PipelineStep.LOAD,
+                lambda: LoadProcessor(self.repository, self.config).execute(
+                    report_id=report_id,
+                    should_cancel=should_cancel,
+                ),
+            ),
+            (
+                PipelineStep.STATES,
+                lambda: StatesProcessor(self.repository, self.config).execute(
+                    should_cancel=should_cancel
+                ),
+            ),
+            (
+                PipelineStep.URL_CHECK,
+                lambda: UrlCheckProcessor(self.repository, self.config).execute(
+                    should_cancel=should_cancel
+                ),
+            ),
+            (
+                PipelineStep.CONTENT_HASH,
+                lambda: ContentHashProcessor(self.repository, self.config).execute(
+                    should_cancel=should_cancel
+                ),
+            ),
+            (
+                PipelineStep.EMBEDDING,
+                lambda: EmbeddingProcessor(self.repository, self.config).execute(
+                    should_cancel=should_cancel
+                ),
+            ),
         ]
 
         self._execute_pipeline_steps(summary, steps, should_cancel)
@@ -73,17 +102,40 @@ class DeduperOrchestrator:
         self,
         report_id: int | None = None,
         should_cancel: Callable[[], bool] | None = None,
+        clear_first: bool = True,
     ) -> PipelineSummary:
         summary = self.new_summary(PipelineRunMode.ANALYZE_FAST)
         summary.report_id = report_id
         summary.status = "running"
 
-        self.run_clear_table(skip_confirmation=True)
+        if clear_first:
+            self.run_clear_table(skip_confirmation=True)
         steps = [
-            (PipelineStep.LOAD, lambda: self.run_load(report_id=report_id)),
-            (PipelineStep.STATES, self.run_states),
-            (PipelineStep.URL_CHECK, self.run_url_check),
-            (PipelineStep.EMBEDDING, self.run_embedding),
+            (
+                PipelineStep.LOAD,
+                lambda: LoadProcessor(self.repository, self.config).execute(
+                    report_id=report_id,
+                    should_cancel=should_cancel,
+                ),
+            ),
+            (
+                PipelineStep.STATES,
+                lambda: StatesProcessor(self.repository, self.config).execute(
+                    should_cancel=should_cancel
+                ),
+            ),
+            (
+                PipelineStep.URL_CHECK,
+                lambda: UrlCheckProcessor(self.repository, self.config).execute(
+                    should_cancel=should_cancel
+                ),
+            ),
+            (
+                PipelineStep.EMBEDDING,
+                lambda: EmbeddingProcessor(self.repository, self.config).execute(
+                    should_cancel=should_cancel
+                ),
+            ),
         ]
 
         self._execute_pipeline_steps(summary, steps, should_cancel)
@@ -123,6 +175,12 @@ class DeduperOrchestrator:
                     started_at=_utc_now_iso(),
                 )
                 summary.steps.append(progress)
+                self.logger.info(
+                    "event=step_start step=%s report_id=%s",
+                    step,
+                    summary.report_id,
+                )
+                step_started = time.perf_counter()
 
                 result = fn()
 
@@ -131,13 +189,36 @@ class DeduperOrchestrator:
                 progress.processed = int(result.get("processed", 0))
                 progress.total = progress.processed
                 progress.message = str(result)
+                duration_ms = int((time.perf_counter() - step_started) * 1000)
+                self.logger.info(
+                    "event=step_complete step=%s processed=%s duration_ms=%s",
+                    step,
+                    progress.processed,
+                    duration_ms,
+                )
 
             summary.status = "completed"
+            self.logger.info(
+                "event=pipeline_complete mode=%s report_id=%s",
+                summary.mode,
+                summary.report_id,
+            )
         except DeduperProcessorError:
             summary.status = "cancelled"
+            self.logger.warning(
+                "event=pipeline_cancelled mode=%s report_id=%s",
+                summary.mode,
+                summary.report_id,
+            )
             raise
-        except Exception:
+        except Exception as exc:
             summary.status = "failed"
+            self.logger.error(
+                "event=pipeline_failed mode=%s report_id=%s error=%s",
+                summary.mode,
+                summary.report_id,
+                exc,
+            )
             raise
         finally:
             summary.completed_at = _utc_now_iso()
