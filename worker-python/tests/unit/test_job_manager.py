@@ -24,16 +24,16 @@ def test_cancel_missing_job() -> None:
 
 @pytest.mark.unit
 def test_clear_table_missing_env_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("PATH_TO_DATABASE", raising=False)
+    monkeypatch.delenv("PATH_DATABASE", raising=False)
     monkeypatch.delenv("NAME_DB", raising=False)
 
-    with pytest.raises(Exception, match="PATH_TO_DATABASE is required"):
+    with pytest.raises(Exception, match="PATH_DATABASE is required"):
         job_manager.run_clear_table()
 
 
 @pytest.mark.unit
 def test_health_unhealthy_when_database_missing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("PATH_TO_DATABASE", "/tmp/path/that/does/not/exist")
+    monkeypatch.setenv("PATH_DATABASE", "/tmp/path/that/does/not/exist")
     monkeypatch.setenv("NAME_DB", "missing.db")
 
     summary = job_manager.health_summary()
@@ -83,7 +83,7 @@ def test_run_clear_table_in_process_success(monkeypatch: pytest.MonkeyPatch, tmp
     conn.commit()
     conn.close()
 
-    monkeypatch.setenv("PATH_TO_DATABASE", str(tmp_path))
+    monkeypatch.setenv("PATH_DATABASE", str(tmp_path))
     monkeypatch.setenv("NAME_DB", "test.db")
 
     response = job_manager.run_clear_table()

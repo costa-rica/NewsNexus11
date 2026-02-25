@@ -53,13 +53,13 @@ def test_cancel_unknown_job(client) -> None:
 
 @pytest.mark.integration
 def test_clear_db_table_missing_env_returns_500(client, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("PATH_TO_DATABASE", raising=False)
+    monkeypatch.delenv("PATH_DATABASE", raising=False)
     monkeypatch.delenv("NAME_DB", raising=False)
 
     response = client.delete("/deduper/clear-db-table")
 
     assert response.status_code == 500
-    assert "PATH_TO_DATABASE is required" in response.json()["error"]
+    assert "PATH_DATABASE is required" in response.json()["error"]
 
 
 @pytest.mark.integration
@@ -71,7 +71,7 @@ def test_clear_db_table_in_process_success(client, monkeypatch: pytest.MonkeyPat
     conn.commit()
     conn.close()
 
-    monkeypatch.setenv("PATH_TO_DATABASE", str(tmp_path))
+    monkeypatch.setenv("PATH_DATABASE", str(tmp_path))
     monkeypatch.setenv("NAME_DB", "test.db")
 
     response = client.delete("/deduper/clear-db-table")
@@ -164,7 +164,7 @@ def test_report_job_runs_deduper_in_process_e2e(
     conn.commit()
     conn.close()
 
-    monkeypatch.setenv("PATH_TO_DATABASE", str(tmp_path))
+    monkeypatch.setenv("PATH_DATABASE", str(tmp_path))
     monkeypatch.setenv("NAME_DB", "test.db")
     monkeypatch.setenv("DEDUPER_ENABLE_EMBEDDING", "false")
 

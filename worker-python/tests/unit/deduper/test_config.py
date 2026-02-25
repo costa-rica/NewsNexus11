@@ -8,7 +8,7 @@ from src.modules.deduper.errors import DeduperConfigError
 
 @pytest.mark.unit
 def test_config_from_env_success(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("PATH_TO_DATABASE", "/tmp/db")
+    monkeypatch.setenv("PATH_DATABASE", "/tmp/db")
     monkeypatch.setenv("NAME_DB", "news.db")
     monkeypatch.setenv("DEDUPER_ENABLE_EMBEDDING", "true")
     monkeypatch.setenv("DEDUPER_BATCH_SIZE_LOAD", "1000")
@@ -29,16 +29,16 @@ def test_config_from_env_success(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.mark.unit
 def test_config_missing_required_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("PATH_TO_DATABASE", raising=False)
+    monkeypatch.delenv("PATH_DATABASE", raising=False)
     monkeypatch.setenv("NAME_DB", "news.db")
 
-    with pytest.raises(DeduperConfigError, match="PATH_TO_DATABASE is required"):
+    with pytest.raises(DeduperConfigError, match="PATH_DATABASE is required"):
         DeduperConfig.from_env()
 
 
 @pytest.mark.unit
 def test_config_invalid_batch_size(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("PATH_TO_DATABASE", "/tmp/db")
+    monkeypatch.setenv("PATH_DATABASE", "/tmp/db")
     monkeypatch.setenv("NAME_DB", "news.db")
     monkeypatch.setenv("DEDUPER_BATCH_SIZE_LOAD", "0")
 
@@ -48,9 +48,20 @@ def test_config_invalid_batch_size(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.mark.unit
 def test_config_invalid_bool(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("PATH_TO_DATABASE", "/tmp/db")
+    monkeypatch.setenv("PATH_DATABASE", "/tmp/db")
     monkeypatch.setenv("NAME_DB", "news.db")
     monkeypatch.setenv("DEDUPER_ENABLE_EMBEDDING", "sometimes")
 
     with pytest.raises(DeduperConfigError, match="DEDUPER_ENABLE_EMBEDDING must be a boolean-like value"):
         DeduperConfig.from_env()
+
+
+@pytest.mark.unit
+def test_startup_env_validation(monkeypatch: pytest.MonkeyPatch) -> None:
+    from src.modules.deduper.config import validate_startup_env
+
+    for key in ("PATH_DATABASE", "NAME_DB", "NAME_APP", "PATH_TO_LOGS"):
+        monkeypatch.delenv(key, raising=False)
+
+    with pytest.raises(DeduperConfigError, match="Missing required startup env vars"):
+        validate_startup_env()

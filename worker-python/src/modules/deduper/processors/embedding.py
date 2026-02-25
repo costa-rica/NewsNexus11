@@ -35,11 +35,10 @@ class EmbeddingProcessor:
             return {"processed": 0, "status": "skipped", "reason": "embedding disabled"}
 
         if SentenceTransformer is None or np is None:
-            return {
-                "processed": 0,
-                "status": "skipped",
-                "reason": "sentence-transformers or numpy not installed",
-            }
+            raise DeduperProcessorError(
+                "Embedding stage requires sentence-transformers and numpy, "
+                "but one or both are not installed."
+            )
 
         self._load_model()
 

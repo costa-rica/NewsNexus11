@@ -169,7 +169,7 @@ Stop point 8 validation
 ## Proposed environment variable transition
 
 1. Keep
-- `PATH_TO_DATABASE`
+- `PATH_DATABASE`
 - `NAME_DB`
 
 2. Deprecate after in-process migration

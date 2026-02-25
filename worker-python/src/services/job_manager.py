@@ -117,8 +117,10 @@ class JobManager:
                 self._append_job_log(job, "job_cancelled")
             else:
                 job.status = JobStatus.FAILED
-                self._append_job_log(job, "job_failed")
+                self._append_job_log(job, f"job_failed error={exc}")
             job.error = str(exc)
+            job.stderr = str(exc)
+            job.exit_code = 1
             job.completed_at = utc_now_iso()
 
     def start_deduper_job(self, job_id: int, report_id: int | None = None) -> None:
@@ -144,7 +146,7 @@ class JobManager:
             return False, f"Failed to cancel job: {exc}"
 
     def health_summary(self) -> dict[str, Any]:
-        path_to_database = os.getenv("PATH_TO_DATABASE")
+        path_to_database = os.getenv("PATH_DATABASE")
         name_db = os.getenv("NAME_DB")
         sqlite_path = (
             str(Path(path_to_database) / name_db)
@@ -156,7 +158,7 @@ class JobManager:
             "status": "healthy",
             "timestamp": utc_now_iso(),
             "environment": {
-                "path_to_database_configured": bool(path_to_database),
+                "path_database_configured": bool(path_to_database),
                 "name_db_configured": bool(name_db),
             },
             "jobs": {

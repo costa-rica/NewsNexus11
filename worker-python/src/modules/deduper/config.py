@@ -10,6 +10,12 @@ from src.modules.deduper.errors import DeduperConfigError
 
 TRUE_VALUES = {"1", "true", "yes", "on"}
 FALSE_VALUES = {"0", "false", "no", "off"}
+REQUIRED_STARTUP_ENV_KEYS = (
+    "PATH_DATABASE",
+    "NAME_DB",
+    "NAME_APP",
+    "PATH_TO_LOGS",
+)
 
 
 def _parse_bool(value: str, key: str) -> bool:
@@ -53,11 +59,11 @@ class DeduperConfig:
 
     @classmethod
     def from_env(cls) -> "DeduperConfig":
-        path_to_database = os.getenv("PATH_TO_DATABASE", "").strip()
+        path_to_database = os.getenv("PATH_DATABASE", "").strip()
         name_db = os.getenv("NAME_DB", "").strip()
 
         if not path_to_database:
-            raise DeduperConfigError("PATH_TO_DATABASE is required")
+            raise DeduperConfigError("PATH_DATABASE is required")
         if not name_db:
             raise DeduperConfigError("NAME_DB is required")
 
@@ -88,4 +94,12 @@ class DeduperConfig:
                 os.getenv("DEDUPER_CHECKPOINT_INTERVAL", "250"),
                 "DEDUPER_CHECKPOINT_INTERVAL",
             ),
+        )
+
+
+def validate_startup_env() -> None:
+    missing_keys = [key for key in REQUIRED_STARTUP_ENV_KEYS if not os.getenv(key, "").strip()]
+    if missing_keys:
+        raise DeduperConfigError(
+            "Missing required startup env vars: " + ", ".join(missing_keys)
         )

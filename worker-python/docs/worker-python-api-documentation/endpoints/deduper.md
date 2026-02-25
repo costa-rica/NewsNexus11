@@ -192,7 +192,7 @@ curl --location 'http://localhost:5000/deduper/health'
   "status": "healthy",
   "timestamp": "2026-02-25T15:14:03.488332+00:00",
   "environment": {
-    "path_to_database_configured": true,
+    "path_database_configured": true,
     "name_db_configured": true,
     "database_exists": true
   },

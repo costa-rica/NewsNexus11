@@ -55,7 +55,7 @@ The deduper workflow from NewsNexusDeduper02 is now absorbed internally under `s
 
 Required:
 
-1. `PATH_TO_DATABASE`
+1. `PATH_DATABASE`
 - Directory containing SQLite DB file.
 
 2. `NAME_DB`
