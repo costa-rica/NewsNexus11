@@ -1,11 +1,12 @@
 import app, { initializeDatabase, mountLegacyRouters } from "./app";
-import { env } from "./config/env";
+import { env, validateRequiredStartupEnvVars } from "./config/env";
 import { runOnStartUp } from "./modules/onStartUp";
 
 const port = env.port;
 
 async function startServer(): Promise<void> {
   try {
+    validateRequiredStartupEnvVars();
     await initializeDatabase();
     await runOnStartUp();
     mountLegacyRouters();

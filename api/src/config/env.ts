@@ -45,3 +45,26 @@ export const env: AppEnv = {
   port: readPort('PORT', 8001),
   loadLegacyRouters: readBoolean('LOAD_LEGACY_ROUTERS', false),
 };
+
+// Keep this list append-only for startup hard requirements.
+export const REQUIRED_STARTUP_ENV_VARS: string[] = [
+  'PATH_TO_UTILITIES_ANALYSIS_SPREADSHEETS',
+  'PATH_DATABASE',
+  'NAME_DB',
+  'NAME_APP',
+];
+
+export function validateRequiredStartupEnvVars(
+  requiredVars: string[] = REQUIRED_STARTUP_ENV_VARS,
+): void {
+  const missing = requiredVars.filter((name) => {
+    const value = process.env[name];
+    return !value || value.trim() === '';
+  });
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required startup environment variable(s): ${missing.join(', ')}`,
+    );
+  }
+}
