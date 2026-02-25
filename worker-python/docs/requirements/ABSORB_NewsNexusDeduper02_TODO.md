@@ -59,19 +59,19 @@ Goal: move deduper logic from the standalone NewsNexusDeduper02 microservice int
 Stop point 1 validation
 - [x] Produce command-to-method mapping table.
 - [x] Produce SQL parity checklist.
-- [ ] Review and approve parity checklist before implementation.
+- [x] Review and approve parity checklist before implementation.
 
 ## Phase 2: scaffold internal deduper package
 
-- [ ] Create `src/modules/deduper/` package and subpackages.
-- [ ] Add configuration loader for required env vars.
-- [ ] Add typed domain models for job input, progress, and result summaries.
-- [ ] Add centralized error classes for recoverable and fatal conditions.
-- [ ] Add logging adapter that matches worker logging style.
+- [x] Create `src/modules/deduper/` package and subpackages.
+- [x] Add configuration loader for required env vars.
+- [x] Add typed domain models for job input, progress, and result summaries.
+- [x] Add centralized error classes for recoverable and fatal conditions.
+- [x] Add logging adapter that matches worker logging style.
 
 Stop point 2 validation
-- [ ] Import checks pass for all package modules.
-- [ ] Unit tests for config and type validation pass.
+- [x] Import checks pass for all package modules.
+- [x] Unit tests for config and type validation pass.
 
 ## Phase 3: migrate repository and SQL access
 
