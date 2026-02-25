@@ -75,15 +75,15 @@ Stop point 2 validation
 
 ## Phase 3: migrate repository and SQL access
 
-- [ ] Port DB connection and query methods from legacy `database.py`.
-- [ ] Normalize DB lifecycle handling for worker runtime.
-- [ ] Keep query semantics identical during initial migration.
-- [ ] Add tests for each repository method with representative fixtures.
-- [ ] Confirm performance-sensitive queries have equivalent indexes and limits.
+- [x] Port DB connection and query methods from legacy `database.py`.
+- [x] Normalize DB lifecycle handling for worker runtime.
+- [x] Keep query semantics identical during initial migration.
+- [x] Add tests for each repository method with representative fixtures.
+- [x] Confirm performance-sensitive queries have equivalent indexes and limits.
 
 Stop point 3 validation
-- [ ] Repository test suite passes.
-- [ ] SQL parity checklist marked complete.
+- [x] Repository test suite passes.
+- [x] SQL parity checklist marked complete.
 
 ## Phase 4: migrate processors as internal modules
 
