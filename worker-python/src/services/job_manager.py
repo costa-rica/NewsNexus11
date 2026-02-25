@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import os
-import subprocess
 import threading
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
+
+from src.modules.deduper.config import DeduperConfig
+from src.modules.deduper.orchestrator import DeduperOrchestrator
+from src.modules.deduper.repository import DeduperRepository
 
 
 class JobStatus(StrEnum):
@@ -36,7 +38,7 @@ class JobRecord:
     stdout: str | None = None
     stderr: str | None = None
     error: str | None = None
-    process: subprocess.Popen[str] | None = None
+    cancel_requested: bool = False
 
 
 class JobManager:
@@ -67,22 +69,11 @@ class JobManager:
             for job in self.jobs.values()
         ]
 
-    def _deduper_command(self, report_id: int | None = None) -> list[str]:
-        deduper_path = os.getenv("PATH_TO_MICROSERVICE_DEDUPER")
-        python_venv = os.getenv("PATH_TO_PYTHON_VENV")
-
-        if not deduper_path or not python_venv:
-            raise RuntimeError("Missing environment variables for deduper or python venv")
-
-        cmd = [
-            f"{python_venv}/bin/python",
-            f"{deduper_path}/src/main.py",
-            "analyze_fast",
-        ]
-        if report_id is not None:
-            cmd.extend(["--report-id", str(report_id)])
-
-        return cmd
+    def _create_orchestrator(self) -> tuple[DeduperOrchestrator, DeduperRepository]:
+        config = DeduperConfig.from_env()
+        repository = DeduperRepository(config)
+        orchestrator = DeduperOrchestrator(repository, config)
+        return orchestrator, repository
 
     def _run_deduper_job(self, job_id: int, report_id: int | None = None) -> None:
         job = self.get_job(job_id)
@@ -92,25 +83,32 @@ class JobManager:
         try:
             job.status = JobStatus.RUNNING
             job.started_at = utc_now_iso()
+            orchestrator, repository = self._create_orchestrator()
+            try:
+                summary = orchestrator.run_analyze_fast(
+                    report_id=report_id,
+                    should_cancel=lambda: bool(job.cancel_requested),
+                )
+            finally:
+                repository.close()
 
-            cmd = self._deduper_command(report_id=report_id)
-
-            process = subprocess.Popen(cmd, text=True)
-            job.process = process
-
-            process.wait()
-            job.stdout = "Process output streamed to terminal"
-            job.stderr = "Process errors streamed to terminal"
-            job.exit_code = process.returncode
+            job.stdout = "Deduper processed in-process inside worker-python"
+            job.stderr = ""
+            job.exit_code = 0 if summary.status == "completed" else 1
             job.completed_at = utc_now_iso()
 
-            if process.returncode == 0:
+            if summary.status == "cancelled" or job.cancel_requested:
+                job.status = JobStatus.CANCELLED
+            elif summary.status == "completed":
                 job.status = JobStatus.COMPLETED
             else:
                 job.status = JobStatus.FAILED
 
-        except Exception as exc:  # pragma: no cover
-            job.status = JobStatus.FAILED
+        except Exception as exc:
+            if job.cancel_requested:
+                job.status = JobStatus.CANCELLED
+            else:
+                job.status = JobStatus.FAILED
             job.error = str(exc)
             job.completed_at = utc_now_iso()
 
@@ -128,12 +126,7 @@ class JobManager:
             return False, f"Cannot cancel job with status: {job.status}"
 
         try:
-            if job.process is not None and job.process.poll() is None:
-                job.process.terminate()
-                time.sleep(1)
-                if job.process.poll() is None:
-                    job.process.kill()
-
+            job.cancel_requested = True
             job.status = JobStatus.CANCELLED
             job.completed_at = utc_now_iso()
             return True, "Job cancelled successfully"
@@ -141,15 +134,20 @@ class JobManager:
             return False, f"Failed to cancel job: {exc}"
 
     def health_summary(self) -> dict[str, Any]:
-        deduper_path = os.getenv("PATH_TO_MICROSERVICE_DEDUPER")
-        python_venv = os.getenv("PATH_TO_PYTHON_VENV")
+        path_to_database = os.getenv("PATH_TO_DATABASE")
+        name_db = os.getenv("NAME_DB")
+        sqlite_path = (
+            str(Path(path_to_database) / name_db)
+            if path_to_database and name_db
+            else None
+        )
 
         checks: dict[str, Any] = {
             "status": "healthy",
             "timestamp": utc_now_iso(),
             "environment": {
-                "deduper_path_configured": bool(deduper_path),
-                "python_venv_configured": bool(python_venv),
+                "path_to_database_configured": bool(path_to_database),
+                "name_db_configured": bool(name_db),
             },
             "jobs": {
                 "total": len(self.jobs),
@@ -161,9 +159,9 @@ class JobManager:
             },
         }
 
-        if deduper_path:
-            checks["environment"]["deduper_path_exists"] = Path(deduper_path).exists()
-            if not checks["environment"]["deduper_path_exists"]:
+        if sqlite_path:
+            checks["environment"]["database_exists"] = Path(sqlite_path).exists()
+            if not checks["environment"]["database_exists"]:
                 checks["status"] = "unhealthy"
 
         return checks
@@ -174,12 +172,7 @@ class JobManager:
         for job in self.jobs.values():
             if job.status in {JobStatus.PENDING, JobStatus.RUNNING}:
                 try:
-                    if job.process is not None and job.process.poll() is None:
-                        job.process.terminate()
-                        time.sleep(0.5)
-                        if job.process.poll() is None:
-                            job.process.kill()
-
+                    job.cancel_requested = True
                     job.status = JobStatus.CANCELLED
                     job.completed_at = utc_now_iso()
                     cancelled_jobs.append(job.id)
@@ -190,40 +183,14 @@ class JobManager:
         return cancelled_jobs
 
     def run_clear_table(self) -> dict[str, Any]:
-        deduper_path = os.getenv("PATH_TO_MICROSERVICE_DEDUPER")
-        python_venv = os.getenv("PATH_TO_PYTHON_VENV")
-
-        if not deduper_path or not python_venv:
-            raise RuntimeError("Missing environment variables for deduper or python venv")
-
         cancelled_jobs = self.cancel_all_active_jobs()
+        orchestrator, repository = self._create_orchestrator()
+        try:
+            response = orchestrator.run_clear_table(skip_confirmation=True)
+        finally:
+            repository.close()
 
-        cmd = [
-            f"{python_venv}/bin/python",
-            f"{deduper_path}/src/main.py",
-            "clear_table",
-            "-y",
-        ]
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-
-        response: dict[str, Any] = {
-            "cleared": result.returncode == 0,
-            "cancelledJobs": cancelled_jobs,
-            "exitCode": result.returncode,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "timestamp": utc_now_iso(),
-        }
-
-        if result.returncode != 0:
-            response["error"] = "Clear table command failed"
-
+        response["cancelledJobs"] = cancelled_jobs
         return response
 
 

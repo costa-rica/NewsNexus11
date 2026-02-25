@@ -117,21 +117,21 @@ Stop point 4 validation
 ## Phase 5: orchestrator and route integration
 
 - [ ] Implement internal pipeline orchestrator methods:
-  - [ ] `run_load(report_id=None)`
-  - [ ] `run_states()`
-  - [ ] `run_url_check()`
-  - [ ] `run_content_hash()`
-  - [ ] `run_embedding()`
-  - [ ] `run_analyze(report_id=None)`
-  - [ ] `run_analyze_fast(report_id=None)`
-  - [ ] `run_clear_table(skip_confirmation=True)`
-- [ ] Update FastAPI deduper routes to call orchestrator directly.
-- [ ] Keep existing API response contract stable.
-- [ ] Add route tests that validate in-process execution flow.
+  - [x] `run_load(report_id=None)`
+  - [x] `run_states()`
+  - [x] `run_url_check()`
+  - [x] `run_content_hash()`
+  - [x] `run_embedding()`
+  - [x] `run_analyze(report_id=None)`
+  - [x] `run_analyze_fast(report_id=None)`
+  - [x] `run_clear_table(skip_confirmation=True)`
+- [x] Update FastAPI deduper routes to call orchestrator directly.
+- [x] Keep existing API response contract stable.
+- [x] Add route tests that validate in-process execution flow.
 
 Stop point 5 validation
-- [ ] Contract tests for deduper endpoints pass.
-- [ ] Integration tests confirm no subprocess calls remain.
+- [x] Contract tests for deduper endpoints pass.
+- [x] Integration tests confirm no subprocess calls remain.
 
 ## Phase 6: remove subprocess dependency path
 

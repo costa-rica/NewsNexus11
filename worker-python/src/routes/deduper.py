@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import subprocess
-
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
@@ -93,15 +91,6 @@ def clear_db_table() -> JSONResponse:
         if response["cleared"]:
             return JSONResponse(response, status_code=200)
         return JSONResponse(response, status_code=500)
-    except subprocess.TimeoutExpired:
-        return JSONResponse(
-            {
-                "error": "Clear table command timed out",
-                "cancelledJobs": [],
-                "timestamp": utc_now_iso(),
-            },
-            status_code=500,
-        )
     except Exception as exc:
         return JSONResponse(
             {

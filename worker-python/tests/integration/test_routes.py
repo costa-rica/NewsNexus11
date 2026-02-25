@@ -1,4 +1,5 @@
 import pytest
+import sqlite3
 
 
 @pytest.mark.integration
@@ -52,10 +53,30 @@ def test_cancel_unknown_job(client) -> None:
 
 @pytest.mark.integration
 def test_clear_db_table_missing_env_returns_500(client, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("PATH_TO_MICROSERVICE_DEDUPER", raising=False)
-    monkeypatch.delenv("PATH_TO_PYTHON_VENV", raising=False)
+    monkeypatch.delenv("PATH_TO_DATABASE", raising=False)
+    monkeypatch.delenv("NAME_DB", raising=False)
 
     response = client.delete("/deduper/clear-db-table")
 
     assert response.status_code == 500
-    assert "Missing environment variables" in response.json()["error"]
+    assert "PATH_TO_DATABASE is required" in response.json()["error"]
+
+
+@pytest.mark.integration
+def test_clear_db_table_in_process_success(client, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    db_file = tmp_path / "test.db"
+    conn = sqlite3.connect(str(db_file))
+    conn.execute("CREATE TABLE ArticleDuplicateAnalyses (id INTEGER PRIMARY KEY AUTOINCREMENT)")
+    conn.execute("INSERT INTO ArticleDuplicateAnalyses DEFAULT VALUES")
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setenv("PATH_TO_DATABASE", str(tmp_path))
+    monkeypatch.setenv("NAME_DB", "test.db")
+
+    response = client.delete("/deduper/clear-db-table")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["cleared"] is True
+    assert body["exitCode"] == 0
