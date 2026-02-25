@@ -9,6 +9,16 @@ This file is the top-level reference index for engineers and service consumers.
 - [index](./endpoints/index.md)
 - [deduper](./endpoints/deduper.md)
 
+## Quick usage guidance
+
+1. Treat `jobId` and `reportId` as different values.
+2. Create deduper job by report ID:
+- `GET /deduper/jobs/reportId/{report_id}`
+3. Poll job status using `jobId` from creation response:
+- `GET /deduper/jobs/{job_id}`
+4. Use `GET /deduper/jobs/list` to inspect active and recent jobs.
+5. Use `GET /deduper/health` for runtime and environment checks.
+
 ## Documentation conventions
 
 1. Keep endpoint file names lowercase.

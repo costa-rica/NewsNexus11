@@ -4,9 +4,9 @@ This is the new FastAPI-based worker service for NewsNexus11.
 
 ## Current status
 
-- FastAPI scaffold is initialized.
-- Flask legacy service was moved to `worker-python-flask/`.
-- Migration tasks are tracked in `docs/REQUIREMENTS_FASTAPI_TRANSITION_TODO.md`.
+- Worker API and deduper pipeline run in-process.
+- Legacy Flask service remains in `worker-python-flask/` for fallback.
+- Implementation and maintenance guidance is in `AGENT.md`.
 
 ## Quick start
 
@@ -41,10 +41,16 @@ make test-contract
 ## Endpoints currently implemented
 
 - `GET /`
-- `GET /health`
+- `GET /test`
+- `GET /deduper/jobs`
+- `GET /deduper/jobs/reportId/{report_id}`
+- `GET /deduper/jobs/{job_id}`
+- `POST /deduper/jobs/{job_id}/cancel`
+- `GET /deduper/jobs/list`
+- `GET /deduper/health`
+- `DELETE /deduper/clear-db-table`
 
 ## Next work
 
-- Expand contract coverage for all edge cases in deduper routes.
-- Add stronger unit test coverage for subprocess lifecycle paths.
-- Finalize production run and deployment configuration.
+- Finalize deployment checklist and rollout safeguards.
+- Continue endpoint and operations documentation maintenance.

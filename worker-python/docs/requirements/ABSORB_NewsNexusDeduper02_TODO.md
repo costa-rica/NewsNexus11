@@ -157,14 +157,14 @@ Stop point 7 validation
 
 ## Phase 8: docs and operational readiness
 
-- [ ] Update endpoint docs for any request/response changes.
-- [ ] Add internal module documentation for maintainers.
-- [ ] Add runbook for deduper troubleshooting and rollback.
-- [ ] Update `.env` docs with new required and deprecated variables.
+- [x] Update endpoint docs for any request/response changes.
+- [x] Add internal module documentation for maintainers.
+- [x] Add runbook for deduper troubleshooting and rollback.
+- [x] Update `.env` docs with new required and deprecated variables.
 
 Stop point 8 validation
-- [ ] Documentation reviewed and aligned with implementation.
-- [ ] Deployment checklist complete.
+- [x] Documentation reviewed and aligned with implementation.
+- [x] Deployment checklist complete.
 
 ## Proposed environment variable transition
 
@@ -189,11 +189,11 @@ Stop point 8 validation
 
 ## Acceptance criteria
 
-- [ ] Worker executes deduper pipeline internally without child process launch.
-- [ ] Legacy deduper command behaviors are available via internal orchestrator methods.
-- [ ] Existing worker API contract remains stable for `api/` integration.
-- [ ] Tests include unit, integration, and contract coverage for absorbed functionality.
-- [ ] Operational docs reflect new architecture and rollback plan.
+- [x] Worker executes deduper pipeline internally without child process launch.
+- [x] Legacy deduper command behaviors are available via internal orchestrator methods.
+- [x] Existing worker API contract remains stable for `api/` integration.
+- [x] Tests include unit, integration, and contract coverage for absorbed functionality.
+- [x] Operational docs reflect new architecture and rollback plan.
 
 ## Suggested implementation order
 
