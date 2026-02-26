@@ -87,22 +87,22 @@ Stop point validation
 
 ## Phase 4: in-process global queue engine
 
-- [ ] Implement one global FIFO queue engine with `concurrency = 1`.
-- [ ] Add enqueue behavior used by all job-start endpoints.
-- [ ] Add execution lifecycle transitions:
+- [x] Implement one global FIFO queue engine with `concurrency = 1`.
+- [x] Add enqueue behavior used by all job-start endpoints.
+- [x] Add execution lifecycle transitions:
   - `queued` on enqueue
   - `running` with `startedAt` when execution begins
   - terminal status `completed`, `failed`, or `canceled` with `endedAt`
-- [ ] Implement cancellation flow:
+- [x] Implement cancellation flow:
   - if queued: cancel immediately
   - if running: send `SIGTERM`, wait 10 seconds, then `SIGKILL` if still alive
-- [ ] Ensure no automatic retry behavior on failures.
-- [ ] Ensure all queue state updates are persisted to JSON.
+- [x] Ensure no automatic retry behavior on failures.
+- [x] Ensure all queue state updates are persisted to JSON.
 
 Stop point validation
-- [ ] Tests prove FIFO order and global single-concurrency behavior across mixed job types.
-- [ ] Tests prove queued and running cancellation behavior.
-- [ ] Tests prove no retry occurs after failure.
+- [x] Tests prove FIFO order and global single-concurrency behavior across mixed job types.
+- [x] Tests prove queued and running cancellation behavior.
+- [x] Tests prove no retry occurs after failure.
 
 ## Phase 5: queue-info routes
 
