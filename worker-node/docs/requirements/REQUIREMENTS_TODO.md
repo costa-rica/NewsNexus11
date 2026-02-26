@@ -120,17 +120,17 @@ Stop point validation
 
 ## Phase 6: requestGoogleRss integration
 
-- [ ] Add route file `src/routes/requestGoogleRss.ts`.
-- [ ] Implement `POST /request-google-rss/start-job`.
-- [ ] Validate required input and verify spreadsheet path from `PATH_AND_FILENAME_FOR_QUERY_SPREADSHEET_AUTOMATED`.
-- [ ] Create job handler module under `src/modules/jobs/` using legacy behavior from:
+- [x] Add route file `src/routes/requestGoogleRss.ts`.
+- [x] Implement `POST /request-google-rss/start-job`.
+- [x] Validate required input and verify spreadsheet path from `PATH_AND_FILENAME_FOR_QUERY_SPREADSHEET_AUTOMATED`.
+- [x] Create job handler module under `src/modules/jobs/` using legacy behavior from:
   - `/Users/nick/Documents/NewsNexus10-OBE/NewsNexusRequesterGoogleRss04`
-- [ ] Wire start endpoint to enqueue global queue job.
-- [ ] Ensure endpoint returns job metadata (`jobId`, status, and route/job type info).
+- [x] Wire start endpoint to enqueue global queue job.
+- [x] Ensure endpoint returns job metadata (`jobId`, status, and route/job type info).
 
 Stop point validation
-- [ ] Route tests confirm enqueue behavior and response contract.
-- [ ] Job module tests cover expected failure path when spreadsheet file is missing.
+- [x] Route tests confirm enqueue behavior and response contract.
+- [x] Job module tests cover expected failure path when spreadsheet file is missing.
 
 ## Phase 7: semanticScorer integration
 
