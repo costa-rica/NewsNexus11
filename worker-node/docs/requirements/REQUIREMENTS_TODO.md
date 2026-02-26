@@ -17,9 +17,9 @@ This document breaks implementation into phases with checklists. A task can be m
 
 ## Phase 1: project scaffolding and baseline
 
-- [ ] Initialize `worker-node` as an ExpressJS + TypeScript project.
-- [ ] Add package scripts for `dev`, `build`, `start`, `test`, and `test:watch`.
-- [ ] Create baseline folder structure:
+- [x] Initialize `worker-node` as an ExpressJS + TypeScript project.
+- [x] Add package scripts for `dev`, `build`, `start`, `test`, and `test:watch`.
+- [x] Create baseline folder structure:
   - `src/`
   - `src/routes/`
   - `src/modules/`
@@ -30,13 +30,13 @@ This document breaks implementation into phases with checklists. A task can be m
   - `tests/helpers/`
   - `tests/routes/`
   - `tests/modules/`
-- [ ] Add `src/server.ts` and `src/app.ts` with app bootstrap and router mounting.
-- [ ] Mount an index/health route for smoke testing.
-- [ ] Ensure route module names follow camelCase naming convention.
+- [x] Add `src/server.ts` and `src/app.ts` with app bootstrap and router mounting.
+- [x] Mount an index/health route for smoke testing.
+- [x] Ensure route module names follow camelCase naming convention.
 
 Stop point validation
-- [ ] TypeScript build passes.
-- [ ] Smoke test proves app boots and health endpoint responds.
+- [x] TypeScript build passes.
+- [x] Smoke test proves app boots and health endpoint responds.
 
 ## Phase 2: configuration, logging, and error contracts
 
