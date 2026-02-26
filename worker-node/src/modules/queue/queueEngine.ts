@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { QueueJobStore, resolveDefaultQueueStorePath } from './jobStore';
 import { QueueJobRecord } from './types';
+import { QueueStatusView, getCheckStatusByJobId, getQueueStatus } from './queueStatus';
 
 export interface CancelableProcessHandle {
   kill: (signal?: NodeJS.Signals | number) => boolean;
@@ -110,6 +111,14 @@ export class GlobalQueueEngine {
       jobId,
       status: 'queued'
     };
+  }
+
+  public async getCheckStatus(jobId: string): Promise<QueueJobRecord | null> {
+    return getCheckStatusByJobId(this.store, jobId);
+  }
+
+  public async getQueueStatusView(): Promise<QueueStatusView> {
+    return getQueueStatus(this.store);
   }
 
   public async cancelJob(jobId: string): Promise<CancelJobResult> {

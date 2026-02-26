@@ -106,17 +106,17 @@ Stop point validation
 
 ## Phase 5: queue-info routes
 
-- [ ] Add route file `src/routes/queueInfo.ts`.
-- [ ] Implement endpoints under `/queue-info`:
-  - [ ] `check-status/:jobId`
-  - [ ] `queue_status/`
-  - [ ] `cancel_job/:jobId`
-- [ ] Select and document HTTP methods used for each endpoint.
-- [ ] Validate `jobId` parameter and return contract-consistent errors.
+- [x] Add route file `src/routes/queueInfo.ts`.
+- [x] Implement endpoints under `/queue-info`:
+  - [x] `check-status/:jobId`
+  - [x] `queue_status/`
+  - [x] `cancel_job/:jobId`
+- [x] Select and document HTTP methods used for each endpoint.
+- [x] Validate `jobId` parameter and return contract-consistent errors.
 
 Stop point validation
-- [ ] Route contract tests for success and not-found/error paths.
-- [ ] Tests verify endpoint responses reflect JSON-backed queue state.
+- [x] Route contract tests for success and not-found/error paths.
+- [x] Tests verify endpoint responses reflect JSON-backed queue state.
 
 ## Phase 6: requestGoogleRss integration
 

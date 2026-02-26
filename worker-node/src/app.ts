@@ -1,5 +1,6 @@
 import express from 'express';
 import healthRouter from './routes/health';
+import queueInfoRouter from './routes/queueInfo';
 import { errorHandler, notFoundHandler } from './modules/middleware/errorHandlers';
 
 export const createApp = (): express.Express => {
@@ -12,6 +13,7 @@ export const createApp = (): express.Express => {
   });
 
   app.use('/health', healthRouter);
+  app.use('/queue-info', queueInfoRouter);
   app.use(notFoundHandler);
   app.use(errorHandler);
 
