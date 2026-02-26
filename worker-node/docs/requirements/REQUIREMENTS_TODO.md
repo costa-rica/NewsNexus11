@@ -61,8 +61,8 @@ Stop point validation
 
 ## Phase 3: queue domain model and JSON job store
 
-- [ ] Define queue/job types with statuses: `queued`, `running`, `completed`, `failed`, `canceled`.
-- [ ] Define job record shape:
+- [x] Define queue/job types with statuses: `queued`, `running`, `completed`, `failed`, `canceled`.
+- [x] Define job record shape:
   - `jobId`
   - `endpointName`
   - `status`
@@ -70,20 +70,20 @@ Stop point validation
   - `startedAt` (optional)
   - `endedAt` (optional)
   - `failureReason` (optional)
-- [ ] Create JSON persistence module for job records.
-- [ ] Implement atomic JSON writes using temp file + rename.
-- [ ] Implement serialized JSON access using one in-process lock/queue.
-- [ ] Implement startup maintenance module:
+- [x] Create JSON persistence module for job records.
+- [x] Implement atomic JSON writes using temp file + rename.
+- [x] Implement serialized JSON access using one in-process lock/queue.
+- [x] Implement startup maintenance module:
   - mark stale `queued` or `running` jobs as `failed`
   - set `endedAt` on repaired jobs
   - set `failureReason` to `worker_restart`
   - prune records older than 30 days based on `createdAt`
-- [ ] Add queue status/read helpers for `checkStatus` and `queueStatus`.
+- [x] Add queue status/read helpers for `checkStatus` and `queueStatus`.
 
 Stop point validation
-- [ ] Module tests cover create/read/update job records and status transitions.
-- [ ] Module tests prove atomic write logic and lock/serialized access behavior.
-- [ ] Startup maintenance tests cover stale job repair and 30-day pruning.
+- [x] Module tests cover create/read/update job records and status transitions.
+- [x] Module tests prove atomic write logic and lock/serialized access behavior.
+- [x] Startup maintenance tests cover stale job repair and 30-day pruning.
 
 ## Phase 4: in-process global queue engine
 
