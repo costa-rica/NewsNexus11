@@ -5,13 +5,24 @@ import path from 'node:path';
 import request from 'supertest';
 import { errorHandler } from '../../src/modules/middleware/errorHandlers';
 import { QueueJobStore } from '../../src/modules/queue/jobStore';
-import { GlobalQueueEngine } from '../../src/modules/queue/queueEngine';
+import { GlobalQueueEngine, QueueExecutionContext } from '../../src/modules/queue/queueEngine';
 import { createRequestGoogleRssRouter } from '../../src/routes/requestGoogleRss';
 
-const buildApp = (queueEngine: GlobalQueueEngine, env: NodeJS.ProcessEnv): express.Express => {
+const buildApp = (
+  queueEngine: GlobalQueueEngine,
+  env: NodeJS.ProcessEnv,
+  buildJobHandler?: (spreadsheetPath: string) => (context: QueueExecutionContext) => Promise<void>
+): express.Express => {
   const app = express();
   app.use(express.json());
-  app.use('/request-google-rss', createRequestGoogleRssRouter({ queueEngine, env }));
+  app.use(
+    '/request-google-rss',
+    createRequestGoogleRssRouter({
+      queueEngine,
+      env,
+      buildJobHandler: buildJobHandler ?? (() => async () => undefined)
+    })
+  );
   app.use(errorHandler);
   return app;
 };

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AppError } from '../modules/errors/appError';
+import { QueueJobHandler } from '../modules/queue/queueEngine';
 import { createRequestGoogleRssJobHandler, verifySpreadsheetFileExists } from '../modules/jobs/requestGoogleRssJob';
 import { globalQueueEngine } from '../modules/queue/globalQueue';
 import { GlobalQueueEngine } from '../modules/queue/queueEngine';
@@ -7,6 +8,7 @@ import { GlobalQueueEngine } from '../modules/queue/queueEngine';
 interface RequestGoogleRssRouteDependencies {
   queueEngine: GlobalQueueEngine;
   env: NodeJS.ProcessEnv;
+  buildJobHandler: (spreadsheetPath: string) => QueueJobHandler;
 }
 
 const resolveSpreadsheetPathFromEnv = (env: NodeJS.ProcessEnv): string => {
@@ -26,11 +28,12 @@ const resolveSpreadsheetPathFromEnv = (env: NodeJS.ProcessEnv): string => {
 export const createRequestGoogleRssRouter = (
   dependencies: RequestGoogleRssRouteDependencies = {
     queueEngine: globalQueueEngine,
-    env: process.env
+    env: process.env,
+    buildJobHandler: createRequestGoogleRssJobHandler
   }
 ): Router => {
   const router = Router();
-  const { queueEngine, env } = dependencies;
+  const { queueEngine, env, buildJobHandler } = dependencies;
 
   router.post('/start-job', async (_req, res, next) => {
     try {
@@ -40,7 +43,7 @@ export const createRequestGoogleRssRouter = (
 
       const enqueueResult = await queueEngine.enqueueJob({
         endpointName,
-        run: createRequestGoogleRssJobHandler(spreadsheetPath)
+        run: buildJobHandler(spreadsheetPath)
       });
 
       return res.status(202).json({

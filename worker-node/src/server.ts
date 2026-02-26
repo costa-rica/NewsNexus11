@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import { createApp } from './app';
 import logger, { initializeLogger, isLoggerInitialized } from './modules/logger';
 import { isStartupConfigError, loadAppConfig } from './modules/startup/config';
@@ -59,6 +59,5 @@ export const startServer = async (options: StartServerOptions = {}): Promise<voi
 };
 
 if (require.main === module) {
-  dotenv.config();
   void startServer();
 }
