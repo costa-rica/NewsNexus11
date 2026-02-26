@@ -15,7 +15,7 @@ Also we'll be able to cancel jobs by their job id, whether they have started or 
 
 ## Implementation
 
-The implementation of the worker-node project will be based on a todo list in a file called worker-node/docs/REQUIREMENTS_TODO.md with phases and tasks that have checkboxes in the style of `[ ]`. The implementing engineer will complete a phase and check off the tasks completed with `[x]` only after the tests pass. Once all the tests pass for the phase the engineer will commit changes.
+The implementation of the worker-node project will be based on a todo list in a file called worker-node/docs/requirements/REQUIREMENTS_TODO.md with phases and tasks that have checkboxes in the style of `[ ]`. The implementing engineer will complete a phase and check off the tasks completed with `[x]` only after the tests pass. Once all the tests pass for the phase the engineer will commit changes.
 
 ## Tests
 
@@ -23,7 +23,7 @@ see the docs/TEST_IMPLEMENTATION_NODE.md document for guidance on implementing t
 
 ## Routes
 
-The section headings are the name of the subdomian. If the engineer finds a conflict with the naming convention they should bring this up as an issue before proceeding. The file name pattern for the routes will be routes/[subdomain].py.
+The section headings are the name of the subdomian. If the engineer finds a conflict with the naming convention they should bring this up as an issue before proceeding. The file name pattern for the routes will be routes/[subdomainInCamelCase].ts.
 
 ### queue-info/
 
@@ -31,18 +31,18 @@ This routes file will contain at least the check-status/:job_id, queue_status/ a
 
 ### request-google-rss/
 
-The endpoints in this subdomain will be in a file routes/request-google-rss.py. There should be one endpoint that starts a job called POST /request-google-rss/start-job. This endpoint will search for the excel file that is stored in the path and file name in the .env variable named PATH_AND_FILENAME_FOR_QUERY_SPREADSHEET_AUTOMATED.
+The endpoints in this subdomain will be in a file routes/requestGoogleRss.ts. There should be one endpoint that starts a job called POST /request-google-rss/start-job. This endpoint will search for the excel file that is stored in the path and file name in the .env variable named PATH_AND_FILENAME_FOR_QUERY_SPREADSHEET_AUTOMATED.
 
 The reference code for implementing this functionality can be found in the /Users/nick/Documents/NewsNexus10-OBE/NewsNexusRequesterGoogleRss04.
 
 ### semantic-scorer/
 
-The endpoints in this subdomain will be in a file routes/semantic-scorer.py. There should be one endpoint that starts a job called POST /semantic-scorer/start-job. The NewsNexusSemanticScorer02 project made use of two .env vars that were redundant: PATH_TO_SEMANTIC_SCORER_DIR and PATH_TO_SEMANTIC_SCORER_KEYWORDS_EXCEL_FILE. Let's only use the PATH_TO_SEMANTIC_SCORER_DIR as the path to where files for this functionality. This directory will contain the NewsNexusSemanticScorerKeywords.xlsx file used to score the articles as well as any text files the NewsNexusSemanticScorer02 microservice created.
+The endpoints in this subdomain will be in a file routes/semanticScorer.ts. There should be one endpoint that starts a job called POST /semantic-scorer/start-job. The NewsNexusSemanticScorer02 project made use of two .env vars that were redundant: PATH_TO_SEMANTIC_SCORER_DIR and PATH_TO_SEMANTIC_SCORER_KEYWORDS_EXCEL_FILE. Let's only use the PATH_TO_SEMANTIC_SCORER_DIR as the path to where files for this functionality. This directory will contain the NewsNexusSemanticScorerKeywords.xlsx file used to score the articles as well as any text files the NewsNexusSemanticScorer02 microservice created.
 The reference code for implementing this functionality can be found in the /Users/nick/Documents/NewsNexus10-OBE/NewsNexusSemanticScorer02.
 
 ### state-assigner/
 
-The endpoints in this subdomain will be in a file routes/state-assigner.py. There should be one endpoint that starts a job called POST /state-assigner/start-job.
+The endpoints in this subdomain will be in a file routes/stateAssigner.ts. There should be one endpoint that starts a job called POST /state-assigner/start-job.
 
 The NewsNexusLlmStateAssigner01 project made use of .env vars:
 
@@ -78,3 +78,57 @@ use the guidance in the worker-node/docs/requirements/LOGGING_NODE_JS_V07.md fil
 ## Error responses
 
 use the guidance in the worker-node/docs/requirements/ERROR_REQUIREMENTS.md
+
+## Queueing requirements
+
+Let's keep track of jobs in JSON file. This will keep the job id, job endpoint name, status, createdAt, startedAt (optional), endedAt (optional), failureReason (optional). Let's do an In-process queue, no BullMQ, no RabbitMQ. Writing to the JSON should require atomic write (temp + rename) and serialized access via a queue/lock.
+
+Here questions and answers for implementing the queue functionality:
+
+1. Should queued jobs survive process restarts, or can the queue reset on restart?
+
+- answer: no, any stale job should be marked as status failed. Any stale, job will be one with a status queued, running. stale-job repair should also set endedAt and a failureReason (for example worker_restart) .
+
+2. Will worker-node run as a single instance only, or may we run multiple instances later?
+
+- answer: single instance
+
+3. For cancel_job/:job_id, if a job is already running, should cancel mean: hard kill child process immediately, or mark cancel-requested and let job stop gracefully?
+
+- answer: stop as gracefully as possible without waiting for the full job to complete. Some jobs may take hours to run - we don't want to wait hours. Use SIGTERM → wait 10 seconds → SIGKILL.
+
+4. Do you want retries on failure? If yes, how many and with what delay/backoff?
+
+- answer: no retries
+
+5. Should we support job timeouts per job type (RSS, semantic scorer, state assigner)?
+
+- answer: I'm not exactly sure what this means, but if the job iterates requests, it should wait 10 seconds max or less if the reference microservice waited less, then if there is timeout or longer than the allotted time, then the iteration should skip an continue to the next iteration. It should not kill the entire process. timeouts that are skippped should be logged. Apply this to external requests.
+
+6. Do we need duplicate prevention (same payload submitted twice) or idempotency keys?
+
+- answer: duplicate jobs should be handled as the microserivce handled them. If there is no reference to handling duplicates within the microservice's process, then just proceed redoing the job.
+
+7. What job states do you want exposed (queued, running, completed, failed, canceled)?
+
+- answer: the JSON file used as the "database" for this functionality will keep track of all the statuses of all jobs
+
+8. How long should completed/failed job history be retained?
+
+- answer: the JSON file should be kept for 30 days max, then deleted based on the createdAt. Implement a onStartUp module that has a function that checks the file.
+
+9. Do queue-info endpoints need auth/role checks, or are they internal trusted-only?
+
+- answer: no, auth/role, all endpoints will be called internally.
+
+10. Should queue order always be FIFO, or do we need priority (for example, state-assigner > RSS)?
+
+- answer: no priority, FIFO
+
+11. Do we need progress updates/log streaming per job, or only final status?
+
+- answer: no, but update the JSON file as appropriate
+
+12. Is “one at a time” global across all job types, or one-at-a-time per route/subdomain?
+
+- answer: global queue concurrency = 1
