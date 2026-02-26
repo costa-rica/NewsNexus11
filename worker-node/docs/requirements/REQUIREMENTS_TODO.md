@@ -40,7 +40,7 @@ Stop point validation
 
 ## Phase 2: configuration, logging, and error contracts
 
-- [ ] Implement env loader and validator for required `.env` keys:
+- [x] Implement env loader and validator for required `.env` keys:
   - `PATH_AND_FILENAME_FOR_QUERY_SPREADSHEET_AUTOMATED`
   - `PATH_TO_SEMANTIC_SCORER_DIR`
   - `PATH_TO_LOGS`
@@ -50,14 +50,14 @@ Stop point validation
   - `NAME_APP`
   - `NAME_DB`
   - `PATH_DATABASE`
-- [ ] Fail fast on startup when required env vars are missing.
-- [ ] Implement logging setup per `worker-node/docs/requirements/LOGGING_NODE_JS_V07.md`.
-- [ ] Implement shared API error shape per `worker-node/docs/requirements/ERROR_REQUIREMENTS.md`.
-- [ ] Add centralized error helpers and middleware.
+- [x] Fail fast on startup when required env vars are missing.
+- [x] Implement logging setup per `worker-node/docs/requirements/LOGGING_NODE_JS_V07.md`.
+- [x] Implement shared API error shape per `worker-node/docs/requirements/ERROR_REQUIREMENTS.md`.
+- [x] Add centralized error helpers and middleware.
 
 Stop point validation
-- [ ] Tests confirm startup fails when required env vars are missing.
-- [ ] Tests confirm error response contract for at least one validation and one internal failure path.
+- [x] Tests confirm startup fails when required env vars are missing.
+- [x] Tests confirm error response contract for at least one validation and one internal failure path.
 
 ## Phase 3: queue domain model and JSON job store
 

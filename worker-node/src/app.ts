@@ -1,14 +1,21 @@
 import express from 'express';
 import healthRouter from './routes/health';
+import { errorHandler, notFoundHandler } from './modules/middleware/errorHandlers';
 
-const app = express();
+export const createApp = (): express.Express => {
+  const app = express();
 
-app.use(express.json());
+  app.use(express.json());
 
-app.get('/', (_req, res) => {
-  res.status(200).json({ service: 'worker-node', status: 'up' });
-});
+  app.get('/', (_req, res) => {
+    res.status(200).json({ service: 'worker-node', status: 'up' });
+  });
 
-app.use('/health', healthRouter);
+  app.use('/health', healthRouter);
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
-export default app;
+  return app;
+};
+
+export default createApp();

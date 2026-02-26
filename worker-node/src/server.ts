@@ -1,9 +1,64 @@
-import 'dotenv/config';
-import app from './app';
+import dotenv from 'dotenv';
+import { createApp } from './app';
+import logger, { initializeLogger, isLoggerInitialized } from './modules/logger';
+import { isStartupConfigError, loadAppConfig } from './modules/startup/config';
 
-const port = Number(process.env.PORT ?? 3002);
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-app.listen(port, () => {
-  // Keep startup logging minimal until logging module is implemented in Phase 2.
-  console.log(`[worker-node] listening on port ${port}`);
-});
+const getStartupFailureMessage = (error: unknown): string => {
+  if (isStartupConfigError(error)) {
+    return `[worker-node] startup failed: ${error.message}`;
+  }
+
+  if (error instanceof Error) {
+    return `[worker-node] startup failed: ${error.message}`;
+  }
+
+  return '[worker-node] startup failed due to an unknown error';
+};
+
+interface StartServerOptions {
+  env?: NodeJS.ProcessEnv;
+  exit?: (code: number) => never;
+  exitDelayMs?: number;
+}
+
+export const startServer = async (options: StartServerOptions = {}): Promise<void> => {
+  const env = options.env ?? process.env;
+  const exit = options.exit ?? ((code: number): never => process.exit(code));
+  const exitDelayMs = options.exitDelayMs ?? 100;
+
+  try {
+    const config = loadAppConfig(env);
+
+    initializeLogger({
+      nodeEnv: config.nodeEnv,
+      nameApp: config.nameApp,
+      pathToLogs: config.pathToLogs,
+      logMaxFiles: config.logMaxFiles,
+      logMaxSizeMb: config.logMaxSizeMb
+    });
+
+    logger.info('Worker-node startup attempt');
+
+    const app = createApp();
+    app.listen(config.port, () => {
+      logger.info(`Worker-node listening on port ${config.port}`);
+    });
+  } catch (error) {
+    const startupMessage = getStartupFailureMessage(error);
+    process.stderr.write(`${startupMessage}\n`);
+
+    if (isLoggerInitialized()) {
+      logger.error(startupMessage);
+    }
+
+    await sleep(exitDelayMs);
+    exit(1);
+  }
+};
+
+if (require.main === module) {
+  dotenv.config();
+  void startServer();
+}
