@@ -151,20 +151,20 @@ Stop point validation
 
 ## Phase 8: stateAssigner integration
 
-- [ ] Add route file `src/routes/stateAssigner.ts`.
-- [ ] Implement `POST /state-assigner/start-job`.
-- [ ] Remove use of env vars `TARGET_ARTICLE_THRESHOLD_DAYS_OLD` and `TARGET_ARTICLE_STATE_REVIEW_COUNT`.
-- [ ] Accept equivalent values in request body using camelCase fields.
-- [ ] Create job handler module under `src/modules/jobs/` using legacy behavior from:
+- [x] Add route file `src/routes/stateAssigner.ts`.
+- [x] Implement `POST /state-assigner/start-job`.
+- [x] Remove use of env vars `TARGET_ARTICLE_THRESHOLD_DAYS_OLD` and `TARGET_ARTICLE_STATE_REVIEW_COUNT`.
+- [x] Accept equivalent values in request body using camelCase fields.
+- [x] Create job handler module under `src/modules/jobs/` using legacy behavior from:
   - `/Users/nick/Documents/NewsNexus10-OBE/NewsNexusLlmStateAssigner01`
-- [ ] Apply per-iteration external request timeout:
+- [x] Apply per-iteration external request timeout:
   - max 10 seconds, or less if legacy microservice used a lower timeout
   - timeout should skip current iteration, continue process, and log timeout event
-- [ ] Wire start endpoint to enqueue global queue job.
+- [x] Wire start endpoint to enqueue global queue job.
 
 Stop point validation
-- [ ] Route tests confirm request validation and enqueue behavior.
-- [ ] Job module tests confirm timeout skip-and-continue behavior.
+- [x] Route tests confirm request validation and enqueue behavior.
+- [x] Job module tests confirm timeout skip-and-continue behavior.
 
 ## Phase 9: db-models integration and startup wiring
 

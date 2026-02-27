@@ -27,7 +27,6 @@ export interface ScorableArticle {
   id: number;
   title: string | null;
   description: string | null;
-  approvedText: string | null;
 }
 
 export interface ScoreResult {
@@ -60,6 +59,12 @@ const DEFAULT_ITERATION_TIMEOUT_MS = 10_000;
 const PROCESS_LOG_EVERY = 100;
 
 let dbReadyPromise: Promise<void> | null = null;
+let embedderPromise: Promise<
+  (
+    text: string,
+    options: { pooling: 'mean'; normalize: true }
+  ) => Promise<{ data: Float32Array | number[] }>
+> | null = null;
 
 const ensureDbReady = async (): Promise<void> => {
   if (dbReadyPromise) {
@@ -75,29 +80,29 @@ const ensureDbReady = async (): Promise<void> => {
   return dbReadyPromise;
 };
 
-const splitTokens = (input: string): string[] =>
-  input
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .map((token) => token.trim())
-    .filter((token) => token.length > 0);
+const cosineSimilarity = (vecA: number[] | Float32Array, vecB: number[] | Float32Array): number => {
+  const length = Math.min(vecA.length, vecB.length);
 
-const scoreWithKeywordOverlap = (text: string, keyword: string): number => {
-  const textTokens = new Set(splitTokens(text));
-  const keywordTokens = splitTokens(keyword);
+  let dot = 0;
+  let normASum = 0;
+  let normBSum = 0;
 
-  if (keywordTokens.length === 0) {
+  for (let i = 0; i < length; i += 1) {
+    const a = vecA[i];
+    const b = vecB[i];
+    dot += a * b;
+    normASum += a * a;
+    normBSum += b * b;
+  }
+
+  const normA = Math.sqrt(normASum);
+  const normB = Math.sqrt(normBSum);
+
+  if (normA === 0 || normB === 0) {
     return -1;
   }
 
-  let overlapCount = 0;
-  for (const token of keywordTokens) {
-    if (textTokens.has(token)) {
-      overlapCount += 1;
-    }
-  }
-
-  return overlapCount / keywordTokens.length;
+  return dot / (normA * normB);
 };
 
 const pickArticleText = (article: ScorableArticle): string | null => {
@@ -109,16 +114,44 @@ const pickArticleText = (article: ScorableArticle): string | null => {
     return article.title;
   }
 
-  if (article.approvedText && article.approvedText.trim() !== '') {
-    return article.approvedText;
-  }
-
   return null;
 };
 
-export const scoreArticleByKeywordOverlap = async (
+const getEmbedder = async (): Promise<
+  (
+    text: string,
+    options: { pooling: 'mean'; normalize: true }
+  ) => Promise<{ data: Float32Array | number[] }>
+> => {
+  if (!embedderPromise) {
+    embedderPromise = (async () => {
+      const transformers = (await import('@xenova/transformers')) as {
+        pipeline: (
+          task: 'feature-extraction',
+          model: string
+        ) => Promise<
+          (
+            text: string,
+            options: { pooling: 'mean'; normalize: true }
+          ) => Promise<{ data: Float32Array | number[] }>
+        >;
+      };
+
+      logger.info(`Loading semantic scorer model: ${LEGACY_AI_MODEL}`);
+      return transformers.pipeline('feature-extraction', LEGACY_AI_MODEL);
+    })();
+  }
+
+  return embedderPromise;
+};
+
+export const scoreArticleWithEmbeddings = async (
   article: ScorableArticle,
-  keywords: string[]
+  keywords: string[],
+  embedder?: (
+    text: string,
+    options: { pooling: 'mean'; normalize: true }
+  ) => Promise<{ data: Float32Array | number[] }>
 ): Promise<ScoreResult> => {
   const text = pickArticleText(article);
 
@@ -126,11 +159,15 @@ export const scoreArticleByKeywordOverlap = async (
     return { keyword: null, keywordRating: null };
   }
 
+  const loadedEmbedder = embedder ?? (await getEmbedder());
+  const articleVec = (await loadedEmbedder(text, { pooling: 'mean', normalize: true })).data;
+
   let bestKeyword: string | null = null;
-  let bestRating = -1;
+  let bestRating = -Infinity;
 
   for (const keyword of keywords) {
-    const rating = scoreWithKeywordOverlap(text, keyword);
+    const keywordVec = (await loadedEmbedder(keyword, { pooling: 'mean', normalize: true })).data;
+    const rating = cosineSimilarity(articleVec, keywordVec);
     if (rating > bestRating) {
       bestRating = rating;
       bestKeyword = keyword;
@@ -281,12 +318,18 @@ const createFilteredArticlesArray = async (
 
   return allArticles
     .filter((article) => !alreadyProcessed.has(article.id))
-    .map((article) => ({
-      id: article.id,
-      title: article.title,
-      description: article.description,
-      approvedText: article.ArticleApproveds?.[0]?.textForPdfReport ?? null
-    }));
+    .map((article) => {
+      let description = article.description;
+      if (!description || description.trim() === '') {
+        description = article.ArticleApproveds?.[0]?.textForPdfReport ?? null;
+      }
+
+      return {
+        id: article.id,
+        title: article.title,
+        description
+      };
+    });
 };
 
 const writeRunningStatus = async (semanticScorerDir: string, count: number): Promise<void> => {
@@ -371,13 +414,14 @@ const runLegacyWorkflow = async (context: SemanticScorerJobContext): Promise<voi
 
   const keywords = await loadKeywordsFromExcel(keywordsWorkbookPath);
   logger.info(`Loaded keywords: ${keywords.length}`);
+  const embedder = await getEmbedder();
 
   await processArticlesWithTimeout({
     articles,
     keywords,
     iterationTimeoutMs: DEFAULT_ITERATION_TIMEOUT_MS,
     signal: context.signal,
-    scoreArticle: (article, keywordList) => scoreArticleByKeywordOverlap(article, keywordList),
+    scoreArticle: (article, keywordList) => scoreArticleWithEmbeddings(article, keywordList, embedder),
     persistScore: async (articleId, keyword, keywordRating) => {
       await ArticleEntityWhoCategorizedArticleContract.upsert({
         articleId,

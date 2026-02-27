@@ -31,8 +31,8 @@ describe('semanticScorer job handler', () => {
 
     await processArticlesWithTimeout({
       articles: [
-        { id: 1, title: 'a', description: 'd1', approvedText: null },
-        { id: 2, title: 'b', description: 'd2', approvedText: null }
+        { id: 1, title: 'a', description: 'd1' },
+        { id: 2, title: 'b', description: 'd2' }
       ],
       keywords: ['fire'],
       iterationTimeoutMs: 10,

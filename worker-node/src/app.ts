@@ -3,6 +3,7 @@ import healthRouter from './routes/health';
 import queueInfoRouter from './routes/queueInfo';
 import requestGoogleRssRouter from './routes/requestGoogleRss';
 import semanticScorerRouter from './routes/semanticScorer';
+import stateAssignerRouter from './routes/stateAssigner';
 import { errorHandler, notFoundHandler } from './modules/middleware/errorHandlers';
 
 export const createApp = (): express.Express => {
@@ -18,6 +19,7 @@ export const createApp = (): express.Express => {
   app.use('/queue-info', queueInfoRouter);
   app.use('/request-google-rss', requestGoogleRssRouter);
   app.use('/semantic-scorer', semanticScorerRouter);
+  app.use('/state-assigner', stateAssignerRouter);
   app.use(notFoundHandler);
   app.use(errorHandler);
 
