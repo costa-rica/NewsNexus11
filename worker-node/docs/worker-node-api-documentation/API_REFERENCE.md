@@ -11,6 +11,7 @@ This file is the top-level reference index for engineers and service consumers.
 - [queue-info](./endpoints/queue-info.md)
 - [request-google-rss](./endpoints/request-google-rss.md)
 - [semantic-scorer](./endpoints/semantic-scorer.md)
+- [state-assigner](./endpoints/state-assigner.md)
 
 ## Documentation conventions
 
