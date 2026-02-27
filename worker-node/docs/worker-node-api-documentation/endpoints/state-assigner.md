@@ -44,7 +44,7 @@ Runtime dependencies:
 ### Sample Request
 
 ```bash
-curl --location --request POST 'http://localhost:3003/state-assigner/start-job' \
+curl --location --request POST 'http://localhost:3002/state-assigner/start-job' \
 --header 'Content-Type: application/json' \
 --data '{
   "targetArticleThresholdDaysOld": 30,

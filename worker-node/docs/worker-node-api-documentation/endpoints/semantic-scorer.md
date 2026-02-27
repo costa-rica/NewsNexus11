@@ -25,7 +25,7 @@ Runtime dependency:
 ### Sample Request
 
 ```bash
-curl --location --request POST 'http://localhost:3003/semantic-scorer/start-job' \
+curl --location --request POST 'http://localhost:3002/semantic-scorer/start-job' \
 --header 'Content-Type: application/json' \
 --data '{}'
 ```
