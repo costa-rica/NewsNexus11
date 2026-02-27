@@ -134,19 +134,19 @@ Stop point validation
 
 ## Phase 7: semanticScorer integration
 
-- [ ] Add route file `src/routes/semanticScorer.ts`.
-- [ ] Implement `POST /semantic-scorer/start-job`.
-- [ ] Use only `PATH_TO_SEMANTIC_SCORER_DIR` for scorer files and keyword workbook.
-- [ ] Create job handler module under `src/modules/jobs/` using legacy behavior from:
+- [x] Add route file `src/routes/semanticScorer.ts`.
+- [x] Implement `POST /semantic-scorer/start-job`.
+- [x] Use only `PATH_TO_SEMANTIC_SCORER_DIR` for scorer files and keyword workbook.
+- [x] Create job handler module under `src/modules/jobs/` using legacy behavior from:
   - `/Users/nick/Documents/NewsNexus10-OBE/NewsNexusSemanticScorer02`
-- [ ] Apply per-iteration external request timeout:
+- [x] Apply per-iteration external request timeout:
   - max 10 seconds, or less if legacy microservice used a lower timeout
   - timeout should skip current iteration, continue process, and log timeout event
-- [ ] Wire start endpoint to enqueue global queue job.
+- [x] Wire start endpoint to enqueue global queue job.
 
 Stop point validation
-- [ ] Route tests confirm enqueue behavior and response contract.
-- [ ] Job module tests confirm timeout skip-and-continue behavior with logging.
+- [x] Route tests confirm enqueue behavior and response contract.
+- [x] Job module tests confirm timeout skip-and-continue behavior with logging.
 
 ## Phase 8: stateAssigner integration
 

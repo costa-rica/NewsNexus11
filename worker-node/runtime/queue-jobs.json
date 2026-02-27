@@ -1,0 +1,76 @@
+{
+  "jobs": [
+    {
+      "jobId": "5b571bdb-c563-4b20-b5ba-1b8dba8ca740",
+      "endpointName": "/request-google-rss/start-job",
+      "status": "completed",
+      "createdAt": "2026-02-26T04:39:29.829Z",
+      "startedAt": "2026-02-26T04:39:29.832Z",
+      "endedAt": "2026-02-26T04:39:29.833Z"
+    },
+    {
+      "jobId": "9eb2eb8e-b687-4711-848e-566e3e57bead",
+      "endpointName": "/request-google-rss/start-job",
+      "status": "completed",
+      "createdAt": "2026-02-26T04:48:20.758Z",
+      "startedAt": "2026-02-26T04:48:20.762Z",
+      "endedAt": "2026-02-26T04:48:20.763Z"
+    },
+    {
+      "jobId": "d5ba0b4c-7f91-418f-8120-29fb3d8f0eb7",
+      "endpointName": "/request-google-rss/start-job",
+      "status": "completed",
+      "createdAt": "2026-02-26T04:50:04.500Z",
+      "startedAt": "2026-02-26T04:50:04.508Z",
+      "endedAt": "2026-02-26T04:50:04.510Z"
+    },
+    {
+      "jobId": "b63ec5d7-f595-4eb2-9471-04d4f5a3a245",
+      "endpointName": "/request-google-rss/start-job",
+      "status": "completed",
+      "createdAt": "2026-02-26T04:52:48.059Z",
+      "startedAt": "2026-02-26T04:52:48.063Z",
+      "endedAt": "2026-02-26T04:52:48.064Z"
+    },
+    {
+      "jobId": "07426af4-ecca-4880-a6a9-4c1888aadf25",
+      "endpointName": "/request-google-rss/start-job",
+      "status": "completed",
+      "createdAt": "2026-02-26T04:53:22.035Z",
+      "startedAt": "2026-02-26T04:53:22.043Z",
+      "endedAt": "2026-02-26T04:53:22.045Z"
+    },
+    {
+      "jobId": "6044d300-17f7-4557-bf43-ed97640c5436",
+      "endpointName": "/request-google-rss/start-job",
+      "status": "completed",
+      "createdAt": "2026-02-26T04:54:55.517Z",
+      "startedAt": "2026-02-26T04:54:55.521Z",
+      "endedAt": "2026-02-26T04:54:55.522Z"
+    },
+    {
+      "jobId": "f49601c5-06e5-44a3-98cb-bf153618e056",
+      "endpointName": "/request-google-rss/start-job",
+      "status": "completed",
+      "createdAt": "2026-02-26T05:03:13.735Z",
+      "startedAt": "2026-02-26T05:03:13.744Z",
+      "endedAt": "2026-02-26T05:03:31.175Z"
+    },
+    {
+      "jobId": "d218dd06-7d72-43bc-a603-0afb24477777",
+      "endpointName": "/request-google-rss/start-job",
+      "status": "completed",
+      "createdAt": "2026-02-26T05:08:14.626Z",
+      "startedAt": "2026-02-26T05:08:14.634Z",
+      "endedAt": "2026-02-26T05:08:34.524Z"
+    },
+    {
+      "jobId": "8b3df984-c3da-4fee-9ded-a6e2f4d7e5d0",
+      "endpointName": "/semantic-scorer/start-job",
+      "status": "completed",
+      "createdAt": "2026-02-27T13:46:46.377Z",
+      "startedAt": "2026-02-27T13:46:46.382Z",
+      "endedAt": "2026-02-27T13:46:48.260Z"
+    }
+  ]
+}
