@@ -70,6 +70,7 @@ The worker-node/ will check for the .env variables on start and if not in the .e
 - NAME_APP
 - NAME_DB
 - PATH_DATABASE
+- PATH_UTILTIES
 
 ## Logging
 

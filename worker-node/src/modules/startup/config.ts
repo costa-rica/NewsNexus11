@@ -7,7 +7,8 @@ const REQUIRED_ENV_VARS = [
   'PATH_TO_SAVE_CHATGPT_RESPONSES',
   'NAME_APP',
   'NAME_DB',
-  'PATH_DATABASE'
+  'PATH_DATABASE',
+  'PATH_UTILTIES'
 ] as const;
 
 export type RuntimeNodeEnv = 'development' | 'testing' | 'production';
@@ -22,6 +23,7 @@ export interface AppConfig {
   nameApp: string;
   nameDb: string;
   pathDatabase: string;
+  pathUtilities: string;
   logMaxSizeMb: number;
   logMaxFiles: number;
   port: number;
@@ -108,6 +110,7 @@ export const loadAppConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig =
     nameApp: readRequiredString(env, 'NAME_APP'),
     nameDb: readRequiredString(env, 'NAME_DB'),
     pathDatabase: readRequiredString(env, 'PATH_DATABASE'),
+    pathUtilities: readRequiredString(env, 'PATH_UTILTIES'),
     logMaxSizeMb,
     logMaxFiles,
     port

@@ -9,7 +9,8 @@ const requiredEnv = {
   PATH_TO_SAVE_CHATGPT_RESPONSES: '/tmp/chatgpt',
   NAME_APP: 'worker-node',
   NAME_DB: 'newsnexus.sqlite',
-  PATH_DATABASE: '/tmp'
+  PATH_DATABASE: '/tmp',
+  PATH_UTILTIES: '/tmp/utilities'
 };
 
 describe('startup config validation', () => {

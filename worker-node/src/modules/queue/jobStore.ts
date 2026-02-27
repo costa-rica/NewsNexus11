@@ -191,5 +191,10 @@ export class QueueJobStore {
   }
 }
 
-export const resolveDefaultQueueStorePath = (cwd: string = process.cwd()): string =>
-  path.join(cwd, 'runtime', 'queue-jobs.json');
+export const resolveDefaultQueueStorePath = (
+  pathUtilities: string | undefined = process.env.PATH_UTILTIES,
+  cwd: string = process.cwd()
+): string => {
+  const basePath = pathUtilities && pathUtilities.trim() !== '' ? pathUtilities.trim() : cwd;
+  return path.join(basePath, 'worker-node', 'queue-jobs.json');
+};

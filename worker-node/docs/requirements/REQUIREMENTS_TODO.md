@@ -50,6 +50,7 @@ Stop point validation
   - `NAME_APP`
   - `NAME_DB`
   - `PATH_DATABASE`
+  - `PATH_UTILTIES`
 - [x] Fail fast on startup when required env vars are missing.
 - [x] Implement logging setup per `worker-node/docs/requirements/LOGGING_NODE_JS_V07.md`.
 - [x] Implement shared API error shape per `worker-node/docs/requirements/ERROR_REQUIREMENTS.md`.
