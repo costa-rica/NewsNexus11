@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { createApp } from './app';
 import logger, { initializeLogger, isLoggerInitialized } from './modules/logger';
 import { isStartupConfigError, loadAppConfig } from './modules/startup/config';
+import { ensureStateAssignerDirectories } from './modules/startup/stateAssignerFiles';
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -40,6 +41,7 @@ export const startServer = async (options: StartServerOptions = {}): Promise<voi
     });
 
     logger.info('Worker-node startup attempt');
+    await ensureStateAssignerDirectories(config.pathToStateAssignerFiles);
 
     const app = createApp();
     app.listen(config.port, () => {

@@ -11,7 +11,8 @@ describe('stateAssigner job handler', () => {
       {
         targetArticleThresholdDaysOld: 15,
         targetArticleStateReviewCount: 25,
-        keyOpenAi: 'test-key'
+        keyOpenAi: 'test-key',
+        pathToStateAssignerFiles: '/tmp/state-assigner-files'
       },
       { runLegacyWorkflow }
     );
@@ -28,7 +29,8 @@ describe('stateAssigner job handler', () => {
       signal: expect.any(Object),
       targetArticleThresholdDaysOld: 15,
       targetArticleStateReviewCount: 25,
-      keyOpenAi: 'test-key'
+      keyOpenAi: 'test-key',
+      pathToStateAssignerFiles: '/tmp/state-assigner-files'
     });
   });
 
@@ -46,9 +48,14 @@ describe('stateAssigner job handler', () => {
       prompt: { id: 7, content: 'test prompt' },
       entityWhoCategorizesId: 11,
       keyOpenAi: 'test-key',
+      stateAssignerDirectories: {
+        rootDir: '/tmp/state-assigner-files',
+        chatGptResponsesDir: '/tmp/state-assigner-files/chatgpt_responses',
+        promptsDir: '/tmp/state-assigner-files/prompts'
+      },
       iterationTimeoutMs: 10,
       signal: new AbortController().signal,
-      analyzeArticle: async (_key, _prompt, article, signal) => {
+      analyzeArticle: async (_key, _dirs, _prompt, article, signal) => {
         if (article.id === 1) {
           await new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(resolve, 30);

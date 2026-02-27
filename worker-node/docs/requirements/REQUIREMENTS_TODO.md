@@ -35,6 +35,7 @@ This document breaks implementation into phases with checklists. A task can be m
 - [x] Ensure route module names follow camelCase naming convention.
 
 Stop point validation
+
 - [x] TypeScript build passes.
 - [x] Smoke test proves app boots and health endpoint responds.
 
@@ -46,7 +47,7 @@ Stop point validation
   - `PATH_TO_LOGS`
   - `NODE_ENV`
   - `KEY_OPEN_AI`
-  - `PATH_TO_SAVE_CHATGPT_RESPONSES`
+  - `PATH_TO_STATE_ASSIGNER_FILES`
   - `NAME_APP`
   - `NAME_DB`
   - `PATH_DATABASE`
@@ -57,6 +58,7 @@ Stop point validation
 - [x] Add centralized error helpers and middleware.
 
 Stop point validation
+
 - [x] Tests confirm startup fails when required env vars are missing.
 - [x] Tests confirm error response contract for at least one validation and one internal failure path.
 
@@ -82,6 +84,7 @@ Stop point validation
 - [x] Add queue status/read helpers for `checkStatus` and `queueStatus`.
 
 Stop point validation
+
 - [x] Module tests cover create/read/update job records and status transitions.
 - [x] Module tests prove atomic write logic and lock/serialized access behavior.
 - [x] Startup maintenance tests cover stale job repair and 30-day pruning.
@@ -101,6 +104,7 @@ Stop point validation
 - [x] Ensure all queue state updates are persisted to JSON.
 
 Stop point validation
+
 - [x] Tests prove FIFO order and global single-concurrency behavior across mixed job types.
 - [x] Tests prove queued and running cancellation behavior.
 - [x] Tests prove no retry occurs after failure.
@@ -116,6 +120,7 @@ Stop point validation
 - [x] Validate `jobId` parameter and return contract-consistent errors.
 
 Stop point validation
+
 - [x] Route contract tests for success and not-found/error paths.
 - [x] Tests verify endpoint responses reflect JSON-backed queue state.
 
@@ -130,6 +135,7 @@ Stop point validation
 - [x] Ensure endpoint returns job metadata (`jobId`, status, and route/job type info).
 
 Stop point validation
+
 - [x] Route tests confirm enqueue behavior and response contract.
 - [x] Job module tests cover expected failure path when spreadsheet file is missing.
 
@@ -146,6 +152,7 @@ Stop point validation
 - [x] Wire start endpoint to enqueue global queue job.
 
 Stop point validation
+
 - [x] Route tests confirm enqueue behavior and response contract.
 - [x] Job module tests confirm timeout skip-and-continue behavior with logging.
 
@@ -163,6 +170,7 @@ Stop point validation
 - [x] Wire start endpoint to enqueue global queue job.
 
 Stop point validation
+
 - [x] Route tests confirm request validation and enqueue behavior.
 - [x] Job module tests confirm timeout skip-and-continue behavior.
 
@@ -180,6 +188,7 @@ Stop point validation
   - app listen
 
 Stop point validation
+
 - [ ] Integration test confirms startup sequence and failure behavior on missing env/db issues.
 - [ ] Integration test confirms stale job repair happens before route handling.
 
@@ -196,6 +205,7 @@ Stop point validation
   - operational notes for cancel and timeout handling
 
 Stop point validation
+
 - [ ] Full test suite passes with `npm test`.
 - [ ] TypeScript compile passes with `npm run build`.
 - [ ] Final requirement parity checklist is complete.

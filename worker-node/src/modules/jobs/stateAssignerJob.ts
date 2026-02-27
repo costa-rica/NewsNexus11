@@ -10,8 +10,11 @@ import {
   initModels,
   sequelize
 } from '@newsnexus/db-models';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import logger from '../logger';
 import { QueueExecutionContext } from '../queue/queueEngine';
+import { ensureStateAssignerDirectories, StateAssignerDirectories } from '../startup/stateAssignerFiles';
 
 interface StateAssignerArticle {
   id: number;
@@ -28,6 +31,7 @@ export interface StateAssignerJobInput {
   targetArticleThresholdDaysOld: number;
   targetArticleStateReviewCount: number;
   keyOpenAi: string;
+  pathToStateAssignerFiles: string;
 }
 
 export interface StateAssignerJobContext extends StateAssignerJobInput {
@@ -50,10 +54,12 @@ interface ProcessStateAssignmentsOptions {
   prompt: PromptData;
   entityWhoCategorizesId: number;
   keyOpenAi: string;
+  stateAssignerDirectories: StateAssignerDirectories;
   iterationTimeoutMs: number;
   signal: AbortSignal;
   analyzeArticle: (
     keyOpenAi: string,
+    stateAssignerDirectories: StateAssignerDirectories,
     promptTemplate: string,
     article: StateAssignerArticle,
     signal: AbortSignal
@@ -130,6 +136,40 @@ const getPrompt = async (): Promise<PromptData> => {
   };
 };
 
+const loadPromptMarkdownFiles = async (promptsDir: string): Promise<string[]> => {
+  const entries = await fs.readdir(promptsDir, { withFileTypes: true });
+
+  const markdownFiles = entries
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b));
+
+  const contents: string[] = [];
+  for (const fileName of markdownFiles) {
+    const fullPath = path.join(promptsDir, fileName);
+    const content = (await fs.readFile(fullPath, 'utf8')).trim();
+    if (content !== '') {
+      contents.push(content);
+    }
+  }
+
+  return contents;
+};
+
+const syncPromptFilesToDatabase = async (promptsDir: string): Promise<void> => {
+  const promptContents = await loadPromptMarkdownFiles(promptsDir);
+
+  for (const content of promptContents) {
+    const existingPrompt = await Prompt.findOne({
+      where: { promptInMarkdown: content }
+    });
+
+    if (!existingPrompt) {
+      await Prompt.create({ promptInMarkdown: content });
+    }
+  }
+};
+
 const selectArticles = async (
   targetCount: number,
   thresholdDaysOld: number
@@ -200,6 +240,7 @@ const buildPrompt = (template: string, article: StateAssignerArticle): string =>
 
 const analyzeArticleWithOpenAi = async (
   keyOpenAi: string,
+  stateAssignerDirectories: StateAssignerDirectories,
   promptTemplate: string,
   article: StateAssignerArticle,
   signal: AbortSignal
@@ -232,6 +273,10 @@ const analyzeArticleWithOpenAi = async (
   if (!rawContent) {
     throw new Error('No response content from OpenAI');
   }
+
+  const responseFileName = `response-${article.id}-${new Date().toISOString().replace(/:/g, '-')}.json`;
+  const responseFilePath = path.join(stateAssignerDirectories.chatGptResponsesDir, responseFileName);
+  await fs.writeFile(responseFilePath, rawContent, 'utf8');
 
   const parsed = JSON.parse(rawContent) as ChatGptResponse;
 
@@ -318,6 +363,7 @@ export const processStateAssignmentsWithTimeout = async ({
   prompt,
   entityWhoCategorizesId,
   keyOpenAi,
+  stateAssignerDirectories,
   iterationTimeoutMs,
   signal,
   analyzeArticle,
@@ -334,7 +380,14 @@ export const processStateAssignmentsWithTimeout = async ({
 
     try {
       const result = await runWithIterationTimeout(
-        (iterationSignal) => analyzeArticle(keyOpenAi, prompt.content, article, iterationSignal),
+        (iterationSignal) =>
+          analyzeArticle(
+            keyOpenAi,
+            stateAssignerDirectories,
+            prompt.content,
+            article,
+            iterationSignal
+          ),
         iterationTimeoutMs,
         signal
       );
@@ -362,6 +415,10 @@ export const processStateAssignmentsWithTimeout = async ({
 
 const runLegacyWorkflow = async (context: StateAssignerJobContext): Promise<void> => {
   await ensureDbReady();
+  const stateAssignerDirectories = await ensureStateAssignerDirectories(
+    context.pathToStateAssignerFiles
+  );
+  await syncPromptFilesToDatabase(stateAssignerDirectories.promptsDir);
 
   const entityWhoCategorizesId = await resolveEntityWhoCategorizesId();
   const prompt = await getPrompt();
@@ -382,6 +439,7 @@ const runLegacyWorkflow = async (context: StateAssignerJobContext): Promise<void
     prompt,
     entityWhoCategorizesId,
     keyOpenAi: context.keyOpenAi,
+    stateAssignerDirectories,
     iterationTimeoutMs: DEFAULT_ITERATION_TIMEOUT_MS,
     signal: context.signal,
     analyzeArticle: analyzeArticleWithOpenAi,
@@ -402,7 +460,8 @@ export const createStateAssignerJobHandler = (
       signal: queueContext.signal,
       targetArticleThresholdDaysOld: input.targetArticleThresholdDaysOld,
       targetArticleStateReviewCount: input.targetArticleStateReviewCount,
-      keyOpenAi: input.keyOpenAi
+      keyOpenAi: input.keyOpenAi,
+      pathToStateAssignerFiles: input.pathToStateAssignerFiles
     });
   };
 };

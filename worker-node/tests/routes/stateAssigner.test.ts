@@ -15,6 +15,7 @@ const buildApp = (
     targetArticleThresholdDaysOld: number;
     targetArticleStateReviewCount: number;
     keyOpenAi: string;
+    pathToStateAssignerFiles: string;
   }) => (context: QueueExecutionContext) => Promise<void>
 ): express.Express => {
   const app = express();
@@ -57,7 +58,8 @@ describe('stateAssigner routes', () => {
 
   it('validates request body and enqueues state assigner job', async () => {
     const app = buildApp(queueEngine, {
-      KEY_OPEN_AI: 'test-key'
+      KEY_OPEN_AI: 'test-key',
+      PATH_TO_STATE_ASSIGNER_FILES: tempDirPath
     });
 
     const response = await request(app).post('/state-assigner/start-job').send({
@@ -79,7 +81,8 @@ describe('stateAssigner routes', () => {
 
   it('returns validation error when request body fields are invalid', async () => {
     const app = buildApp(queueEngine, {
-      KEY_OPEN_AI: 'test-key'
+      KEY_OPEN_AI: 'test-key',
+      PATH_TO_STATE_ASSIGNER_FILES: tempDirPath
     });
 
     const response = await request(app).post('/state-assigner/start-job').send({
@@ -99,6 +102,30 @@ describe('stateAssigner routes', () => {
         {
           field: 'targetArticleStateReviewCount',
           message: 'targetArticleStateReviewCount must be a positive integer'
+        }
+      ]
+    });
+  });
+
+  it('returns validation error when PATH_TO_STATE_ASSIGNER_FILES is missing', async () => {
+    const app = buildApp(queueEngine, {
+      KEY_OPEN_AI: 'test-key'
+    });
+
+    const response = await request(app).post('/state-assigner/start-job').send({
+      targetArticleThresholdDaysOld: 30,
+      targetArticleStateReviewCount: 50
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toEqual({
+      code: 'VALIDATION_ERROR',
+      message: 'Request validation failed',
+      status: 400,
+      details: [
+        {
+          field: 'PATH_TO_STATE_ASSIGNER_FILES',
+          message: 'PATH_TO_STATE_ASSIGNER_FILES env var is required'
         }
       ]
     });

@@ -12,6 +12,7 @@ interface StateAssignerRouteDependencies {
     targetArticleThresholdDaysOld: number;
     targetArticleStateReviewCount: number;
     keyOpenAi: string;
+    pathToStateAssignerFiles: string;
   }) => QueueJobHandler;
 }
 
@@ -82,6 +83,21 @@ const resolveOpenAiKey = (env: NodeJS.ProcessEnv): string => {
   return value.trim();
 };
 
+const resolveStateAssignerFilesPath = (env: NodeJS.ProcessEnv): string => {
+  const value = env.PATH_TO_STATE_ASSIGNER_FILES;
+
+  if (!value || value.trim() === '') {
+    throw AppError.validation([
+      {
+        field: 'PATH_TO_STATE_ASSIGNER_FILES',
+        message: 'PATH_TO_STATE_ASSIGNER_FILES env var is required'
+      }
+    ]);
+  }
+
+  return value.trim();
+};
+
 export const createStateAssignerRouter = (
   dependencies: StateAssignerRouteDependencies = {
     queueEngine: globalQueueEngine,
@@ -96,6 +112,7 @@ export const createStateAssignerRouter = (
     try {
       const endpointName = '/state-assigner/start-job';
       const openAiKey = resolveOpenAiKey(env);
+      const pathToStateAssignerFiles = resolveStateAssignerFilesPath(env);
       const body = validateStartJobBody(req.body);
 
       const enqueueResult = await queueEngine.enqueueJob({
@@ -103,7 +120,8 @@ export const createStateAssignerRouter = (
         run: buildJobHandler({
           targetArticleThresholdDaysOld: body.targetArticleThresholdDaysOld,
           targetArticleStateReviewCount: body.targetArticleStateReviewCount,
-          keyOpenAi: openAiKey
+          keyOpenAi: openAiKey,
+          pathToStateAssignerFiles
         })
       });
 

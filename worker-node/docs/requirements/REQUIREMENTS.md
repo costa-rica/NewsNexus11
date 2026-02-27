@@ -49,7 +49,7 @@ The NewsNexusLlmStateAssigner01 project made use of .env vars:
 - KEY_OPEN_AI
 - TARGET_ARTICLE_THRESHOLD_DAYS_OLD
 - TARGET_ARTICLE_STATE_REVIEW_COUNT
-- PATH_TO_SAVE_CHATGPT_RESPONSES
+- PATH_TO_STATE_ASSIGNER_FILES
 
 The other .env variables teh NewsNexusLlmStateAssigner01 used are already in the .env for the worker-node/ project and not unique to this particular functionality. Let's remove the TARGET_ARTICLE_THRESHOLD_DAYS_OLD and TARGET_ARTICLE_STATE_REVIEW_COUNT. These will be json body elements passed in the request. Let's rename them in the request to be camel case.
 
@@ -66,7 +66,7 @@ The worker-node/ will check for the .env variables on start and if not in the .e
 - PATH_TO_LOGS
 - NODE_ENV
 - KEY_OPEN_AI
-- PATH_TO_SAVE_CHATGPT_RESPONSES
+- PATH_TO_STATE_ASSIGNER_FILES
 - NAME_APP
 - NAME_DB
 - PATH_DATABASE
