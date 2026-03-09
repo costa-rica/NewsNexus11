@@ -116,11 +116,11 @@ If all tests pass, check off the completed tasks above and commit all changes be
 
 ---
 
-## Phase 3: Migrate the logger configuration
+## Phase 3: Migrate the logger configuration ✅
 
 Port the Winston logger, updating environment variable references to match NewsNexus11 conventions.
 
-- [ ] Migrate `src/config/logger.ts`
+- [x] Migrate `src/config/logger.ts`
   - Keep the existing implementation as-is (env vars: `NODE_ENV`, `NAME_APP`, `PATH_TO_LOGS`, `LOG_MAX_SIZE`, `LOG_MAX_FILES`)
   - The logger reads env vars at module load time; this will be important for test mocking
 
@@ -131,15 +131,15 @@ The logger executes side effects at import time (reads env vars, creates directo
 **File:** `tests/modules/logger.test.ts`
 
 Test cases:
-- [ ] Creates a Winston logger instance when all required env vars are set
-- [ ] Logger has `info`, `warn`, `error`, and `debug` methods
-- [ ] Uses console transport in `development` mode
-- [ ] Uses file transport in `production` mode
-- [ ] Uses `debug` log level in `development` mode
-- [ ] Uses `info` log level in `production` mode
-- [ ] Exits with error when `NODE_ENV` is missing (mock `process.exit` and `process.stderr.write`)
-- [ ] Exits with error when `NAME_APP` is missing
-- [ ] Exits with error when `PATH_TO_LOGS` is missing
+- [x] Creates a Winston logger instance when all required env vars are set
+- [x] Logger has `info`, `warn`, `error`, and `debug` methods
+- [x] Uses console transport in `development` mode
+- [x] Uses file transport in `production` mode
+- [x] Uses `debug` log level in `development` mode
+- [x] Uses `info` log level in `production` mode
+- [x] Exits with error when `NODE_ENV` is missing (mock `process.exit` and `process.stderr.write`)
+- [x] Exits with error when `NAME_APP` is missing
+- [x] Exits with error when `PATH_TO_LOGS` is missing
 
 ### Phase 3 Checkpoint
 
