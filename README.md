@@ -20,7 +20,10 @@ Other node.js microservices were triggered manually.
 ├── api/                            - Express.js REST API (TypeScript)
 │   ├── src/
 │   └── package.json
-├── db-models/                      - Shared Sequelize models (@newsnexus/db)
+├── db-manager/                     - Database management CLI tool (@newsnexus/db-manager)
+│   ├── src/
+│   └── package.json
+├── db-models/                      - Shared Sequelize models (@newsnexus/db-models)
 │   ├── src/
 │   └── package.json
 ├── docs/                           - Project-wide documentation
