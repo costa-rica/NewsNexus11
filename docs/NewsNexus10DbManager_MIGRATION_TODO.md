@@ -186,11 +186,11 @@ If all tests pass, check off the completed tasks above and commit all changes be
 
 ---
 
-## Phase 5: Migrate the delete articles module
+## Phase 5: Migrate the delete articles module ✅
 
 Port the article deletion module, updating imports from `newsnexus10db` to `@newsnexus/db-models`.
 
-- [ ] Migrate `src/modules/deleteArticles.ts`
+- [x] Migrate `src/modules/deleteArticles.ts`
   - Change `import { Article, ArticleApproved, ArticleIsRelevant } from "newsnexus10db"` to `from "@newsnexus/db-models"`
   - Change `import { logger } from "../config/logger"` — no change needed
   - Export types `DeleteArticlesResult` and `DeleteTrimResult` unchanged
@@ -202,19 +202,19 @@ Mock `@newsnexus/db-models` (Article, ArticleApproved, ArticleIsRelevant) and `.
 **File:** `tests/modules/deleteArticles.test.ts`
 
 Test cases for `deleteOldUnapprovedArticles()`:
-- [ ] Returns `{ deletedCount: 0 }` when no articles match the cutoff
-- [ ] Deletes articles older than the cutoff that are not in approved or relevant tables
-- [ ] Protects articles that appear in `ArticleApproved`
-- [ ] Protects articles that appear in `ArticleIsRelevant`
-- [ ] Returns a `cutoffDate` in `YYYY-MM-DD` format
-- [ ] Processes articles in batches (verify `Article.destroy` is called with batched IDs)
+- [x] Returns `{ deletedCount: 0 }` when no articles match the cutoff
+- [x] Deletes articles older than the cutoff that are not in approved or relevant tables
+- [x] Protects articles that appear in `ArticleApproved`
+- [x] Protects articles that appear in `ArticleIsRelevant`
+- [x] Returns a `cutoffDate` in `YYYY-MM-DD` format
+- [x] Processes articles in batches (verify `Article.destroy` is called with batched IDs)
 
 Test cases for `deleteOldestEligibleArticles()`:
-- [ ] Returns `{ deletedCount: 0 }` when no eligible articles exist
-- [ ] Deletes the requested number of oldest eligible articles
-- [ ] Protects articles in `ArticleApproved` and `ArticleIsRelevant`
-- [ ] Returns correct `requestedCount`, `foundCount`, and `deletedCount`
-- [ ] Handles case where `foundCount` is less than `requestedCount`
+- [x] Returns `{ deletedCount: 0 }` when no eligible articles exist
+- [x] Deletes the requested number of oldest eligible articles
+- [x] Protects articles in `ArticleApproved` and `ArticleIsRelevant`
+- [x] Returns correct `requestedCount`, `foundCount`, and `deletedCount`
+- [x] Handles case where `foundCount` is less than `requestedCount`
 
 ### Phase 5 Checkpoint
 
