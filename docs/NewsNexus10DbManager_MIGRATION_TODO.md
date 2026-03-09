@@ -312,11 +312,11 @@ If all tests pass, check off the completed tasks above and commit all changes be
 
 ---
 
-## Phase 8: Migrate the main entry point
+## Phase 8: Migrate the main entry point ✅
 
 Port `src/index.ts`, updating imports and wiring everything together.
 
-- [ ] Migrate `src/index.ts`
+- [x] Migrate `src/index.ts`
   - Change `require("newsnexus10db")` to `require("@newsnexus/db-models")`
   - Change `const { initModels, sequelize } = require("newsnexus10db")` to `require("@newsnexus/db-models")`
   - Keep all orchestration logic: CLI parsing → `initModels()` → `ensureDatabaseExists()` → conditional operations → status report → close
@@ -329,12 +329,12 @@ The entry point is an immediately-invoked async function. Test the extracted hel
 **File:** `tests/smoke/entrypoint.test.ts`
 
 Test cases:
-- [ ] `logStatus()` calls `logger.info` with formatted article counts
-- [ ] `ensureDatabaseExists()` throws when `PATH_DATABASE` or `NAME_DB` env vars are missing
-- [ ] `ensureDatabaseExists()` calls `sequelize.sync()` when the database file does not exist
-- [ ] `ensureDatabaseExists()` does not call `sequelize.sync()` when the database file exists
-- [ ] `databaseHasData()` returns `true` when at least one table has rows
-- [ ] `databaseHasData()` returns `false` when all tables are empty
+- [x] `logStatus()` calls `logger.info` with formatted article counts
+- [x] `ensureDatabaseExists()` throws when `PATH_DATABASE` or `NAME_DB` env vars are missing
+- [x] `ensureDatabaseExists()` calls `sequelize.sync()` when the database file does not exist
+- [x] `ensureDatabaseExists()` does not call `sequelize.sync()` when the database file exists
+- [x] `databaseHasData()` returns `true` when at least one table has rows
+- [x] `databaseHasData()` returns `false` when all tables are empty
 
 ### Phase 8 Checkpoint
 
