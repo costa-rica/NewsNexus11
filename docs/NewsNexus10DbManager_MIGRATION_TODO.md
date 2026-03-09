@@ -347,13 +347,13 @@ If all tests pass, check off the completed tasks above and commit all changes be
 
 ---
 
-## Phase 9: Build verification and integration test
+## Phase 9: Build verification and integration test ✅
 
 Verify the full package compiles, runs, and integrates with `@newsnexus/db-models`.
 
-- [ ] Run `npm run build` in `db-manager/` and verify `dist/` is produced with no TypeScript errors
-- [ ] Verify `dist/index.js` exists and is the correct entry point
-- [ ] Create a `.env.example` file documenting all required environment variables:
+- [x] Run `npm run build` in `db-manager/` and verify `dist/` is produced with no TypeScript errors
+- [x] Verify `dist/index.js` exists and is the correct entry point
+- [x] Create a `.env.example` file documenting all required environment variables:
   - `NODE_ENV` — `development`, `testing`, or `production`
   - `NAME_APP` — `NewsNexus11DbManager`
   - `PATH_TO_LOGS` — absolute path to logs directory
@@ -369,9 +369,9 @@ Verify the full package compiles, runs, and integrates with `@newsnexus/db-model
 **File:** `tests/smoke/build.test.ts`
 
 Test cases:
-- [ ] The `dist/` directory contains `index.js` after build
-- [ ] The `dist/` directory contains compiled files for each module (`modules/cli.js`, `modules/status.js`, `modules/deleteArticles.js`, `modules/backup.js`, `modules/zipImport.js`)
-- [ ] The `dist/` directory contains `config/logger.js`
+- [x] The `dist/` directory contains `index.js` after build
+- [x] The `dist/` directory contains compiled files for each module (`modules/cli.js`, `modules/status.js`, `modules/deleteArticles.js`, `modules/backup.js`, `modules/zipImport.js`)
+- [x] The `dist/` directory contains `config/logger.js`
 
 ### Phase 9 Checkpoint
 
