@@ -8,8 +8,9 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
+from loguru import logger
+
 from src.modules.deduper.config import DeduperConfig
-from src.modules.deduper.logging_adapter import get_deduper_logger
 from src.modules.deduper.orchestrator import DeduperOrchestrator
 from src.modules.deduper.repository import DeduperRepository
 
@@ -47,7 +48,7 @@ class JobManager:
         self.jobs: dict[int, JobRecord] = {}
         self.job_counter = 1
         self.lock = threading.Lock()
-        self.logger = get_deduper_logger(__name__)
+        self.logger = logger
 
     def create_job(self, report_id: int | None = None) -> JobRecord:
         with self.lock:

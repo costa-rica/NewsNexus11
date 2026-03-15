@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from loguru import logger
+
 from src.modules.deduper.config import DeduperConfig
 from src.modules.deduper.errors import DeduperProcessorError
-from src.modules.deduper.logging_adapter import get_deduper_logger
 from src.modules.deduper.repository import DeduperRepository
 from src.modules.deduper.utils.text_norm import (
     hamming_distance,
@@ -19,7 +20,7 @@ class ContentHashProcessor:
     def __init__(self, repository: DeduperRepository, config: DeduperConfig) -> None:
         self.repository = repository
         self.config = config
-        self.logger = get_deduper_logger(__name__)
+        self.logger = logger
         self.norm_cache: dict[int, str] = {}
 
     def execute(self, should_cancel=None) -> dict[str, int]:
@@ -38,7 +39,7 @@ class ContentHashProcessor:
         processed = 0
         batch_size = self.config.batch_size_content_hash
         checkpoint_interval = self.config.checkpoint_interval
-        self.logger.info("event=content_hash_start total=%s", len(total_candidates))
+        self.logger.info("event=content_hash_start total={}", len(total_candidates))
 
         while True:
             if processed % checkpoint_interval == 0 and cancel_check():
@@ -64,7 +65,7 @@ class ContentHashProcessor:
 
         stats = self.repository.get_content_hash_processing_stats()
         stats["processed"] = processed
-        self.logger.info("event=content_hash_complete processed=%s", processed)
+        self.logger.info("event=content_hash_complete processed={}", processed)
         return stats
 
     def _compare_content_with_details(

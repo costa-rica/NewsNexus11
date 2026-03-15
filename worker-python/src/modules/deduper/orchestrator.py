@@ -6,9 +6,10 @@ from datetime import datetime, timezone
 import time
 from typing import Any, Callable
 
+from loguru import logger
+
 from src.modules.deduper.config import DeduperConfig
 from src.modules.deduper.errors import DeduperProcessorError
-from src.modules.deduper.logging_adapter import get_deduper_logger
 from src.modules.deduper.processors.content_hash import ContentHashProcessor
 from src.modules.deduper.processors.embedding import EmbeddingProcessor
 from src.modules.deduper.processors.load import LoadProcessor
@@ -26,7 +27,7 @@ class DeduperOrchestrator:
     def __init__(self, repository: DeduperRepository, config: DeduperConfig) -> None:
         self.repository = repository
         self.config = config
-        self.logger = get_deduper_logger(__name__)
+        self.logger = logger
 
     def check_ready(self) -> bool:
         return self.repository.healthcheck()
@@ -176,7 +177,7 @@ class DeduperOrchestrator:
                 )
                 summary.steps.append(progress)
                 self.logger.info(
-                    "event=step_start step=%s report_id=%s",
+                    "event=step_start step={} report_id={}",
                     step,
                     summary.report_id,
                 )
@@ -191,7 +192,7 @@ class DeduperOrchestrator:
                 progress.message = str(result)
                 duration_ms = int((time.perf_counter() - step_started) * 1000)
                 self.logger.info(
-                    "event=step_complete step=%s processed=%s duration_ms=%s",
+                    "event=step_complete step={} processed={} duration_ms={}",
                     step,
                     progress.processed,
                     duration_ms,
@@ -199,14 +200,14 @@ class DeduperOrchestrator:
 
             summary.status = "completed"
             self.logger.info(
-                "event=pipeline_complete mode=%s report_id=%s",
+                "event=pipeline_complete mode={} report_id={}",
                 summary.mode,
                 summary.report_id,
             )
         except DeduperProcessorError:
             summary.status = "cancelled"
             self.logger.warning(
-                "event=pipeline_cancelled mode=%s report_id=%s",
+                "event=pipeline_cancelled mode={} report_id={}",
                 summary.mode,
                 summary.report_id,
             )
@@ -214,7 +215,7 @@ class DeduperOrchestrator:
         except Exception as exc:
             summary.status = "failed"
             self.logger.error(
-                "event=pipeline_failed mode=%s report_id=%s error=%s",
+                "event=pipeline_failed mode={} report_id={} error={}",
                 summary.mode,
                 summary.report_id,
                 exc,

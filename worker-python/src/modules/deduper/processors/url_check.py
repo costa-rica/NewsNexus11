@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from urllib.parse import urlparse, urlunparse
 
+from loguru import logger
+
 from src.modules.deduper.config import DeduperConfig
 from src.modules.deduper.errors import DeduperProcessorError
-from src.modules.deduper.logging_adapter import get_deduper_logger
 from src.modules.deduper.repository import DeduperRepository
 
 
@@ -14,7 +15,7 @@ class UrlCheckProcessor:
     def __init__(self, repository: DeduperRepository, config: DeduperConfig) -> None:
         self.repository = repository
         self.config = config
-        self.logger = get_deduper_logger(__name__)
+        self.logger = logger
 
     def execute(self, should_cancel=None) -> dict[str, int]:
         cancel_check = should_cancel or (lambda: False)
@@ -27,7 +28,7 @@ class UrlCheckProcessor:
         processed = 0
         checkpoint_interval = self.config.checkpoint_interval
 
-        self.logger.info("event=url_check_start total=%s", len(records))
+        self.logger.info("event=url_check_start total={}", len(records))
 
         for record in records:
             if processed % checkpoint_interval == 0 and cancel_check():
@@ -48,7 +49,7 @@ class UrlCheckProcessor:
 
         stats = self.repository.get_url_check_processing_stats()
         stats["processed"] = processed
-        self.logger.info("event=url_check_complete processed=%s", processed)
+        self.logger.info("event=url_check_complete processed={}", processed)
         return stats
 
     def _compare_urls(self, url1: str | None, url2: str | None) -> bool:

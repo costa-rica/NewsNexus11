@@ -5,9 +5,10 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from loguru import logger
+
 from src.modules.deduper.config import DeduperConfig
 from src.modules.deduper.errors import DeduperProcessorError
-from src.modules.deduper.logging_adapter import get_deduper_logger
 from src.modules.deduper.repository import DeduperRepository
 
 try:
@@ -25,7 +26,7 @@ class EmbeddingProcessor:
     def __init__(self, repository: DeduperRepository, config: DeduperConfig) -> None:
         self.repository = repository
         self.config = config
-        self.logger = get_deduper_logger(__name__)
+        self.logger = logger
         self.model: Any = None
         self.embedding_cache: dict[int, Any] = {}
 
@@ -56,7 +57,7 @@ class EmbeddingProcessor:
         updates: list[dict] = []
         processed = 0
         checkpoint_interval = self.config.checkpoint_interval
-        self.logger.info("event=embedding_start total=%s", len(records))
+        self.logger.info("event=embedding_start total={}", len(records))
 
         for record in records:
             if processed % checkpoint_interval == 0 and cancel_check():
@@ -82,7 +83,7 @@ class EmbeddingProcessor:
         stats = self.repository.get_embedding_processing_stats()
         stats["processed"] = processed
         stats["status"] = "ok"
-        self.logger.info("event=embedding_complete processed=%s", processed)
+        self.logger.info("event=embedding_complete processed={}", processed)
         return stats
 
     def _load_model(self) -> None:

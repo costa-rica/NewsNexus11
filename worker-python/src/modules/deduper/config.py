@@ -13,8 +13,6 @@ FALSE_VALUES = {"0", "false", "no", "off"}
 REQUIRED_STARTUP_ENV_KEYS = (
     "PATH_DATABASE",
     "NAME_DB",
-    "NAME_APP",
-    "PATH_TO_LOGS",
 )
 
 

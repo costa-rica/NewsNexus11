@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from loguru import logger
+
 from src.modules.deduper.config import DeduperConfig
 from src.modules.deduper.errors import DeduperProcessorError
-from src.modules.deduper.logging_adapter import get_deduper_logger
 from src.modules.deduper.repository import DeduperRepository
 from src.modules.deduper.utils.csv_input import read_article_ids_from_csv
 
@@ -13,7 +14,7 @@ class LoadProcessor:
     def __init__(self, repository: DeduperRepository, config: DeduperConfig) -> None:
         self.repository = repository
         self.config = config
-        self.logger = get_deduper_logger(__name__)
+        self.logger = logger
 
     def execute(
         self,
@@ -78,7 +79,7 @@ class LoadProcessor:
         if batch:
             self.repository.insert_article_duplicate_analysis_batch(batch)
 
-        self.logger.info("event=load_complete processed=%s", processed)
+        self.logger.info("event=load_complete processed={}", processed)
 
         return {
             "processed": processed,
