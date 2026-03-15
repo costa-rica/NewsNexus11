@@ -10,8 +10,8 @@ export default function ManageAutomation() {
         Manage Automations
       </h1>
 
-      <ArticleRequestSpreadsheetsSection />
       <GoogleRssSection />
+      <ArticleRequestSpreadsheetsSection />
     </div>
   );
 }
