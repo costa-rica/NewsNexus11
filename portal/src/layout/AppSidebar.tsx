@@ -78,7 +78,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <GearIcon />,
-    name: "Settings",
+    name: "User Settings",
     path: "/user-settings",
   },
   {

@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { WebBrowserExtensionsSection } from "@/components/user-settings/WebBrowserExtensionsSection";
 import {
 	updateRequestTableBodyParams,
 } from "@/store/features/user/userSlice";
@@ -88,6 +89,8 @@ export default function UserSettings() {
 					</div>
 				</div>
 			</div>
+
+			<WebBrowserExtensionsSection />
 		</div>
 	);
 }
