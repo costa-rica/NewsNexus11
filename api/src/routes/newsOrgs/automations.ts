@@ -1,4 +1,5 @@
 import express from 'express';
+import axios from 'axios';
 import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
@@ -17,6 +18,10 @@ function getErrorMessage(error: unknown): string {
 
 function getAutomationExcelDir(): string | null {
   return process.env.PATH_TO_AUTOMATION_EXCEL_FILES || null;
+}
+
+function getWorkerNodeBaseUrl(): string | null {
+  return process.env.URL_BASE_NEWS_NEXUS_WORKER_NODE || null;
 }
 
 const storage = multer.diskStorage({
@@ -105,5 +110,46 @@ router.post(
     return res.json({ result: true, message: 'File uploaded successfully.' });
   }
 );
+
+router.post('/request-google-rss/start-job', authenticateToken, async (_req, res) => {
+  const workerNodeBaseUrl = getWorkerNodeBaseUrl();
+
+  if (!workerNodeBaseUrl) {
+    return res.status(500).json({
+      result: false,
+      message: 'URL_BASE_NEWS_NEXUS_WORKER_NODE is not configured.',
+    });
+  }
+
+  try {
+    const response = await axios.post(
+      `${workerNodeBaseUrl}/request-google-rss/start-job`,
+      {},
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return res.status(response.status).json(response.data);
+  } catch (error: unknown) {
+    logger.error('Error starting Google RSS worker job:', error);
+
+    if (axios.isAxiosError(error)) {
+      return res.status(error.response?.status || 500).json(
+        error.response?.data || {
+          result: false,
+          message: error.message,
+        }
+      );
+    }
+
+    return res.status(500).json({
+      result: false,
+      message: getErrorMessage(error),
+    });
+  }
+});
 
 export = router;

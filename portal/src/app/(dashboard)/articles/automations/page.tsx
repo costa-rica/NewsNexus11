@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { ArticleRequestSpreadsheetsSection } from "@/components/automations/ArticleRequestSpreadsheetsSection";
+import { GoogleRssSection } from "@/components/automations/GoogleRssSection";
 
 export default function ManageAutomation() {
   return (
@@ -10,6 +11,7 @@ export default function ManageAutomation() {
       </h1>
 
       <ArticleRequestSpreadsheetsSection />
+      <GoogleRssSection />
     </div>
   );
 }
