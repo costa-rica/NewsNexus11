@@ -76,29 +76,30 @@ pytest tests/unit/queue/test_queue_config.py tests/unit/queue/test_queue_types.p
 
 ## Phase 2. Build the JSON queue store
 
-- [ ] Create a queue store module responsible for initializing, reading, and writing `queue-jobs.json`.
-- [ ] Ensure the store creates the `worker-python` subdirectory under `PATH_UTILTIES` when missing.
-- [ ] Ensure the store creates an empty `queue-jobs.json` file when missing.
-- [ ] Implement serialized writes to avoid concurrent write corruption.
-- [ ] Implement atomic file replacement behavior for updates.
-- [ ] Implement methods to:
+- [x] Create a queue store module responsible for initializing, reading, and writing `queue-jobs.json`.
+- [x] Ensure the store creates the `worker-python` subdirectory under `PATH_UTILTIES` when missing.
+- [x] Ensure the store creates an empty `queue-jobs.json` file when missing.
+- [x] Implement serialized writes to avoid concurrent write corruption.
+- [x] Implement atomic file replacement behavior for updates.
+- [x] Implement methods to:
   - load all jobs
   - append a job
   - update a job by `jobId`
   - fetch a job by `jobId`
   - fetch the latest job by `endpointName`
-- [ ] Decide and implement queue file shape:
+- [x] Decide and implement queue file shape:
   - single array of jobs
   - or object wrapper with metadata plus jobs array
-- [ ] Add a bounded retention policy or define that pruning is deferred to a later phase.
+- [x] Add a bounded retention policy or define that pruning is deferred to a later phase.
+  - pruning is deferred to a later phase; the current store persists all jobs in a `{ "jobs": [] }` JSON object
 
 Tests to implement in this phase:
 
-- [ ] Add unit tests for first-run initialization with an empty temp directory.
-- [ ] Add unit tests for append and update behavior.
-- [ ] Add unit tests for latest-job lookup by `endpointName`.
-- [ ] Add unit tests for atomic update behavior at the store boundary.
-- [ ] Add at least one failure-path test for invalid JSON or unreadable file state.
+- [x] Add unit tests for first-run initialization with an empty temp directory.
+- [x] Add unit tests for append and update behavior.
+- [x] Add unit tests for latest-job lookup by `endpointName`.
+- [x] Add unit tests for atomic update behavior at the store boundary.
+- [x] Add at least one failure-path test for invalid JSON or unreadable file state.
 
 Suggested test files:
 
