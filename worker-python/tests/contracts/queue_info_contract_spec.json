@@ -1,0 +1,28 @@
+{
+  "endpoints": [
+    {
+      "path": "/queue-info/check-status/{job_id}",
+      "method": "GET",
+      "expected_status": 200,
+      "required_json_keys": ["job"]
+    },
+    {
+      "path": "/queue-info/latest-job",
+      "method": "GET",
+      "expected_status": 200,
+      "required_json_keys": ["job"]
+    },
+    {
+      "path": "/queue-info/queue-status",
+      "method": "GET",
+      "expected_status": 200,
+      "required_json_keys": ["summary", "runningJob", "queuedJobs"]
+    },
+    {
+      "path": "/queue-info/cancel-job/{job_id}",
+      "method": "POST",
+      "expected_status": 200,
+      "required_json_keys": ["jobId", "outcome"]
+    }
+  ]
+}

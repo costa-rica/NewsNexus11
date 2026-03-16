@@ -25,3 +25,7 @@ def resolve_queue_jobs_path() -> Path:
 
 def validate_queue_startup_env() -> None:
     get_path_utilities()
+
+
+def resolve_default_queue_store_path() -> Path:
+    return resolve_queue_jobs_path()

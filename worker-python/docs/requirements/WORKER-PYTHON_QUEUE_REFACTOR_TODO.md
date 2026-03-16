@@ -168,21 +168,22 @@ pytest tests/unit/queue/test_queue_engine.py tests/unit/queue/test_queue_status.
 
 ## Phase 4. Add queue-info routes
 
-- [ ] Add a dedicated queue-info route module.
-- [ ] Add `GET /queue-info/check-status/{jobId}`.
-- [ ] Add `GET /queue-info/latest-job`.
-- [ ] Add `GET /queue-info/queue-status`.
-- [ ] Add `POST /queue-info/cancel-job/{jobId}`.
-- [ ] Validate required route and query parameters.
-- [ ] Return stable JSON response shapes that match the intended API proxy contract.
-- [ ] Mount the queue-info router in `src/main.py`.
-- [ ] Decide whether route naming should fully match worker-node or remain Python-style with minimal variation. Favor matching worker-node unless a framework constraint prevents it.
+- [x] Add a dedicated queue-info route module.
+- [x] Add `GET /queue-info/check-status/{jobId}`.
+- [x] Add `GET /queue-info/latest-job`.
+- [x] Add `GET /queue-info/queue-status`.
+- [x] Add `POST /queue-info/cancel-job/{jobId}`.
+- [x] Validate required route and query parameters.
+- [x] Return stable JSON response shapes that match the intended API proxy contract.
+- [x] Mount the queue-info router in `src/main.py`.
+- [x] Decide whether route naming should fully match worker-node or remain Python-style with minimal variation. Favor matching worker-node unless a framework constraint prevents it.
+  - route naming now matches the worker-node contract closely
 
 Tests to implement in this phase:
 
-- [ ] Add integration tests for each queue-info route using the FastAPI test client.
-- [ ] Add success-path and failure-path coverage for missing job IDs and missing `endpointName`.
-- [ ] Add contract tests for stable response shape on:
+- [x] Add integration tests for each queue-info route using the FastAPI test client.
+- [x] Add success-path and failure-path coverage for missing job IDs and missing `endpointName`.
+- [x] Add contract tests for stable response shape on:
   - latest-job
   - check-status
   - queue-status
