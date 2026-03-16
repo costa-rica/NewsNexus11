@@ -114,11 +114,10 @@ Each package reads from its own `.env`. Key variables:
 - Title should be a clear summary, max 50 characters.
 - Use the body (optional) to explain _why_, not just _what_.
 - Bullet points should be concise and high-level.
-- try to use ideal format, but if the commit has many "types" then
+- Try to use the ideal format. But if the commit is too broad or has too many different types, then use the borad format.
+- When committing changes from TODO or task list that is already part of the repo and has phases, make refernce to the file and phase instead of writing a long commit message.
 
 ### Format
-
-Try to use the ideal format. But if the commit is too broad or has too many different types, then use the borad format.
 
 #### Ideal Format
 
