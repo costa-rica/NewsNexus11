@@ -81,21 +81,21 @@ pytest tests/unit/location_scorer/test_config.py tests/unit/location_scorer/test
 
 ## Phase 2. Build the repository
 
-- [ ] Create `src/modules/location_scorer/repository.py` following the deduper repository pattern:
+- [x] Create `src/modules/location_scorer/repository.py` following the deduper repository pattern:
   - Use raw `sqlite3` (not SQLAlchemy) to match the deduper pattern.
   - Lazy connection initialization with `get_connection()`.
   - `close()` method for cleanup.
   - `healthcheck()` method.
-- [ ] Implement `get_entity_who_categorized_article_id(ai_entity_name)`:
+- [x] Implement `get_entity_who_categorized_article_id(ai_entity_name)`:
   - Look up `ArtificialIntelligences.id` by name.
   - Look up `EntityWhoCategorizedArticles.id` by `artificialIntelligenceId`.
   - Return the entity ID or `None`.
-- [ ] Implement `get_unscored_articles(entity_id, limit=None)`:
+- [x] Implement `get_unscored_articles(entity_id, limit=None)`:
   - Query `Articles` for `id`, `title`, `description`.
   - Exclude articles already in `ArticleEntityWhoCategorizedArticleContracts` for this entity.
   - Apply optional limit.
   - Return list of dicts.
-- [ ] Implement `write_scores_batch(entity_id, scores)`:
+- [x] Implement `write_scores_batch(entity_id, scores)`:
   - Insert rows into `ArticleEntityWhoCategorizedArticleContracts`.
   - Fields: `articleId`, `entityWhoCategorizesId`, `keyword`, `keywordRating`, `createdAt`, `updatedAt`.
   - Skip duplicates gracefully using the existing unique constraint on `(articleId, entityWhoCategorizesId, keyword)` and catch `IntegrityError`.
@@ -103,11 +103,11 @@ pytest tests/unit/location_scorer/test_config.py tests/unit/location_scorer/test
 
 Tests to implement in this phase:
 
-- [ ] Add unit tests using an in-memory SQLite database with the required table schemas.
-- [ ] Test `get_entity_who_categorized_article_id()` with existing and missing entities.
-- [ ] Test `get_unscored_articles()` with scored and unscored articles, and with limit.
-- [ ] Test `write_scores_batch()` with valid data and duplicate handling.
-- [ ] Test `healthcheck()` success and failure.
+- [x] Add unit tests using an in-memory SQLite database with the required table schemas.
+- [x] Test `get_entity_who_categorized_article_id()` with existing and missing entities.
+- [x] Test `get_unscored_articles()` with scored and unscored articles, and with limit.
+- [x] Test `write_scores_batch()` with valid data and duplicate handling.
+- [x] Test `healthcheck()` success and failure.
 
 Suggested test files:
 
