@@ -262,4 +262,25 @@ describe("news org automations routes", () => {
       },
     );
   });
+
+  test("POST /automations/location-scorer/start-job returns worker-python unavailable message on connection refusal", async () => {
+    mockAxios.isAxiosError.mockReturnValue(true);
+    mockAxios.post.mockRejectedValue({
+      code: "ECONNREFUSED",
+      message: "connect ECONNREFUSED 127.0.0.1:5000",
+      response: undefined,
+    });
+
+    const app = buildApp();
+    const response = await request(app)
+      .post("/automations/location-scorer/start-job")
+      .send({});
+
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({
+      result: false,
+      message:
+        "Unable to reach the worker-python app. Make sure the worker-python service is running and try again.",
+    });
+  });
 });
