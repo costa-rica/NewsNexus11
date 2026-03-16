@@ -130,18 +130,18 @@ pytest tests/unit/location_scorer/test_repository.py
 
 ### 3a. Load processor
 
-- [ ] Create `src/modules/location_scorer/processors/load.py`.
-- [ ] Implement `LoadProcessor` with `execute(should_cancel=None)`:
+- [x] Create `src/modules/location_scorer/processors/load.py`.
+- [x] Implement `LoadProcessor` with `execute(should_cancel=None)`:
   - Use repository to look up the AI entity ID.
   - Raise `LocationScorerConfigError` if the AI entity is not found in the database.
   - Use repository to fetch unscored articles.
   - Return `{ "processed": count, "articles": list }` where articles is the list of unscored article dicts.
-- [ ] Support `should_cancel` callback for cooperative cancellation.
+- [x] Support `should_cancel` callback for cooperative cancellation.
 
 ### 3b. Classify processor
 
-- [ ] Create `src/modules/location_scorer/processors/classify.py`.
-- [ ] Implement `ClassifyProcessor` with `execute(articles, should_cancel=None)`:
+- [x] Create `src/modules/location_scorer/processors/classify.py`.
+- [x] Implement `ClassifyProcessor` with `execute(articles, should_cancel=None)`:
   - Accept the articles list from the load processor output.
   - Load `facebook/bart-large-mnli` model via `transformers.pipeline("zero-shot-classification")`.
   - For each article, classify `title + "\n\n" + description` against labels: `"Occurred in the United States"`, `"Occurred outside the United States"`.
@@ -149,12 +149,12 @@ pytest tests/unit/location_scorer/test_repository.py
   - Skip articles with empty title and description.
   - Check `should_cancel` at checkpoint intervals.
   - Return `{ "processed": count, "scores": list_of_score_dicts }` where each score dict has `article_id`, `score`, `rating_for`.
-- [ ] Implement lazy model loading so the model is loaded once and reused across calls.
+- [x] Implement lazy model loading so the model is loaded once and reused across calls.
 
 ### 3c. Write processor
 
-- [ ] Create `src/modules/location_scorer/processors/write.py`.
-- [ ] Implement `WriteProcessor` with `execute(entity_id, scores, should_cancel=None)`:
+- [x] Create `src/modules/location_scorer/processors/write.py`.
+- [x] Implement `WriteProcessor` with `execute(entity_id, scores, should_cancel=None)`:
   - Accept the entity ID and scores list from prior processors.
   - Use repository `write_scores_batch()` to insert scores in batches.
   - Check `should_cancel` between batches.
@@ -162,8 +162,8 @@ pytest tests/unit/location_scorer/test_repository.py
 
 ### 3d. Orchestrator
 
-- [ ] Create `src/modules/location_scorer/orchestrator.py`.
-- [ ] Implement `LocationScorerOrchestrator` following the deduper orchestrator pattern:
+- [x] Create `src/modules/location_scorer/orchestrator.py`.
+- [x] Implement `LocationScorerOrchestrator` following the deduper orchestrator pattern:
   - Constructor accepts `LocationScorerRepository` and `LocationScorerConfig`.
   - Implement `run_score(limit=None, should_cancel=None)`:
     - Step 1: `LoadProcessor.execute()` to get unscored articles.
@@ -171,17 +171,16 @@ pytest tests/unit/location_scorer/test_repository.py
     - Step 3: `WriteProcessor.execute(entity_id, scores)` to write results.
   - Use `_execute_pipeline_steps()` pattern with `StepProgress` tracking.
   - Return `PipelineSummary`.
-- [ ] Implement `check_ready()` via repository healthcheck.
-- [ ] Persist enough result metadata during execution to support a more informative portal status display without introducing new shared queue status enum values.
+- [x] Implement `check_ready()` via repository healthcheck.
 
 Tests to implement in this phase:
 
-- [ ] Add unit tests for `LoadProcessor` with mocked repository.
-- [ ] Add unit tests for `ClassifyProcessor` with a mocked `transformers.pipeline` to avoid downloading the real model.
-- [ ] Add unit tests for `WriteProcessor` with mocked repository.
-- [ ] Add unit tests for orchestrator pipeline flow with all processors mocked.
-- [ ] Add cancellation tests for each processor and the orchestrator.
-- [ ] Add at least one failure-path test for missing AI entity in the load step.
+- [x] Add unit tests for `LoadProcessor` with mocked repository.
+- [x] Add unit tests for `ClassifyProcessor` with a mocked `transformers.pipeline` to avoid downloading the real model.
+- [x] Add unit tests for `WriteProcessor` with mocked repository.
+- [x] Add unit tests for orchestrator pipeline flow with all processors mocked.
+- [x] Add cancellation tests for each processor and the orchestrator.
+- [x] Add at least one failure-path test for missing AI entity in the load step.
 
 Suggested test files:
 
@@ -216,6 +215,7 @@ This phase requires the shared queue engine from the queue refactor TODO (at lea
   - Create `LocationScorerOrchestrator` and `LocationScorerRepository`.
   - Call `orchestrator.run_score(limit=limit, should_cancel=cancel_callback)`.
   - Ensure repository is closed in a `finally` block.
+- [ ] Persist enough result metadata during execution to support a more informative portal status display without introducing new shared queue status enum values.
 - [ ] Register the location scorer router in `src/main.py`.
 - [ ] Add `validate_location_scorer_startup_env()` call to the startup validation block in `src/main.py`.
 - [ ] Confirm that queue-info endpoints (`/queue-info/latest-job?endpointName=/location-scorer/start-job`, `/queue-info/check-status/{jobId}`, `/queue-info/cancel-job/{jobId}`) work for location scorer jobs without any changes to the queue-info router.
