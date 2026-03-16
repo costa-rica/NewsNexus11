@@ -43,6 +43,7 @@ function getErrorMessage(errorBody: string): string {
   try {
     const parsed = JSON.parse(errorBody) as {
       error?: { message?: string; details?: Array<{ field: string; message: string }> };
+      message?: string;
     };
 
     if (parsed.error?.details && parsed.error.details.length > 0) {
@@ -53,6 +54,10 @@ function getErrorMessage(errorBody: string): string {
 
     if (parsed.error?.message) {
       return parsed.error.message;
+    }
+
+    if (parsed.message) {
+      return parsed.message;
     }
   } catch (_error) {
     return errorBody;

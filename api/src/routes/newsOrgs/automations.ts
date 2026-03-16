@@ -105,6 +105,25 @@ function forwardWorkerPythonAxiosError(
   return forwardAxiosError(res, error);
 }
 
+function forwardWorkerNodeAxiosError(
+  res: express.Response,
+  error: unknown
+): express.Response {
+  if (
+    axios.isAxiosError(error) &&
+    !error.response &&
+    error.code === 'ECONNREFUSED'
+  ) {
+    return res.status(502).json({
+      result: false,
+      message:
+        'Unable to reach the worker-node app. Make sure the worker-node service is running and try again.',
+    });
+  }
+
+  return forwardAxiosError(res, error);
+}
+
 const storage = multer.diskStorage({
   destination: function (_req: any, _file: any, cb: any) {
     const excelFilesDir = getAutomationExcelDir();
@@ -212,7 +231,7 @@ router.post('/request-google-rss/start-job', authenticateToken, async (_req, res
     return res.status(response.status).json(response.data);
   } catch (error: unknown) {
     logger.error('Error starting Google RSS worker job:', error);
-    return forwardAxiosError(res, error);
+    return forwardWorkerNodeAxiosError(res, error);
   }
 });
 
@@ -236,7 +255,7 @@ router.post('/state-assigner/start-job', authenticateToken, async (req, res) => 
     return res.status(response.status).json(response.data);
   } catch (error: unknown) {
     logger.error('Error starting state assigner worker job:', error);
-    return forwardAxiosError(res, error);
+    return forwardWorkerNodeAxiosError(res, error);
   }
 });
 

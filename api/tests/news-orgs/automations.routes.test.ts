@@ -67,6 +67,27 @@ describe("news org automations routes", () => {
     );
   });
 
+  test("POST /automations/request-google-rss/start-job returns worker-node unavailable message on connection refusal", async () => {
+    mockAxios.isAxiosError.mockReturnValue(true);
+    mockAxios.post.mockRejectedValue({
+      code: "ECONNREFUSED",
+      message: "connect ECONNREFUSED 127.0.0.1:3002",
+      response: undefined,
+    });
+
+    const app = buildApp();
+    const response = await request(app).post(
+      "/automations/request-google-rss/start-job",
+    );
+
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({
+      result: false,
+      message:
+        "Unable to reach the worker-node app. Make sure the worker-node service is running and try again.",
+    });
+  });
+
   test("GET /automations/worker-node/latest-job proxies latest worker job", async () => {
     mockAxios.get.mockResolvedValue({
       data: {
@@ -140,6 +161,30 @@ describe("news org automations routes", () => {
         },
       },
     );
+  });
+
+  test("POST /automations/state-assigner/start-job returns worker-node unavailable message on connection refusal", async () => {
+    mockAxios.isAxiosError.mockReturnValue(true);
+    mockAxios.post.mockRejectedValue({
+      code: "ECONNREFUSED",
+      message: "connect ECONNREFUSED 127.0.0.1:3002",
+      response: undefined,
+    });
+
+    const app = buildApp();
+    const response = await request(app)
+      .post("/automations/state-assigner/start-job")
+      .send({
+        targetArticleStateReviewCount: 100,
+        targetArticleThresholdDaysOld: 180,
+      });
+
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({
+      result: false,
+      message:
+        "Unable to reach the worker-node app. Make sure the worker-node service is running and try again.",
+    });
   });
 
   test("POST /automations/worker-node/cancel-job/:jobId proxies cancel response", async () => {
