@@ -121,30 +121,31 @@ pytest tests/unit/queue/test_job_store.py tests/unit/queue/test_job_store_latest
 
 ## Phase 3. Build the queue engine
 
-- [ ] Create a queue engine that separates enqueueing and execution from workflow-specific logic.
-- [ ] Ensure queued jobs transition through:
+- [x] Create a queue engine that separates enqueueing and execution from workflow-specific logic.
+- [x] Ensure queued jobs transition through:
   - `queued`
   - `running`
   - terminal state
-- [ ] Implement generation of 4-digit zero-padded string `jobId` values using the JSON store.
-- [ ] Ensure the engine persists lifecycle transitions back to `queue-jobs.json`.
-- [ ] Implement single-job lookup by `jobId`.
-- [ ] Implement latest-job lookup by `endpointName`.
-- [ ] Implement queue summary generation for queued and running jobs.
-- [ ] Implement cancellation for:
+- [x] Implement generation of 4-digit zero-padded string `jobId` values using the JSON store.
+- [x] Ensure the engine persists lifecycle transitions back to `queue-jobs.json`.
+- [x] Implement single-job lookup by `jobId`.
+- [x] Implement latest-job lookup by `endpointName`.
+- [x] Implement queue summary generation for queued and running jobs.
+- [x] Implement cancellation for:
   - queued jobs
   - running jobs using cooperative cancellation
-- [ ] Define restart behavior for jobs left in `queued` or `running` state after process restart.
+- [x] Define restart behavior for jobs left in `queued` or `running` state after process restart.
+  - current behavior marks those jobs as `failed` with `failureReason = "worker_restarted_before_completion"`
 
 Tests to implement in this phase:
 
-- [ ] Add unit tests for enqueue behavior and initial `queued` status.
-- [ ] Add unit tests for running and completion transitions.
-- [ ] Add unit tests for failure transitions with `failureReason`.
-- [ ] Add unit tests for queued-job cancel behavior.
-- [ ] Add unit tests for running-job cancel-request behavior.
-- [ ] Add unit tests for latest-job lookup through the queue engine.
-- [ ] Add unit tests for queue summary behavior.
+- [x] Add unit tests for enqueue behavior and initial `queued` status.
+- [x] Add unit tests for running and completion transitions.
+- [x] Add unit tests for failure transitions with `failureReason`.
+- [x] Add unit tests for queued-job cancel behavior.
+- [x] Add unit tests for running-job cancel-request behavior.
+- [x] Add unit tests for latest-job lookup through the queue engine.
+- [x] Add unit tests for queue summary behavior.
 
 Suggested test files:
 
