@@ -209,23 +209,24 @@ pytest tests/integration/test_queue_info_routes.py tests/contracts/test_queue_in
 
 ## Phase 5. Migrate deduper onto the shared queue infrastructure
 
-- [ ] Refactor deduper job creation to use the shared queue engine instead of the current in-memory-only `job_manager` flow.
-- [ ] Assign a stable workflow identifier for deduper, for example `/deduper/start-job` or another final endpoint name chosen by the team.
-- [ ] Preserve existing deduper behavior where needed while routing storage and lifecycle updates through the new queue store.
-- [ ] Ensure deduper cancellation integrates with the shared queue cancellation mechanism.
-- [ ] Ensure deduper status lookups remain available during migration.
-- [ ] Decide whether to keep existing deduper routes temporarily for backward compatibility.
-- [ ] Remove or reduce duplicate logic in the legacy `job_manager` after the new path is verified.
+- [x] Refactor deduper job creation to use the shared queue engine instead of the current in-memory-only `job_manager` flow.
+- [x] Assign a stable workflow identifier for deduper, for example `/deduper/start-job` or another final endpoint name chosen by the team.
+- [x] Preserve existing deduper behavior where needed while routing storage and lifecycle updates through the new queue store.
+- [x] Ensure deduper cancellation integrates with the shared queue cancellation mechanism.
+- [x] Ensure deduper status lookups remain available during migration.
+- [x] Decide whether to keep existing deduper routes temporarily for backward compatibility.
+  - existing `/deduper/*` routes remain in place while running on the shared queue backend
+- [x] Remove or reduce duplicate logic in the legacy `job_manager` after the new path is verified.
 
 Tests to implement in this phase:
 
-- [ ] Add unit tests for any deduper-to-queue adapter logic.
-- [ ] Update integration tests so deduper job creation writes to the JSON queue store.
-- [ ] Add an end-to-end integration test proving:
+- [x] Add unit tests for any deduper-to-queue adapter logic.
+- [x] Update integration tests so deduper job creation writes to the JSON queue store.
+- [x] Add an end-to-end integration test proving:
   - job creation returns a string `jobId`
   - queue-info latest-job can find the deduper job by workflow
   - cancel or completion updates are persisted to `queue-jobs.json`
-- [ ] Preserve or update existing deduper route tests so backward compatibility is explicit.
+- [x] Preserve or update existing deduper route tests so backward compatibility is explicit.
 
 Suggested test files:
 

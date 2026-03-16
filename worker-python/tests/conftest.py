@@ -15,8 +15,7 @@ from src.services.job_manager import job_manager
 
 
 def _reset_jobs() -> None:
-    job_manager.jobs.clear()
-    job_manager.job_counter = 1
+    job_manager.reset_for_tests()
 
 
 import pytest

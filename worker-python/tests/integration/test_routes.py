@@ -1,6 +1,16 @@
 import pytest
 import sqlite3
 
+from src.modules.queue.engine import GlobalQueueEngine
+from src.modules.queue.store import QueueJobStore
+from src.services.job_manager import JobManager
+
+
+def _create_job_manager(tmp_path) -> JobManager:
+    store = QueueJobStore(tmp_path / "worker-python" / "queue-jobs.json")
+    engine = GlobalQueueEngine(store)
+    return JobManager(queue_engine=engine, queue_store=store)
+
 
 @pytest.mark.integration
 def test_home_route(client) -> None:
@@ -21,26 +31,30 @@ def test_test_route_echoes_json(client) -> None:
 
 
 @pytest.mark.integration
-def test_create_job_and_fetch_status(client, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_create_job_and_fetch_status(client, monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
     from src.routes import deduper as deduper_routes
 
+    test_job_manager = _create_job_manager(tmp_path)
     monkeypatch.setattr(
         deduper_routes.job_manager,
-        "start_deduper_job",
-        lambda *args, **kwargs: None,
+        "enqueue_deduper_job",
+        test_job_manager.enqueue_deduper_job,
     )
+    monkeypatch.setattr(deduper_routes, "job_manager", test_job_manager)
 
     create_response = client.get("/deduper/jobs")
 
     assert create_response.status_code == 201
     job_id = create_response.json()["jobId"]
+    assert isinstance(job_id, str)
+    assert create_response.json()["status"] == "queued"
 
     status_response = client.get(f"/deduper/jobs/{job_id}")
 
     assert status_response.status_code == 200
     body = status_response.json()
     assert body["jobId"] == job_id
-    assert body["status"] == "pending"
+    assert body["status"] in {"queued", "running"}
 
 
 @pytest.mark.integration
@@ -87,6 +101,7 @@ def test_report_job_runs_deduper_in_process_e2e(
     client, monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     from src.routes import deduper as deduper_routes
+    from src.routes import queue_info as queue_info_routes
 
     db_file = tmp_path / "test.db"
     conn = sqlite3.connect(str(db_file))
@@ -167,22 +182,42 @@ def test_report_job_runs_deduper_in_process_e2e(
     monkeypatch.setenv("PATH_DATABASE", str(tmp_path))
     monkeypatch.setenv("NAME_DB", "test.db")
     monkeypatch.setenv("DEDUPER_ENABLE_EMBEDDING", "false")
-
-    # Force deterministic in-request execution for integration validation.
-    monkeypatch.setattr(
-        deduper_routes.job_manager,
-        "start_deduper_job",
-        lambda job_id, report_id=None: deduper_routes.job_manager._run_deduper_job(
-            job_id, report_id
-        ),
-    )
+    test_job_manager = _create_job_manager(tmp_path)
+    monkeypatch.setattr(deduper_routes, "job_manager", test_job_manager)
+    monkeypatch.setattr(queue_info_routes, "queue_engine", test_job_manager.queue_engine)
 
     create_response = client.get("/deduper/jobs/reportId/10")
     assert create_response.status_code == 201
     job_id = create_response.json()["jobId"]
+    assert isinstance(job_id, str)
+
+    assert test_job_manager.wait_for_idle(timeout=2) is True
 
     status_response = client.get(f"/deduper/jobs/{job_id}")
     assert status_response.status_code == 200
     body = status_response.json()
     assert body["status"] == "completed"
     assert body["exitCode"] == 0
+
+
+@pytest.mark.integration
+def test_deduper_job_is_visible_through_queue_info_latest_job(
+    client, monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    from src.routes import deduper as deduper_routes
+    from src.routes import queue_info as queue_info_routes
+
+    test_job_manager = _create_job_manager(tmp_path)
+    monkeypatch.setattr(deduper_routes, "job_manager", test_job_manager)
+    monkeypatch.setattr(queue_info_routes, "queue_engine", test_job_manager.queue_engine)
+
+    create_response = client.get("/deduper/jobs")
+    assert create_response.status_code == 201
+
+    response = client.get(
+        "/queue-info/latest-job",
+        params={"endpointName": test_job_manager.DEDUPER_ENDPOINT_NAME},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["job"]["jobId"] == create_response.json()["jobId"]

@@ -95,14 +95,15 @@ class GlobalQueueEngine:
         now_iso = self._now()
 
         self._store.append_job(
-            QueueJobRecord(
-                jobId=job_id,
-                endpointName=input_data.endpointName,
-                status=QueueJobStatus.QUEUED,
-                createdAt=now_iso,
-                parameters=input_data.parameters,
+                QueueJobRecord(
+                    jobId=job_id,
+                    endpointName=input_data.endpointName,
+                    status=QueueJobStatus.QUEUED,
+                    createdAt=now_iso,
+                    parameters=input_data.parameters,
+                    result=None,
+                )
             )
-        )
 
         with self._state_lock:
             self._pending_queue.append(
@@ -151,6 +152,7 @@ class GlobalQueueEngine:
                         failureReason="canceled_before_start",
                         logs=job.logs,
                         parameters=job.parameters,
+                        result=job.result,
                     ),
                 )
                 self._notify_idle_waiters_locked()
@@ -216,6 +218,7 @@ class GlobalQueueEngine:
                 failureReason=job.failureReason,
                 logs=job.logs,
                 parameters=job.parameters,
+                result=job.result,
             ),
         )
 
@@ -241,6 +244,7 @@ class GlobalQueueEngine:
                         failureReason="cancel_requested",
                         logs=job.logs,
                         parameters=job.parameters,
+                        result=job.result,
                     ),
                 )
                 return
@@ -257,6 +261,7 @@ class GlobalQueueEngine:
                     failureReason=None,
                     logs=job.logs,
                     parameters=job.parameters,
+                    result=job.result,
                 ),
             )
         except QueueJobCanceledError:
@@ -272,6 +277,7 @@ class GlobalQueueEngine:
                     failureReason="cancel_requested",
                     logs=job.logs,
                     parameters=job.parameters,
+                    result=job.result,
                 ),
             )
         except Exception as error:
@@ -287,6 +293,7 @@ class GlobalQueueEngine:
                     failureReason=_get_error_message(error),
                     logs=job.logs,
                     parameters=job.parameters,
+                    result=job.result,
                 ),
             )
 
@@ -312,6 +319,7 @@ class GlobalQueueEngine:
                     failureReason="worker_restarted_before_completion",
                     logs=job.logs,
                     parameters=job.parameters,
+                    result=job.result,
                 ),
             )
 

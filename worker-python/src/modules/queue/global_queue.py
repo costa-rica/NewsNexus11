@@ -5,6 +5,5 @@ from src.modules.queue.engine import GlobalQueueEngine
 from src.modules.queue.store import QueueJobStore
 
 
-global_queue_engine = GlobalQueueEngine(
-    QueueJobStore(resolve_default_queue_store_path())
-)
+global_queue_store = QueueJobStore(resolve_default_queue_store_path())
+global_queue_engine = GlobalQueueEngine(global_queue_store)

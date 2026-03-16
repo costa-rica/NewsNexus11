@@ -34,6 +34,7 @@ def _parse_job_record(value: object) -> QueueJobRecord:
     failure_reason = value.get("failureReason")
     logs = value.get("logs", [])
     parameters = value.get("parameters")
+    result = value.get("result")
 
     if not isinstance(job_id, str) or job_id.strip() == "":
         raise QueueStoreError("Queue job record jobId must be a non-empty string")
@@ -51,6 +52,8 @@ def _parse_job_record(value: object) -> QueueJobRecord:
         raise QueueStoreError("Queue job record logs must be an array of strings")
     if parameters is not None and not isinstance(parameters, dict):
         raise QueueStoreError("Queue job record parameters must be an object when provided")
+    if result is not None and not isinstance(result, dict):
+        raise QueueStoreError("Queue job record result must be an object when provided")
 
     return QueueJobRecord(
         jobId=job_id,
@@ -62,6 +65,7 @@ def _parse_job_record(value: object) -> QueueJobRecord:
         failureReason=failure_reason,
         logs=logs,
         parameters=parameters,
+        result=result,
     )
 
 
@@ -136,6 +140,10 @@ class QueueJobStore:
                 return None
 
             return max(matching_jobs, key=lambda job: job.createdAt)
+
+    def replace_jobs(self, jobs: list[QueueJobRecord]) -> None:
+        with self._lock:
+            self._write_store_to_disk(QueueJobStoreData(jobs=list(jobs)))
 
     def _ensure_store_file(self) -> None:
         self._file_path.parent.mkdir(parents=True, exist_ok=True)

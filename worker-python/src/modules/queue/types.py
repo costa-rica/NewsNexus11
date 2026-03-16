@@ -40,6 +40,7 @@ class QueueJobRecord:
     failureReason: str | None = None
     logs: list[str] = field(default_factory=list)
     parameters: dict[str, str | int | float | bool | None] | None = None
+    result: dict[str, str | int | float | bool | None] | None = None
 
 
 @dataclass(slots=True)

@@ -2,20 +2,32 @@ import sqlite3
 
 import pytest
 
-from src.services.job_manager import JobStatus, job_manager
+from src.modules.queue.engine import GlobalQueueEngine
+from src.modules.queue.store import QueueJobStore
+from src.services.job_manager import JobManager, JobStatus
+
+
+def _create_job_manager(tmp_path) -> JobManager:
+    store = QueueJobStore(tmp_path / "worker-python" / "queue-jobs.json")
+    engine = GlobalQueueEngine(store)
+    return JobManager(queue_engine=engine, queue_store=store)
 
 
 @pytest.mark.unit
-def test_create_job_defaults() -> None:
-    job = job_manager.create_job()
+def test_enqueue_deduper_job_defaults(tmp_path) -> None:
+    job_manager = _create_job_manager(tmp_path)
 
-    assert job.id == 1
-    assert job.status == JobStatus.PENDING
-    assert job.report_id is None
+    response = job_manager.enqueue_deduper_job()
+
+    assert response["jobId"] == "0001"
+    assert response["status"] == "queued"
+    assert "reportId" not in response
 
 
 @pytest.mark.unit
-def test_cancel_missing_job() -> None:
+def test_cancel_missing_job(tmp_path) -> None:
+    job_manager = _create_job_manager(tmp_path)
+
     ok, message = job_manager.cancel_job(999)
 
     assert ok is False
@@ -24,6 +36,8 @@ def test_cancel_missing_job() -> None:
 
 @pytest.mark.unit
 def test_clear_table_missing_env_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    from src.services.job_manager import job_manager
+
     monkeypatch.delenv("PATH_DATABASE", raising=False)
     monkeypatch.delenv("NAME_DB", raising=False)
 
@@ -33,6 +47,8 @@ def test_clear_table_missing_env_raises(monkeypatch: pytest.MonkeyPatch) -> None
 
 @pytest.mark.unit
 def test_health_unhealthy_when_database_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    from src.services.job_manager import job_manager
+
     monkeypatch.setenv("PATH_DATABASE", "/tmp/path/that/does/not/exist")
     monkeypatch.setenv("NAME_DB", "missing.db")
 
@@ -43,7 +59,9 @@ def test_health_unhealthy_when_database_missing(monkeypatch: pytest.MonkeyPatch)
 
 
 @pytest.mark.unit
-def test_run_deduper_job_uses_in_process_orchestrator(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_deduper_job_uses_in_process_orchestrator(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
     class _FakeSummary:
         status = "completed"
 
@@ -57,7 +75,7 @@ def test_run_deduper_job_uses_in_process_orchestrator(monkeypatch: pytest.Monkey
             assert should_cancel is not None
             return _FakeSummary()
 
-    job = job_manager.create_job(report_id=42)
+    job_manager = _create_job_manager(tmp_path)
 
     monkeypatch.setattr(
         job_manager,
@@ -65,8 +83,9 @@ def test_run_deduper_job_uses_in_process_orchestrator(monkeypatch: pytest.Monkey
         lambda: (_FakeOrchestrator(), _FakeRepo()),
     )
 
-    job_manager._run_deduper_job(job.id, report_id=42)
-    updated = job_manager.get_job(job.id)
+    response = job_manager.enqueue_deduper_job(report_id=42)
+    assert job_manager.wait_for_idle(timeout=1) is True
+    updated = job_manager.get_job(str(response["jobId"]))
 
     assert updated is not None
     assert updated.status == JobStatus.COMPLETED
@@ -76,6 +95,8 @@ def test_run_deduper_job_uses_in_process_orchestrator(monkeypatch: pytest.Monkey
 
 @pytest.mark.unit
 def test_run_clear_table_in_process_success(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    from src.services.job_manager import job_manager
+
     db_file = tmp_path / "test.db"
     conn = sqlite3.connect(str(db_file))
     conn.execute("CREATE TABLE ArticleDuplicateAnalyses (id INTEGER PRIMARY KEY AUTOINCREMENT)")

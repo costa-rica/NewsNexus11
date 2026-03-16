@@ -10,16 +10,12 @@ router = APIRouter(prefix="/deduper", tags=["deduper"])
 
 @router.get("/jobs", status_code=201)
 def create_deduper_job() -> dict:
-    job = job_manager.create_job()
-    job_manager.start_deduper_job(job.id)
-    return {"jobId": job.id, "status": JobStatus.PENDING}
+    return job_manager.enqueue_deduper_job()
 
 
 @router.get("/jobs/reportId/{report_id}", status_code=201)
 def create_deduper_job_by_report_id(report_id: int) -> dict:
-    job = job_manager.create_job(report_id=report_id)
-    job_manager.start_deduper_job(job.id, report_id=report_id)
-    return {"jobId": job.id, "reportId": report_id, "status": JobStatus.PENDING}
+    return job_manager.enqueue_deduper_job(report_id=report_id)
 
 
 @router.get("/jobs/list")
@@ -28,7 +24,7 @@ def get_jobs() -> dict:
 
 
 @router.get("/jobs/{job_id}")
-def get_job_status(job_id: int) -> JSONResponse:
+def get_job_status(job_id: str) -> JSONResponse:
     job = job_manager.get_job(job_id)
     if job is None:
         return JSONResponse({"error": "Job not found"}, status_code=404)
@@ -60,7 +56,7 @@ def get_job_status(job_id: int) -> JSONResponse:
 
 
 @router.post("/jobs/{job_id}/cancel")
-def cancel_job(job_id: int) -> JSONResponse:
+def cancel_job(job_id: str) -> JSONResponse:
     success, message = job_manager.cancel_job(job_id)
     if not success and message == "Job not found":
         return JSONResponse({"error": message}, status_code=404)

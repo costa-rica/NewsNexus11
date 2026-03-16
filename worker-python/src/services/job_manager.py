@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import StrEnum
@@ -11,16 +10,22 @@ from typing import Any
 from loguru import logger
 
 from src.modules.deduper.config import DeduperConfig
+from src.modules.deduper.errors import DeduperProcessorError
 from src.modules.deduper.orchestrator import DeduperOrchestrator
 from src.modules.deduper.repository import DeduperRepository
+from src.modules.queue.engine import EnqueueJobInput, GlobalQueueEngine, QueueExecutionContext, QueueJobCanceledError
+from src.modules.queue.global_queue import global_queue_engine, global_queue_store
+from src.modules.queue.status import summarize_queue_jobs
+from src.modules.queue.store import QueueJobStore
+from src.modules.queue.types import QueueJobRecord, QueueJobStatus
 
 
 class JobStatus(StrEnum):
-    PENDING = "pending"
+    QUEUED = "queued"
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
-    CANCELLED = "cancelled"
+    CANCELLED = "canceled"
 
 
 def utc_now_iso() -> str:
@@ -29,7 +34,7 @@ def utc_now_iso() -> str:
 
 @dataclass
 class JobRecord:
-    id: int
+    id: str
     status: JobStatus
     created_at: str
     logs: list[str] = field(default_factory=list)
@@ -44,107 +49,63 @@ class JobRecord:
 
 
 class JobManager:
-    def __init__(self) -> None:
-        self.jobs: dict[int, JobRecord] = {}
-        self.job_counter = 1
-        self.lock = threading.Lock()
+    DEDUPER_ENDPOINT_NAME = "/deduper/start-job"
+
+    def __init__(
+        self,
+        queue_engine: GlobalQueueEngine = global_queue_engine,
+        queue_store: QueueJobStore = global_queue_store,
+    ) -> None:
+        self.queue_engine = queue_engine
+        self.queue_store = queue_store
         self.logger = logger
 
-    def create_job(self, report_id: int | None = None) -> JobRecord:
-        with self.lock:
-            job_id = self.job_counter
-            self.job_counter += 1
-            job = JobRecord(
-                id=job_id,
-                status=JobStatus.PENDING,
-                created_at=utc_now_iso(),
-                report_id=report_id,
-            )
-            self.jobs[job_id] = job
-            self._append_job_log(job, "job_created")
-            return job
+    def enqueue_deduper_job(self, report_id: int | None = None) -> dict[str, str | int]:
+        parameters: dict[str, str | int | float | bool | None] | None = None
+        if report_id is not None:
+            parameters = {"reportId": report_id}
 
-    def get_job(self, job_id: int) -> JobRecord | None:
-        return self.jobs.get(job_id)
+        result = self.queue_engine.enqueue_job(
+            EnqueueJobInput(
+                endpointName=self.DEDUPER_ENDPOINT_NAME,
+                run=self._build_deduper_runner(report_id),
+                parameters=parameters,
+            )
+        )
+
+        return {
+            "jobId": result.jobId,
+            "status": result.status,
+            **({"reportId": report_id} if report_id is not None else {}),
+        }
+
+    def get_job(self, job_id: str) -> JobRecord | None:
+        queue_job = self.queue_engine.get_check_status(job_id)
+        if queue_job is None:
+            return None
+
+        return self._map_queue_job_to_job_record(queue_job)
 
     def list_jobs(self) -> list[dict[str, Any]]:
         return [
-            {"jobId": job.id, "status": job.status, "createdAt": job.created_at}
-            for job in self.jobs.values()
+            {
+                "jobId": job.jobId,
+                "status": job.status.value,
+                "createdAt": job.createdAt,
+                **({"reportId": job.parameters["reportId"]} if job.parameters and "reportId" in job.parameters else {}),
+            }
+            for job in self.queue_store.get_jobs()
         ]
 
-    def _create_orchestrator(self) -> tuple[DeduperOrchestrator, DeduperRepository]:
-        config = DeduperConfig.from_env()
-        repository = DeduperRepository(config)
-        orchestrator = DeduperOrchestrator(repository, config)
-        return orchestrator, repository
+    def cancel_job(self, job_id: str) -> tuple[bool, str]:
+        result = self.queue_engine.cancel_job(job_id)
+        if result.outcome == "not_found":
+            job = self.get_job(job_id)
+            if job is None:
+                return False, "Job not found"
+            return False, f"Cannot cancel job with status: {job.status.value}"
 
-    def _run_deduper_job(self, job_id: int, report_id: int | None = None) -> None:
-        job = self.get_job(job_id)
-        if job is None:
-            return
-
-        try:
-            job.status = JobStatus.RUNNING
-            job.started_at = utc_now_iso()
-            self._append_job_log(job, "job_started")
-            orchestrator, repository = self._create_orchestrator()
-            try:
-                summary = orchestrator.run_analyze_fast(
-                    report_id=report_id,
-                    should_cancel=lambda: bool(job.cancel_requested),
-                )
-            finally:
-                repository.close()
-
-            job.stdout = "Deduper processed in-process inside worker-python"
-            job.stderr = ""
-            job.exit_code = 0 if summary.status == "completed" else 1
-            job.completed_at = utc_now_iso()
-
-            if summary.status == "cancelled" or job.cancel_requested:
-                job.status = JobStatus.CANCELLED
-                self._append_job_log(job, "job_cancelled")
-            elif summary.status == "completed":
-                job.status = JobStatus.COMPLETED
-                self._append_job_log(job, "job_completed")
-            else:
-                job.status = JobStatus.FAILED
-                self._append_job_log(job, "job_failed")
-
-        except Exception as exc:
-            if job.cancel_requested:
-                job.status = JobStatus.CANCELLED
-                self._append_job_log(job, "job_cancelled")
-            else:
-                job.status = JobStatus.FAILED
-                self._append_job_log(job, f"job_failed error={exc}")
-            job.error = str(exc)
-            job.stderr = str(exc)
-            job.exit_code = 1
-            job.completed_at = utc_now_iso()
-
-    def start_deduper_job(self, job_id: int, report_id: int | None = None) -> None:
-        thread = threading.Thread(target=self._run_deduper_job, args=(job_id, report_id))
-        thread.daemon = True
-        thread.start()
-
-    def cancel_job(self, job_id: int) -> tuple[bool, str]:
-        job = self.get_job(job_id)
-        if job is None:
-            return False, "Job not found"
-
-        if job.status not in {JobStatus.PENDING, JobStatus.RUNNING}:
-            return False, f"Cannot cancel job with status: {job.status}"
-
-        try:
-            job.cancel_requested = True
-            job.status = JobStatus.CANCELLED
-            job.completed_at = utc_now_iso()
-            self._append_job_log(job, "cancel_requested")
-            return True, "Job cancelled successfully"
-        except Exception as exc:
-            return False, f"Failed to cancel job: {exc}"
+        return True, "Job cancelled successfully"
 
     def health_summary(self) -> dict[str, Any]:
         path_to_database = os.getenv("PATH_DATABASE")
@@ -154,6 +115,8 @@ class JobManager:
             if path_to_database and name_db
             else None
         )
+        jobs = self.queue_store.get_jobs()
+        queue_summary = summarize_queue_jobs(jobs)
 
         checks: dict[str, Any] = {
             "status": "healthy",
@@ -163,12 +126,13 @@ class JobManager:
                 "name_db_configured": bool(name_db),
             },
             "jobs": {
-                "total": len(self.jobs),
-                "pending": len([j for j in self.jobs.values() if j.status == JobStatus.PENDING]),
-                "running": len([j for j in self.jobs.values() if j.status == JobStatus.RUNNING]),
-                "completed": len([j for j in self.jobs.values() if j.status == JobStatus.COMPLETED]),
-                "failed": len([j for j in self.jobs.values() if j.status == JobStatus.FAILED]),
-                "cancelled": len([j for j in self.jobs.values() if j.status == JobStatus.CANCELLED]),
+                "total": queue_summary.totalJobs,
+                "pending": queue_summary.queued,
+                "queued": queue_summary.queued,
+                "running": queue_summary.running,
+                "completed": queue_summary.completed,
+                "failed": queue_summary.failed,
+                "cancelled": queue_summary.canceled,
             },
         }
 
@@ -179,20 +143,16 @@ class JobManager:
 
         return checks
 
-    def cancel_all_active_jobs(self) -> list[int]:
-        cancelled_jobs: list[int] = []
+    def cancel_all_active_jobs(self) -> list[str]:
+        cancelled_jobs: list[str] = []
 
-        for job in self.jobs.values():
-            if job.status in {JobStatus.PENDING, JobStatus.RUNNING}:
-                try:
-                    job.cancel_requested = True
-                    job.status = JobStatus.CANCELLED
-                    job.completed_at = utc_now_iso()
-                    self._append_job_log(job, "cancelled_by_clear")
-                    cancelled_jobs.append(job.id)
-                except Exception:
-                    # Preserve Flask behavior: continue cancelling other jobs.
-                    continue
+        for job in self.queue_store.get_jobs():
+            if job.status not in {QueueJobStatus.QUEUED, QueueJobStatus.RUNNING}:
+                continue
+
+            success, _message = self.cancel_job(job.jobId)
+            if success:
+                cancelled_jobs.append(job.jobId)
 
         return cancelled_jobs
 
@@ -207,10 +167,157 @@ class JobManager:
         response["cancelledJobs"] = cancelled_jobs
         return response
 
-    def _append_job_log(self, job: JobRecord, event: str) -> None:
-        message = f"{utc_now_iso()} event={event} job_id={job.id} report_id={job.report_id}"
-        job.logs.append(message)
+    def wait_for_idle(self, timeout: float | None = None) -> bool:
+        return self.queue_engine.on_idle(timeout=timeout)
+
+    def reset_for_tests(self) -> None:
+        self.wait_for_idle(timeout=1)
+        self.queue_store.replace_jobs([])
+
+    def _create_orchestrator(self) -> tuple[DeduperOrchestrator, DeduperRepository]:
+        config = DeduperConfig.from_env()
+        repository = DeduperRepository(config)
+        orchestrator = DeduperOrchestrator(repository, config)
+        return orchestrator, repository
+
+    def _build_deduper_runner(self, report_id: int | None):
+        def _run(context: QueueExecutionContext) -> None:
+            self._append_job_log(context.jobId, "job_started", report_id)
+            orchestrator, repository = self._create_orchestrator()
+
+            try:
+                summary = orchestrator.run_analyze_fast(
+                    report_id=report_id,
+                    should_cancel=context.is_cancel_requested,
+                )
+            except DeduperProcessorError as exc:
+                self._update_job_result(
+                    context.jobId,
+                    exit_code=1,
+                    stdout="",
+                    stderr=str(exc),
+                    error=str(exc),
+                )
+                self._append_job_log(context.jobId, "job_cancelled", report_id)
+                raise QueueJobCanceledError() from exc
+            except Exception as exc:
+                self._update_job_result(
+                    context.jobId,
+                    exit_code=1,
+                    stdout="",
+                    stderr=str(exc),
+                    error=str(exc),
+                )
+                self._append_job_log(context.jobId, f"job_failed error={exc}", report_id)
+                raise
+            finally:
+                repository.close()
+
+            if summary.status == "cancelled" or context.is_cancel_requested():
+                self._update_job_result(
+                    context.jobId,
+                    exit_code=1,
+                    stdout="",
+                    stderr="Pipeline cancelled",
+                    error="Pipeline cancelled",
+                )
+                self._append_job_log(context.jobId, "job_cancelled", report_id)
+                raise QueueJobCanceledError()
+
+            if summary.status != "completed":
+                self._update_job_result(
+                    context.jobId,
+                    exit_code=1,
+                    stdout="",
+                    stderr="deduper_failed",
+                    error="deduper_failed",
+                )
+                self._append_job_log(context.jobId, "job_failed", report_id)
+                raise RuntimeError("deduper_failed")
+
+            self._update_job_result(
+                context.jobId,
+                exit_code=0,
+                stdout="Deduper processed in-process inside worker-python",
+                stderr="",
+                error=None,
+            )
+            self._append_job_log(context.jobId, "job_completed", report_id)
+
+        return _run
+
+    def _append_job_log(self, job_id: str, event: str, report_id: int | None = None) -> None:
+        message = f"{utc_now_iso()} event={event} job_id={job_id} report_id={report_id}"
+
+        self.queue_store.update_job(
+            job_id,
+            lambda job: QueueJobRecord(
+                jobId=job.jobId,
+                endpointName=job.endpointName,
+                status=job.status,
+                createdAt=job.createdAt,
+                startedAt=job.startedAt,
+                endedAt=job.endedAt,
+                failureReason=job.failureReason,
+                logs=[*job.logs, message],
+                parameters=job.parameters,
+                result=job.result,
+            ),
+        )
         self.logger.info(message)
+
+    def _update_job_result(
+        self,
+        job_id: str,
+        *,
+        exit_code: int,
+        stdout: str,
+        stderr: str,
+        error: str | None,
+    ) -> None:
+        self.queue_store.update_job(
+            job_id,
+            lambda job: QueueJobRecord(
+                jobId=job.jobId,
+                endpointName=job.endpointName,
+                status=job.status,
+                createdAt=job.createdAt,
+                startedAt=job.startedAt,
+                endedAt=job.endedAt,
+                failureReason=job.failureReason,
+                logs=job.logs,
+                parameters=job.parameters,
+                result={
+                    "exitCode": exit_code,
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "error": error,
+                },
+            ),
+        )
+
+    def _map_queue_job_to_job_record(self, queue_job: QueueJobRecord) -> JobRecord:
+        result = queue_job.result or {}
+        report_id_value = None
+        if queue_job.parameters is not None:
+            raw_report_id = queue_job.parameters.get("reportId")
+            if isinstance(raw_report_id, int):
+                report_id_value = raw_report_id
+
+        return JobRecord(
+            id=queue_job.jobId,
+            status=JobStatus(queue_job.status.value),
+            created_at=queue_job.createdAt,
+            logs=list(queue_job.logs),
+            report_id=report_id_value,
+            started_at=queue_job.startedAt,
+            completed_at=queue_job.endedAt,
+            exit_code=result.get("exitCode") if isinstance(result.get("exitCode"), int) else None,
+            stdout=result.get("stdout") if isinstance(result.get("stdout"), str) else None,
+            stderr=result.get("stderr") if isinstance(result.get("stderr"), str) else None,
+            error=result.get("error") if isinstance(result.get("error"), str) else None,
+            cancel_requested=queue_job.status == QueueJobStatus.CANCELED,
+        )
 
 
 job_manager = JobManager()

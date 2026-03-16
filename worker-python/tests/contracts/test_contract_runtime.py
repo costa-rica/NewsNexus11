@@ -5,15 +5,28 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.main import app
+from src.modules.queue.engine import GlobalQueueEngine
+from src.modules.queue.store import QueueJobStore
 from src.routes import deduper as deduper_routes
+from src.services.job_manager import JobManager
+
+
+def _create_job_manager(tmp_path) -> JobManager:
+    store = QueueJobStore(tmp_path / "worker-python" / "queue-jobs.json")
+    engine = GlobalQueueEngine(store)
+    return JobManager(queue_engine=engine, queue_store=store)
 
 
 @pytest.mark.contract
-def test_runtime_matches_min_contract(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_runtime_matches_min_contract(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    test_job_manager = _create_job_manager(tmp_path)
     monkeypatch.setattr(
-        deduper_routes.job_manager,
-        "start_deduper_job",
-        lambda *args, **kwargs: None,
+        deduper_routes,
+        "job_manager",
+        test_job_manager,
     )
 
     spec = json.loads(Path("tests/contracts/flask_contract_spec.json").read_text())
