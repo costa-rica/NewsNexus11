@@ -31,6 +31,7 @@ export interface Article {
 	aiApproverTopScoreId?: number | null;
 	aiApproverTopPromptVersionId?: number | null;
 	aiApproverTopPromptName?: string | null;
+	aiApproverTopResultStatus?: string | null;
 	stateAssignment?: StateAssignment | null;
 }
 

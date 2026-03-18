@@ -290,6 +290,9 @@ const TableReviewArticles: React.FC<TableReviewArticlesProps> = ({
 					),
 					columnHelper.accessor(
 						(row) => {
+							if (row.aiApproverTopScoreId && row.aiApproverTopScore === null) {
+								return 0;
+							}
 							const value = row.aiApproverTopScore;
 							if (value === null || value === undefined) {
 								return undefined;
@@ -304,13 +307,24 @@ const TableReviewArticles: React.FC<TableReviewArticlesProps> = ({
 							sortingFn: "basic",
 							cell: ({ row, getValue }) => {
 								const value = getValue();
-								if (value === undefined || value === null) {
+								const hasAnalysis = Boolean(row.original.aiApproverTopScoreId);
+								if (!hasAnalysis) {
 									return <div className="text-center text-xs text-gray-400">N/A</div>;
 								}
-								const normalized = Math.max(0, Math.min(1, Number(value)));
+								const hasValidScore =
+									value !== undefined &&
+									value !== null &&
+									row.original.aiApproverTopScore !== null;
+								const normalized = hasValidScore
+									? Math.max(0, Math.min(1, Number(value)))
+									: 0;
 								const green = Math.floor(normalized * 200);
-								const color = `rgb(${128 - green / 3}, ${green}, ${128 - green / 3})`;
-								const percent = Math.round(normalized * 100);
+								const color = hasValidScore
+									? `rgb(${128 - green / 3}, ${green}, ${128 - green / 3})`
+									: "rgb(147, 51, 234)";
+								const label = hasValidScore
+									? `${Math.round(normalized * 100)}%`
+									: "0";
 								return (
 									<div className="flex justify-center">
 										<button
@@ -318,8 +332,13 @@ const TableReviewArticles: React.FC<TableReviewArticlesProps> = ({
 											onClick={() => onAiApproverClick?.(row.original.id)}
 											className="flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold transition-transform hover:scale-105"
 											style={{ backgroundColor: color }}
+											title={
+												hasValidScore
+													? "Open AI Approver details"
+													: `Open AI Approver details (${row.original.aiApproverTopResultStatus || "no valid response"})`
+											}
 										>
-											{percent}%
+											{label}
 										</button>
 									</div>
 								);

@@ -269,6 +269,7 @@ export default function ReviewArticles() {
 					aiApproverTopScoreId: scoreRow?.id ?? null,
 					aiApproverTopPromptVersionId: scoreRow?.promptVersionId ?? null,
 					aiApproverTopPromptName: scoreRow?.promptName ?? null,
+					aiApproverTopResultStatus: scoreRow?.resultStatus ?? null,
 				};
 			}),
 		[]
