@@ -12,18 +12,18 @@
 
 ## 2. phase 1 - database models and API contracts
 
-- [ ] Add `AiApproverPromptVersions` model in `db-models`.
-- [ ] Add `AiApproverArticleScores` model in `db-models`.
-- [ ] Add the new models to `db-models/src/models/_index.ts`.
-- [ ] Add any required associations in `db-models/src/models/_associations.ts`.
-- [ ] Define `AiApproverPromptVersions` fields:
+- [x] Add `AiApproverPromptVersions` model in `db-models`.
+- [x] Add `AiApproverArticleScores` model in `db-models`.
+- [x] Add the new models to `db-models/src/models/_index.ts`.
+- [x] Add any required associations in `db-models/src/models/_associations.ts`.
+- [x] Define `AiApproverPromptVersions` fields:
   - `id`
   - `name`
   - `description` nullable
   - `promptInMarkdown`
   - `isActive`
   - `endedAt` nullable
-- [ ] Define `AiApproverArticleScores` fields:
+- [x] Define `AiApproverArticleScores` fields:
   - `id`
   - `articleId`
   - `promptVersionId`
@@ -35,32 +35,32 @@
   - `isHumanApproved` nullable
   - `reasonHumanRejected` nullable
   - `runKey` or `jobId` nullable
-- [ ] Add indexes needed for active prompt lookup and article score lookup.
-- [ ] Add a composite unique constraint on `(articleId, promptVersionId)`.
-- [ ] Ensure prompt rows are treated as immutable after creation.
-- [ ] Ensure score rows support per-score-row human validation state.
-- [ ] Seed or otherwise create the initial active prompt version for the first flow.
-- [ ] Build `db-models`.
-- [ ] Build `api` against the updated `db-models`.
-- [ ] Run relevant tests for this phase.
-- [ ] If tests pass, check off completed tasks in this phase.
-- [ ] Commit with a message that references `docs/AI_APPROVER_TODO_20260317_v02.md` and phase 1.
+- [x] Add indexes needed for active prompt lookup and article score lookup.
+- [x] Add a composite unique constraint on `(articleId, promptVersionId)`.
+- [x] Ensure prompt rows are treated as immutable after creation.
+- [x] Ensure score rows support per-score-row human validation state.
+- [x] Seed or otherwise create the initial active prompt version for the first flow.
+- [x] Build `db-models`.
+- [x] Build `api` against the updated `db-models`.
+- [x] Run relevant tests for this phase.
+- [x] If tests pass, check off completed tasks in this phase.
+- [x] Commit with a message that references `docs/AI_APPROVER_TODO_20260317_v02.md` and phase 1.
 
 ## 3. phase 2 - prompt management API
 
-- [ ] Add API routes for AI approver prompt management.
-- [ ] Add API handler to list rows from `AiApproverPromptVersions`.
-- [ ] Add API handler to create a new prompt row.
-- [ ] Add API handler to copy an existing prompt row into a new row.
-- [ ] Add API handler to activate or deactivate a prompt row.
-- [ ] Ensure `endedAt` is managed by the API, not the user.
-- [ ] Add API handler to delete a prompt row only when no `AiApproverArticleScores` rows reference it.
-- [ ] Return clear error responses when delete is blocked.
-- [ ] Add API validation for `promptInMarkdown`, `name`, `description`, and `isActive`.
-- [ ] Implement hard delete for unused prompt rows.
-- [ ] Add API tests for create, copy, list, activate/deactivate, and guarded delete behavior.
-- [ ] Run relevant tests for this phase.
-- [ ] If tests pass, check off completed tasks in this phase.
+- [x] Add API routes for AI approver prompt management.
+- [x] Add API handler to list rows from `AiApproverPromptVersions`.
+- [x] Add API handler to create a new prompt row.
+- [x] Add API handler to copy an existing prompt row into a new row.
+- [x] Add API handler to activate or deactivate a prompt row.
+- [x] Ensure `endedAt` is managed by the API, not the user.
+- [x] Add API handler to delete a prompt row only when no `AiApproverArticleScores` rows reference it.
+- [x] Return clear error responses when delete is blocked.
+- [x] Add API validation for `promptInMarkdown`, `name`, `description`, and `isActive`.
+- [x] Implement hard delete for unused prompt rows.
+- [x] Add API tests for create, copy, list, activate/deactivate, and guarded delete behavior.
+- [x] Run relevant tests for this phase.
+- [x] If tests pass, check off completed tasks in this phase.
 - [ ] Commit with a message that references `docs/AI_APPROVER_TODO_20260317_v02.md` and phase 2.
 
 ## 4. phase 3 - worker-python OpenAI integration and AI approver workflow

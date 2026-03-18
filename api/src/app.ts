@@ -80,6 +80,10 @@ export function mountLegacyRouters(): void {
       modulePath: "./routes/analysis/approvedArticles",
     },
     { prefix: "/analysis/deduper", modulePath: "./routes/analysis/deduper" },
+    {
+      prefix: "/analysis/ai-approver",
+      modulePath: "./routes/analysis/ai-approver",
+    },
     { prefix: "/analysis/llm01", modulePath: "./routes/analysis/llm01" },
     { prefix: "/analysis/llm02", modulePath: "./routes/analysis/llm02" },
     { prefix: "/downloads", modulePath: "./routes/downloads" },
