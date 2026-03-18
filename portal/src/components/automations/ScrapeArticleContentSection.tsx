@@ -23,7 +23,7 @@ const DEFAULT_ALERT_MODAL_STATE: AlertModalState = {
   variant: "info",
 };
 
-const STATE_ASSIGNER_ENDPOINT_NAME = "/state-assigner/start-job";
+const ARTICLE_CONTENT_SCRAPER_ENDPOINT_NAME = "/article-content-scraper/start-job";
 
 function buildWorkerNodeResponseMessage(result: {
   endpointName?: string;
@@ -66,7 +66,7 @@ function getErrorMessage(errorBody: string): string {
   return errorBody;
 }
 
-export function StateAssignerSection() {
+export function ScrapeArticleContentSection() {
   const { token } = useAppSelector((state) => state.user);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshSignal, setRefreshSignal] = useState(0);
@@ -78,12 +78,12 @@ export function StateAssignerSection() {
     DEFAULT_ALERT_MODAL_STATE,
   );
 
-  const handleStartStateAssigner = async () => {
+  const handleStartScraper = async () => {
     setIsSubmitting(true);
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/automations/state-assigner/start-job`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/automations/article-content-scraper/start-job`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -111,9 +111,9 @@ export function StateAssignerSection() {
       setAlertModal({
         message:
           buildWorkerNodeResponseMessage(result) ||
-          "State assigner job was queued successfully.",
+          "Article content scraper job was queued successfully.",
         show: true,
-        title: "AI State Assigner Job Queued",
+        title: "Article Content Scraper Job Queued",
         variant: "success",
       });
       setRefreshSignal((current) => current + 1);
@@ -122,7 +122,7 @@ export function StateAssignerSection() {
         message:
           error instanceof Error ? error.message : "Unknown error starting job.",
         show: true,
-        title: "AI State Assigner Request Failed",
+        title: "Article Content Scraper Request Failed",
         variant: "error",
       });
     } finally {
@@ -132,26 +132,31 @@ export function StateAssignerSection() {
 
   return (
     <>
-      <CollapsibleAutomationSection title="State Assigner" defaultOpen={false}>
+      <CollapsibleAutomationSection
+        title="Scrape Article Content"
+        defaultOpen={false}
+      >
         <div className="space-y-6">
           <button
             type="button"
-            onClick={() => void handleStartStateAssigner()}
+            onClick={() => void handleStartScraper()}
             disabled={isSubmitting}
             className="rounded-lg bg-brand-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-600 dark:hover:bg-brand-700"
           >
-            {isSubmitting ? "Starting AI State Assigner..." : "Start AI State Assigner"}
+            {isSubmitting
+              ? "Starting Article Content Scraper..."
+              : "Start Article Content Scraper"}
           </button>
 
           <WorkerNodeJobStatusPanel
-            endpointName={STATE_ASSIGNER_ENDPOINT_NAME}
+            endpointName={ARTICLE_CONTENT_SCRAPER_ENDPOINT_NAME}
             refreshSignal={refreshSignal}
-            title="Last AI State Assigner Job"
+            title="Last Article Content Scraper Job"
           />
 
           <ArticleTargetingFields
-            thresholdDaysId="stateAssignerThresholdDays"
-            reviewCountId="stateAssignerReviewCount"
+            thresholdDaysId="articleContentScraperThresholdDays"
+            reviewCountId="articleContentScraperReviewCount"
             thresholdDaysValue={targetArticleThresholdDaysOld}
             reviewCountValue={targetArticleStateReviewCount}
             onThresholdDaysChange={setTargetArticleThresholdDaysOld}

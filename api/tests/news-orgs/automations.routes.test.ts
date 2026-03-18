@@ -187,6 +187,68 @@ describe("news org automations routes", () => {
     });
   });
 
+  test("POST /automations/article-content-scraper/start-job proxies worker-node response", async () => {
+    mockAxios.post.mockResolvedValue({
+      data: {
+        endpointName: "/article-content-scraper/start-job",
+        jobId: "job-2b",
+        status: "queued",
+      },
+      status: 202,
+    });
+
+    const app = buildApp();
+    const response = await request(app)
+      .post("/automations/article-content-scraper/start-job")
+      .send({
+        targetArticleStateReviewCount: 100,
+        targetArticleThresholdDaysOld: 180,
+      });
+
+    expect(response.status).toBe(202);
+    expect(response.body).toEqual({
+      endpointName: "/article-content-scraper/start-job",
+      jobId: "job-2b",
+      status: "queued",
+    });
+    expect(mockAxios.post).toHaveBeenCalledWith(
+      "http://worker-node/article-content-scraper/start-job",
+      {
+        targetArticleStateReviewCount: 100,
+        targetArticleThresholdDaysOld: 180,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  });
+
+  test("POST /automations/article-content-scraper/start-job returns worker-node unavailable message on connection refusal", async () => {
+    mockAxios.isAxiosError.mockReturnValue(true);
+    mockAxios.post.mockRejectedValue({
+      code: "ECONNREFUSED",
+      message: "connect ECONNREFUSED 127.0.0.1:3002",
+      response: undefined,
+    });
+
+    const app = buildApp();
+    const response = await request(app)
+      .post("/automations/article-content-scraper/start-job")
+      .send({
+        targetArticleStateReviewCount: 100,
+        targetArticleThresholdDaysOld: 180,
+      });
+
+    expect(response.status).toBe(502);
+    expect(response.body).toEqual({
+      result: false,
+      message:
+        "Unable to reach the worker-node app. Make sure the worker-node service is running and try again.",
+    });
+  });
+
   test("POST /automations/semantic-scorer/start-job proxies worker-node response", async () => {
     mockAxios.post.mockResolvedValue({
       data: {

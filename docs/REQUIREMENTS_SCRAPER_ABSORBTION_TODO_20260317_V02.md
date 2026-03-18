@@ -6,6 +6,23 @@ The standalone scraper flow is a requirement. In the `/articles/automations` sec
 
 For this V02 plan, defer scraper/state-assigner integration tests until a later follow-up. Do not defer the standalone scraper module, job, route, API, or portal tests.
 
+## Implementation notes
+
+- The implemented worker-node scraper uses platform `fetch` plus Cheerio.
+- HTTP policy implemented in code:
+  1. Request timeout: `15000ms`
+  2. Redirect policy: `follow`
+  3. User-Agent: browser-style NewsNexus worker string
+  4. Minimum usable content threshold: `200` characters
+- Puppeteer is intentionally not included in the initial dependency set.
+- Duplicate `ArticleContents` rows are handled by selecting one canonical row deterministically:
+  1. Prefer rows with usable content
+  2. Then prefer longer content
+  3. Then prefer lower `id`
+- Persistence uses update-first writes and only creates a new row when none exists.
+- The state assigner now performs bounded pre-scrape enrichment for its candidate articles and continues on scrape failures.
+- Dedicated scraper/state-assigner integration coverage remains a follow-up item.
+
 ## Phase 0. Prerequisites and implementation setup
 
 - [ ] Confirm the exact worker-node dependencies needed for the Cheerio-first implementation.

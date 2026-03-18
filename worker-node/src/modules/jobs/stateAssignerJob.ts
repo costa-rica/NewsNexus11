@@ -1,20 +1,19 @@
 import {
-  Article,
-  ArticleContent,
-  ArticleStateContract,
   ArticleStateContract02,
   ArtificialIntelligence,
   EntityWhoCategorizedArticle,
   Prompt,
   State,
-  initModels,
-  sequelize
 } from '@newsnexus/db-models';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import logger from '../logger';
 import { QueueExecutionContext } from '../queue/queueEngine';
 import { ensureStateAssignerDirectories, StateAssignerDirectories } from '../startup/stateAssignerFiles';
+import ensureDbReady from '../db/ensureDbReady';
+import { selectTargetArticles, TargetArticleRecord } from '../articleTargeting';
+import { enrichArticleContent } from '../article-content/enrichment';
+import { getCanonicalArticleContentRow } from '../article-content/repository';
 
 interface StateAssignerArticle {
   id: number;
@@ -47,6 +46,8 @@ export interface ChatGptResponse {
 
 export interface StateAssignerJobDependencies {
   runLegacyWorkflow?: (context: StateAssignerJobContext) => Promise<void>;
+  selectArticles?: typeof selectTargetArticles;
+  enrichContent?: typeof enrichArticleContent;
 }
 
 interface ProcessStateAssignmentsOptions {
@@ -79,22 +80,6 @@ interface ProcessStateAssignmentsOptions {
 
 const LEGACY_AI_NAME = 'NewsNexusLlmStateAssigner01';
 const DEFAULT_ITERATION_TIMEOUT_MS = 10_000;
-
-let dbReadyPromise: Promise<void> | null = null;
-
-const ensureDbReady = async (): Promise<void> => {
-  if (dbReadyPromise) {
-    return dbReadyPromise;
-  }
-
-  dbReadyPromise = (async () => {
-    initModels();
-    await sequelize.authenticate();
-    await sequelize.sync();
-  })();
-
-  return dbReadyPromise;
-};
 
 const isAbortError = (error: unknown): boolean =>
   error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'));
@@ -170,59 +155,12 @@ const syncPromptFilesToDatabase = async (promptsDir: string): Promise<void> => {
   }
 };
 
-const selectArticles = async (
-  targetCount: number,
-  thresholdDaysOld: number
+const buildStateAssignerArticles = async (
+  targetArticles: TargetArticleRecord[]
 ): Promise<StateAssignerArticle[]> => {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - thresholdDaysOld);
-  const cutoffDateString = cutoffDate.toISOString().split('T')[0];
-
-  logger.info(
-    `Filtering articles published on or after ${cutoffDateString} (within ${thresholdDaysOld} days)`
-  );
-
-  const contract02ArticleIds = await ArticleStateContract02.findAll({
-    attributes: ['articleId'],
-    raw: true
-  });
-
-  const contractArticleIds = await ArticleStateContract.findAll({
-    attributes: ['articleId'],
-    raw: true
-  });
-
-  const assignedIds = [
-    ...contract02ArticleIds
-      .map((row) => (row as { articleId?: unknown }).articleId)
-      .filter((value): value is number => typeof value === 'number'),
-    ...contractArticleIds
-      .map((row) => (row as { articleId?: unknown }).articleId)
-      .filter((value): value is number => typeof value === 'number')
-  ];
-
-  const uniqueAssignedIds = [...new Set(assignedIds)];
-
-  logger.info(
-    `Found ${uniqueAssignedIds.length} articles with existing state assignments (${contract02ArticleIds.length} in ArticleStateContracts02, ${contractArticleIds.length} in ArticleStateContracts)`
-  );
-
-  const articles = await Article.findAll({
-    order: [['id', 'DESC']]
-  });
-
-  const unassignedArticles = articles
-    .filter((article) => Boolean(article.publishedDate) && article.publishedDate! >= cutoffDateString)
-    .filter((article) => !uniqueAssignedIds.includes(article.id))
-    .slice(0, targetCount);
-
-  logger.info(`Found ${unassignedArticles.length} articles to process`);
-
-  const articlesWithContent = await Promise.all(
-    unassignedArticles.map(async (article) => {
-      const articleContent = await ArticleContent.findOne({
-        where: { articleId: article.id }
-      });
+  return Promise.all(
+    targetArticles.map(async (article) => {
+      const articleContent = await getCanonicalArticleContentRow(article.id);
 
       return {
         id: article.id,
@@ -231,8 +169,6 @@ const selectArticles = async (
       };
     })
   );
-
-  return articlesWithContent;
 };
 
 const buildPrompt = (template: string, article: StateAssignerArticle): string =>
@@ -413,24 +349,52 @@ export const processStateAssignmentsWithTimeout = async ({
   }
 };
 
-const runLegacyWorkflow = async (context: StateAssignerJobContext): Promise<void> => {
+const runLegacyWorkflow = async (
+  context: StateAssignerJobContext,
+  dependencies: Pick<StateAssignerJobDependencies, 'selectArticles' | 'enrichContent'> = {}
+): Promise<void> => {
   await ensureDbReady();
   const stateAssignerDirectories = await ensureStateAssignerDirectories(
     context.pathToStateAssignerFiles
   );
   await syncPromptFilesToDatabase(stateAssignerDirectories.promptsDir);
 
+  const selectArticles = dependencies.selectArticles ?? selectTargetArticles;
+  const enrichContent = dependencies.enrichContent ?? enrichArticleContent;
   const entityWhoCategorizesId = await resolveEntityWhoCategorizesId();
   const prompt = await getPrompt();
-  const articles = await selectArticles(
-    context.targetArticleStateReviewCount,
-    context.targetArticleThresholdDaysOld
-  );
+  const candidateArticles = await selectArticles({
+    targetArticleStateReviewCount: context.targetArticleStateReviewCount,
+    targetArticleThresholdDaysOld: context.targetArticleThresholdDaysOld
+  });
 
-  if (articles.length === 0) {
+  if (candidateArticles.length === 0) {
     logger.info('No articles to process');
     return;
   }
+
+  logger.info('State assigner selected candidate articles for pre-scrape enrichment', {
+    candidateArticleIds: candidateArticles.map((article) => article.id)
+  });
+
+  try {
+    const scrapeSummary = await enrichContent({
+      articles: candidateArticles,
+      signal: context.signal
+    });
+
+    logger.info('State assigner pre-scrape enrichment summary', scrapeSummary);
+  } catch (error) {
+    if (context.signal.aborted || isAbortError(error)) {
+      return;
+    }
+
+    logger.warn('State assigner pre-scrape enrichment failed. Continuing with assignment.', {
+      errorMessage: error instanceof Error ? error.message : 'Unknown enrichment error'
+    });
+  }
+
+  const articles = await buildStateAssignerArticles(candidateArticles);
 
   logger.info(`Starting to process ${articles.length} articles`);
 
@@ -452,7 +416,13 @@ export const createStateAssignerJobHandler = (
   input: StateAssignerJobInput,
   dependencies: StateAssignerJobDependencies = {}
 ) => {
-  const workflowRunner = dependencies.runLegacyWorkflow ?? runLegacyWorkflow;
+  const workflowRunner =
+    dependencies.runLegacyWorkflow ??
+    ((context: StateAssignerJobContext) =>
+      runLegacyWorkflow(context, {
+        selectArticles: dependencies.selectArticles,
+        enrichContent: dependencies.enrichContent
+      }));
 
   return async (queueContext: QueueExecutionContext): Promise<void> => {
     await workflowRunner({

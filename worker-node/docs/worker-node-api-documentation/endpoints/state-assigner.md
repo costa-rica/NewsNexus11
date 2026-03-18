@@ -14,6 +14,13 @@ Creates a queued job for the state-assigner process.
 - Validates required request body fields are positive integers
 - Returns `202` when job is accepted into the queue
 
+Pre-processing behavior:
+
+- Before AI classification begins, the job selects the same bounded candidate article window it will analyze
+- It runs article-content enrichment for only that candidate set
+- Scrape failures are logged and the state assigner continues
+- Articles still fall back to `article.description` when durable content remains unavailable
+
 At runtime, this job also ensures these directories exist:
 
 1. `PATH_TO_STATE_ASSIGNER_FILES/chatgpt_responses`
