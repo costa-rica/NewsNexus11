@@ -187,7 +187,7 @@
 
 ## 9. phase 8 - final verification and cleanup
 
-- [ ] Verify the full end-to-end flow:
+- [x] Verify the full end-to-end flow:
   - create prompt
   - activate prompt
   - run AI approver automation
@@ -195,13 +195,13 @@
   - open modal
   - validate score row
   - confirm fallback to next highest non-rejected score
-- [ ] Verify prompt delete guard behavior.
-- [ ] Verify state filter behavior in the automation flow.
-- [ ] Verify skipped-article behavior when any score row already exists.
-- [ ] Verify invalid JSON and failed attempts are stored correctly.
-- [ ] Verify the review table query excludes rejected top rows.
-- [ ] Verify no UI suggests prompt editing.
-- [ ] Update any related documentation if implementation details changed.
-- [ ] Run final relevant tests for this phase.
-- [ ] If tests pass, check off completed tasks in this phase.
-- [ ] Commit with a message that references `docs/AI_APPROVER_TODO_20260317_v02.md` and phase 8.
+- [x] Verify prompt delete guard behavior.
+- [x] Verify state filter behavior in the automation flow.
+- [x] Verify skipped-article behavior when any score row already exists.
+- [x] Verify invalid JSON and failed attempts are stored correctly.
+- [x] Verify the review table query excludes rejected top rows.
+- [x] Verify no UI suggests prompt editing.
+- [x] Update any related documentation if implementation details changed.
+- [x] Run final relevant tests for this phase.
+- [x] If tests pass, check off completed tasks in this phase.
+- [x] Commit with a message that references `docs/AI_APPROVER_TODO_20260317_v02.md` and phase 8.
