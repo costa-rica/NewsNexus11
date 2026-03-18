@@ -19,6 +19,8 @@ const mockAiApproverPromptVersion = {
 
 const mockAiApproverArticleScore = {
   count: jest.fn(),
+  findAll: jest.fn(),
+  findByPk: jest.fn(),
 };
 
 jest.mock("@newsnexus/db-models", () => ({
@@ -33,6 +35,33 @@ function buildApp() {
   app.use(express.json());
   app.use("/analysis/ai-approver", aiApproverRouter);
   return app;
+}
+
+function buildScoreRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    articleId: 77,
+    promptVersionId: 5,
+    resultStatus: "completed",
+    score: 0.9,
+    reason: "reason",
+    errorCode: null,
+    errorMessage: null,
+    isHumanApproved: null,
+    reasonHumanRejected: null,
+    createdAt: "2026-03-17T00:00:00.000Z",
+    updatedAt: "2026-03-17T00:00:00.000Z",
+    AiApproverPromptVersion: {
+      id: 5,
+      name: "Residential Fire",
+      description: "desc",
+      promptInMarkdown: "# prompt",
+      isActive: true,
+      endedAt: null,
+    },
+    update: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
 }
 
 describe("analysis ai approver routes", () => {
@@ -171,5 +200,94 @@ describe("analysis ai approver routes", () => {
     expect(response.status).toBe(200);
     expect(response.body.result).toBe(true);
     expect(destroy).toHaveBeenCalled();
+  });
+
+  test("GET /analysis/ai-approver/article/:articleId returns scores and top eligible id", async () => {
+    mockAiApproverArticleScore.findAll.mockResolvedValue([
+      buildScoreRow({ id: 11, score: 0.9, isHumanApproved: null }),
+      buildScoreRow({ id: 12, score: 0.8, isHumanApproved: false }),
+    ]);
+
+    const app = buildApp();
+    const response = await request(app).get("/analysis/ai-approver/article/77");
+
+    expect(response.status).toBe(200);
+    expect(response.body.result).toBe(true);
+    expect(response.body.topEligibleScoreId).toBe(11);
+    expect(response.body.scores).toHaveLength(2);
+  });
+
+  test("POST /analysis/ai-approver/top-scores validates request body", async () => {
+    const app = buildApp();
+    const response = await request(app)
+      .post("/analysis/ai-approver/top-scores")
+      .send({ articleIds: ["bad"] });
+
+    expect(response.status).toBe(400);
+    expect(response.body.result).toBe(false);
+  });
+
+  test("POST /analysis/ai-approver/top-scores returns highest non-rejected score per article", async () => {
+    mockAiApproverArticleScore.findAll.mockResolvedValue([
+      buildScoreRow({ id: 21, articleId: 77, score: 0.95, isHumanApproved: false }),
+      buildScoreRow({ id: 22, articleId: 77, score: 0.9, isHumanApproved: null }),
+      buildScoreRow({ id: 23, articleId: 88, score: 0.7, isHumanApproved: true }),
+    ]);
+
+    const app = buildApp();
+    const response = await request(app)
+      .post("/analysis/ai-approver/top-scores")
+      .send({ articleIds: [77, 88] });
+
+    expect(response.status).toBe(200);
+    expect(response.body.result).toBe(true);
+    expect(response.body.topScores["77"]).toMatchObject({
+      id: 22,
+      articleId: 77,
+      score: 0.9,
+    });
+    expect(response.body.topScores["88"]).toMatchObject({
+      id: 23,
+      articleId: 88,
+      score: 0.7,
+    });
+  });
+
+  test("PATCH /analysis/ai-approver/human-verify/:scoreId updates the current top eligible row", async () => {
+    const scoreRow = buildScoreRow({ id: 31, articleId: 77, score: 0.9 });
+    mockAiApproverArticleScore.findByPk.mockResolvedValue(scoreRow);
+    mockAiApproverArticleScore.findAll.mockResolvedValue([
+      scoreRow,
+      buildScoreRow({ id: 32, articleId: 77, score: 0.8, isHumanApproved: null }),
+    ]);
+
+    const app = buildApp();
+    const response = await request(app)
+      .patch("/analysis/ai-approver/human-verify/31")
+      .send({ isHumanApproved: false, reasonHumanRejected: "Not useful" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.result).toBe(true);
+    expect(scoreRow.update).toHaveBeenCalledWith({
+      isHumanApproved: false,
+      reasonHumanRejected: "Not useful",
+    });
+  });
+
+  test("PATCH /analysis/ai-approver/human-verify/:scoreId blocks updates for non-top rows", async () => {
+    const scoreRow = buildScoreRow({ id: 41, articleId: 77, score: 0.8 });
+    mockAiApproverArticleScore.findByPk.mockResolvedValue(scoreRow);
+    mockAiApproverArticleScore.findAll.mockResolvedValue([
+      buildScoreRow({ id: 40, articleId: 77, score: 0.9, isHumanApproved: null }),
+      scoreRow,
+    ]);
+
+    const app = buildApp();
+    const response = await request(app)
+      .patch("/analysis/ai-approver/human-verify/41")
+      .send({ isHumanApproved: true });
+
+    expect(response.status).toBe(409);
+    expect(response.body.result).toBe(false);
   });
 });

@@ -12,6 +12,8 @@ import {
   parseNumericId,
   validatePromptActiveRequest,
   validatePromptCreateRequest,
+  validatePromptHumanVerifyRequest,
+  validateTopScoresRequest,
 } from "../../modules/analysis/ai-approver";
 
 router.get("/prompts", authenticateToken, async (_req: Request, res: Response) => {
@@ -221,6 +223,211 @@ router.delete(
       return res.status(500).json({
         result: false,
         message: "Failed to delete AI approver prompt",
+      });
+    }
+  },
+);
+
+router.get(
+  "/article/:articleId",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    try {
+      const articleId = parseNumericId(req.params.articleId);
+      if (articleId === null) {
+        return res.status(400).json({
+          result: false,
+          message: "Invalid articleId",
+        });
+      }
+
+      const scores = await AiApproverArticleScore.findAll({
+        where: { articleId },
+        include: [{ model: AiApproverPromptVersion }],
+        order: [
+          ["score", "DESC"],
+          ["id", "ASC"],
+        ],
+      });
+
+      const scoreRows = scores.map((scoreRow: any) => ({
+        id: scoreRow.id,
+        articleId: scoreRow.articleId,
+        promptVersionId: scoreRow.promptVersionId,
+        resultStatus: scoreRow.resultStatus,
+        score: scoreRow.score,
+        reason: scoreRow.reason,
+        errorCode: scoreRow.errorCode,
+        errorMessage: scoreRow.errorMessage,
+        isHumanApproved: scoreRow.isHumanApproved,
+        reasonHumanRejected: scoreRow.reasonHumanRejected,
+        createdAt: scoreRow.createdAt,
+        updatedAt: scoreRow.updatedAt,
+        promptVersion: scoreRow.AiApproverPromptVersion
+          ? {
+              id: scoreRow.AiApproverPromptVersion.id,
+              name: scoreRow.AiApproverPromptVersion.name,
+              description: scoreRow.AiApproverPromptVersion.description,
+              promptInMarkdown:
+                scoreRow.AiApproverPromptVersion.promptInMarkdown,
+              isActive: scoreRow.AiApproverPromptVersion.isActive,
+              endedAt: scoreRow.AiApproverPromptVersion.endedAt,
+            }
+          : null,
+      }));
+
+      const topEligible = scoreRows.find(
+        (row: any) => row.isHumanApproved !== false,
+      );
+
+      return res.status(200).json({
+        result: true,
+        articleId,
+        topEligibleScoreId: topEligible?.id ?? null,
+        scores: scoreRows,
+      });
+    } catch (error: unknown) {
+      logger.error(
+        "Error in GET /analysis/ai-approver/article/:articleId:",
+        error,
+      );
+      return res.status(500).json({
+        result: false,
+        message: "Failed to fetch AI approver article scores",
+      });
+    }
+  },
+);
+
+router.post(
+  "/top-scores",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    try {
+      const validation = validateTopScoresRequest(req.body || {});
+      if (!validation.isValid) {
+        return res.status(400).json({
+          result: false,
+          message: validation.error,
+        });
+      }
+
+      const articleIds = req.body.articleIds as number[];
+      const rows = await AiApproverArticleScore.findAll({
+        where: { articleId: articleIds },
+        include: [{ model: AiApproverPromptVersion }],
+        order: [
+          ["articleId", "ASC"],
+          ["score", "DESC"],
+          ["id", "ASC"],
+        ],
+      });
+
+      const topScoresByArticleId = new Map<number, Record<string, unknown>>();
+      for (const row of rows) {
+        const rowAny = row as any;
+        if (rowAny.isHumanApproved === false) {
+          continue;
+        }
+        if (topScoresByArticleId.has(rowAny.articleId)) {
+          continue;
+        }
+        topScoresByArticleId.set(rowAny.articleId, {
+          id: rowAny.id,
+          articleId: rowAny.articleId,
+          promptVersionId: rowAny.promptVersionId,
+          score: rowAny.score,
+          resultStatus: rowAny.resultStatus,
+          promptName: rowAny.AiApproverPromptVersion?.name ?? null,
+        });
+      }
+
+      return res.status(200).json({
+        result: true,
+        topScores: Object.fromEntries(topScoresByArticleId),
+      });
+    } catch (error: unknown) {
+      logger.error("Error in POST /analysis/ai-approver/top-scores:", error);
+      return res.status(500).json({
+        result: false,
+        message: "Failed to fetch AI approver top scores",
+      });
+    }
+  },
+);
+
+router.patch(
+  "/human-verify/:scoreId",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    try {
+      const scoreId = parseNumericId(req.params.scoreId);
+      if (scoreId === null) {
+        return res.status(400).json({
+          result: false,
+          message: "Invalid scoreId",
+        });
+      }
+
+      const validation = validatePromptHumanVerifyRequest(req.body || {});
+      if (!validation.isValid) {
+        return res.status(400).json({
+          result: false,
+          message: validation.error,
+        });
+      }
+
+      const scoreRow = await AiApproverArticleScore.findByPk(scoreId);
+      if (!scoreRow) {
+        return res.status(404).json({
+          result: false,
+          message: "AI approver score row not found",
+        });
+      }
+
+      const articleScores = await AiApproverArticleScore.findAll({
+        where: { articleId: scoreRow.articleId },
+        order: [
+          ["score", "DESC"],
+          ["id", "ASC"],
+        ],
+      });
+
+      const topEligible = articleScores.find(
+        (row: any) => row.isHumanApproved !== false,
+      );
+      if (!topEligible || topEligible.id !== scoreRow.id) {
+        return res.status(409).json({
+          result: false,
+          message:
+            "Human validation can only be applied to the current highest non-rejected score row.",
+        });
+      }
+
+      const isHumanApproved = req.body.isHumanApproved as boolean | null;
+      const reasonHumanRejected =
+        isHumanApproved === false
+          ? (req.body.reasonHumanRejected as string).trim()
+          : null;
+
+      await scoreRow.update({
+        isHumanApproved,
+        reasonHumanRejected,
+      });
+
+      return res.status(200).json({
+        result: true,
+        message: "AI approver human validation updated",
+        score: scoreRow,
+      });
+    } catch (error: unknown) {
+      logger.error(
+        "Error in PATCH /analysis/ai-approver/human-verify/:scoreId:",
+        error,
+      );
+      return res.status(500).json({
+        result: false,
+        message: "Failed to update AI approver human validation",
       });
     }
   },

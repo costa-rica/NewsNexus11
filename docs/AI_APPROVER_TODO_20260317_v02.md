@@ -102,24 +102,24 @@
 
 ## 5. phase 4 - API worker integration and score endpoints
 
-- [ ] Add API route to start the AI approver workflow.
-- [ ] Proxy requests from `api` to `worker-python`.
-- [ ] Accept request body fields for:
+- [x] Add API route to start the AI approver workflow.
+- [x] Proxy requests from `api` to `worker-python`.
+- [x] Accept request body fields for:
   - article count limit
   - require AI state assignment flag
   - optional `stateIds: number[]`
-- [ ] Use a queue-based start-job route pattern for the worker integration.
-- [ ] Add API route to fetch AI approver score rows for one `articleId`.
-- [ ] Return all prompt-version score rows and prompt metadata needed by the modal.
-- [ ] Add API route to update human validation fields on one `AiApproverArticleScores` row.
-- [ ] Allow `isHumanApproved` values of `true`, `false`, or `null`.
-- [ ] Allow `reasonHumanRejected` only when rejecting.
-- [ ] Add API route or query support for the review table to fetch the highest non-rejected score per article.
-- [ ] Ensure review-table queries treat `isHumanApproved = false` as excluded from top-score display.
-- [ ] Return no score link and `N/A` or blank behavior when an article has no AI approver score rows.
-- [ ] Add API tests for start, fetch details, human validation update, and top-score query behavior.
-- [ ] Run relevant tests for this phase.
-- [ ] If tests pass, check off completed tasks in this phase.
+- [x] Use a queue-based start-job route pattern for the worker integration.
+- [x] Add API route to fetch AI approver score rows for one `articleId`.
+- [x] Return all prompt-version score rows and prompt metadata needed by the modal.
+- [x] Add API route to update human validation fields on one `AiApproverArticleScores` row.
+- [x] Allow `isHumanApproved` values of `true`, `false`, or `null`.
+- [x] Allow `reasonHumanRejected` only when rejecting.
+- [x] Add API route or query support for the review table to fetch the highest non-rejected score per article.
+- [x] Ensure review-table queries treat `isHumanApproved = false` as excluded from top-score display.
+- [x] Return no score link and `N/A` or blank behavior when an article has no AI approver score rows.
+- [x] Add API tests for start, fetch details, human validation update, and top-score query behavior.
+- [x] Run relevant tests for this phase.
+- [x] If tests pass, check off completed tasks in this phase.
 - [ ] Commit with a message that references `docs/AI_APPROVER_TODO_20260317_v02.md` and phase 4.
 
 ## 6. phase 5 - portal automations UI

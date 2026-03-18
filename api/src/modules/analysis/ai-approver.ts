@@ -9,6 +9,15 @@ type ActiveBody = {
   isActive?: unknown;
 };
 
+type HumanVerifyBody = {
+  isHumanApproved?: unknown;
+  reasonHumanRejected?: unknown;
+};
+
+type TopScoresBody = {
+  articleIds?: unknown;
+};
+
 export function validatePromptCreateRequest(body: PromptBody): {
   isValid: boolean;
   error?: string;
@@ -77,4 +86,69 @@ export function parseNumericId(value: string | string[] | undefined): number | n
   }
 
   return parsed;
+}
+
+export function validatePromptHumanVerifyRequest(body: HumanVerifyBody): {
+  isValid: boolean;
+  error?: string;
+} {
+  const { isHumanApproved, reasonHumanRejected } = body;
+
+  if (
+    isHumanApproved !== true &&
+    isHumanApproved !== false &&
+    isHumanApproved !== null
+  ) {
+    return {
+      isValid: false,
+      error: "isHumanApproved must be true, false, or null",
+    };
+  }
+
+  if (
+    reasonHumanRejected !== undefined &&
+    reasonHumanRejected !== null &&
+    typeof reasonHumanRejected !== "string"
+  ) {
+    return {
+      isValid: false,
+      error: "reasonHumanRejected must be a string if provided",
+    };
+  }
+
+  if (
+    isHumanApproved === false &&
+    (typeof reasonHumanRejected !== "string" ||
+      reasonHumanRejected.trim().length === 0)
+  ) {
+    return {
+      isValid: false,
+      error: "reasonHumanRejected is required when rejecting a score",
+    };
+  }
+
+  return { isValid: true };
+}
+
+export function validateTopScoresRequest(body: TopScoresBody): {
+  isValid: boolean;
+  error?: string;
+} {
+  const { articleIds } = body;
+
+  if (!Array.isArray(articleIds) || articleIds.length === 0) {
+    return {
+      isValid: false,
+      error: "articleIds must be a non-empty array",
+    };
+  }
+
+  if (!articleIds.every((value) => Number.isInteger(value) && value > 0)) {
+    return {
+      isValid: false,
+      error: "articleIds must contain positive integers only",
+    };
+  }
+
+  return { isValid: true };
 }
