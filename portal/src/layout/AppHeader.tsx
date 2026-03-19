@@ -4,6 +4,27 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef } from "react";
 
+const rawMode = (process.env.NEXT_PUBLIC_MODE || "").toLowerCase();
+
+const environmentDisplay =
+	rawMode === "development" || rawMode === "dev"
+		? {
+				badgeClassName:
+					"border border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800/60 dark:bg-amber-900/30 dark:text-amber-200",
+				headerClassName:
+					"bg-amber-50 border-amber-200 dark:border-amber-900/40 dark:bg-amber-950/40",
+				label: "DEV",
+			}
+		: rawMode === "testing" || rawMode === "test"
+			? {
+					badgeClassName:
+						"border border-sky-200 bg-sky-100 text-sky-800 dark:border-sky-800/60 dark:bg-sky-900/30 dark:text-sky-200",
+					headerClassName:
+						"bg-sky-50 border-sky-200 dark:border-sky-900/40 dark:bg-sky-950/40",
+					label: "TEST",
+				}
+			: null;
+
 const AppHeader: React.FC = () => {
 	const { isMobileOpen, toggleMobileSidebar } = useSidebar();
 
@@ -29,25 +50,40 @@ const AppHeader: React.FC = () => {
 	}, []);
 
 	return (
-		<header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
+		<header
+			className={`sticky top-0 flex w-full border-gray-200 z-99999 dark:border-gray-800 lg:border-b ${
+				environmentDisplay
+					? environmentDisplay.headerClassName
+					: "bg-white dark:bg-gray-900"
+			}`}
+		>
 			<div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
 				<div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:border-b-0 lg:px-0 lg:py-4">
-					<Link href="/">
-						<Image
-							width={154}
-							height={32}
-							className="dark:hidden"
-							src="/images/logoAndNameRound.png"
-							alt="Logo and Name"
-						/>
-						<Image
-							width={154}
-							height={32}
-							className="hidden dark:block"
-							src="/images/logoAndNameRound.png"
-							alt="Logo and Name"
-						/>
-					</Link>
+					<div className="flex items-center gap-3">
+						<Link href="/">
+							<Image
+								width={154}
+								height={32}
+								className="dark:hidden"
+								src="/images/logoAndNameRound.png"
+								alt="Logo and Name"
+							/>
+							<Image
+								width={154}
+								height={32}
+								className="hidden dark:block"
+								src="/images/logoAndNameRound.png"
+								alt="Logo and Name"
+							/>
+						</Link>
+						{environmentDisplay ? (
+							<span
+								className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide ${environmentDisplay.badgeClassName}`}
+							>
+								{environmentDisplay.label}
+							</span>
+						) : null}
+					</div>
 					<button
 						className="flex lg:hidden items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 dark:text-gray-400"
 						onClick={handleToggle}
