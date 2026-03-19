@@ -1,4 +1,9 @@
-import { Article, ArticleStateContract, ArticleStateContract02 } from '@newsnexus/db-models';
+import {
+  Article,
+  ArticleIsRelevant,
+  ArticleStateContract,
+  ArticleStateContract02
+} from '@newsnexus/db-models';
 import { AppError } from './errors/appError';
 import logger from './logger';
 
@@ -94,6 +99,12 @@ export const selectTargetArticles = async ({
     raw: true
   });
 
+  const notRelevantArticleIds = await ArticleIsRelevant.findAll({
+    attributes: ['articleId'],
+    where: { isRelevant: false },
+    raw: true
+  });
+
   const assignedIds = [
     ...contract02ArticleIds
       .map((row) => (row as { articleId?: unknown }).articleId)
@@ -104,9 +115,19 @@ export const selectTargetArticles = async ({
   ];
 
   const uniqueAssignedIds = [...new Set(assignedIds)];
+  const uniqueNotRelevantIds = [
+    ...new Set(
+      notRelevantArticleIds
+        .map((row) => (row as { articleId?: unknown }).articleId)
+        .filter((value): value is number => typeof value === 'number')
+    )
+  ];
 
   logger.info(
     `Found ${uniqueAssignedIds.length} articles with existing state assignments (${contract02ArticleIds.length} in ArticleStateContracts02, ${contractArticleIds.length} in ArticleStateContracts)`
+  );
+  logger.info(
+    `Found ${uniqueNotRelevantIds.length} articles marked not relevant in ArticleIsRelevants`
   );
 
   const articles = await Article.findAll({
@@ -116,6 +137,7 @@ export const selectTargetArticles = async ({
   const unassignedArticles = articles
     .filter((article) => Boolean(article.publishedDate) && article.publishedDate! >= cutoffDateString)
     .filter((article) => !uniqueAssignedIds.includes(article.id))
+    .filter((article) => !uniqueNotRelevantIds.includes(article.id))
     .slice(0, targetArticleStateReviewCount);
 
   logger.info(`Found ${unassignedArticles.length} articles to process`);
