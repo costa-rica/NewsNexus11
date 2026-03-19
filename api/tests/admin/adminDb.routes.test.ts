@@ -46,6 +46,8 @@ function createModelMock() {
 }
 
 const modelNames = [
+  "AiApproverArticleScore",
+  "AiApproverPromptVersion",
   "User",
   "ArticleKeywordContract",
   "EntityWhoCategorizedArticle",
@@ -142,6 +144,23 @@ describe("adminDb routes", () => {
       where: {},
       truncate: true,
     });
+  });
+
+  test("GET /admin-db/db-row-counts-by-table includes AI approver tables", async () => {
+    dbMock.AiApproverArticleScore.count.mockResolvedValue(7);
+    dbMock.AiApproverPromptVersion.count.mockResolvedValue(2);
+
+    const app = buildApp();
+    const response = await request(app).get("/admin-db/db-row-counts-by-table");
+
+    expect(response.status).toBe(200);
+    expect(response.body.result).toBe(true);
+    expect(response.body.arrayRowCountsByTable).toEqual(
+      expect.arrayContaining([
+        { tableName: "AiApproverArticleScore", rowCount: 7 },
+        { tableName: "AiApproverPromptVersion", rowCount: 2 },
+      ]),
+    );
   });
 
   test("PUT /admin-db/table-row/:tableName/null creates a new row", async () => {

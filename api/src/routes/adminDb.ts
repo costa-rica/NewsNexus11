@@ -10,6 +10,8 @@ import unzipper from "unzipper";
 
 const router = express.Router();
 const {
+  AiApproverArticleScore,
+  AiApproverPromptVersion,
   User,
   ArticleKeywordContract,
   EntityWhoCategorizedArticle,
@@ -40,6 +42,8 @@ const {
 } = require("@newsnexus/db-models");
 
 const tableRegistry = {
+  AiApproverArticleScore,
+  AiApproverPromptVersion,
   User,
   ArticleKeywordContract,
   EntityWhoCategorizedArticle,
