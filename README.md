@@ -15,7 +15,7 @@ Other node.js microservices were triggered manually.
 
 ```
 .
-├── AGENT.md                        - AI assistant guidance for this monorepo
+├── AGENTS.md                        - AI assistant guidance for this monorepo
 ├── README.md
 ├── api/                            - Express.js REST API (TypeScript)
 │   ├── src/
