@@ -3,38 +3,9 @@ import fs from "fs";
 import path from "path";
 // const sequelize = require("../models/_connection"); // Import Sequelize instance
 import logger from "./logger";
+import * as db from "@newsnexus/db-models";
 
-// Import models directly
-const {
-  sequelize,
-  User,
-  ArticleKeywordContract,
-  EntityWhoCategorizedArticle,
-  ArtificialIntelligence,
-  State,
-  ArticleStateContract,
-  Report,
-  ArticleReportContract,
-  ArticleReviewed,
-  ArticleApproved,
-  ArticleDuplicateAnalysis,
-  NewsApiRequest,
-  ArticleContents02,
-  NewsRssRequest,
-  Keyword,
-  NewsArticleAggregatorSource,
-  Article,
-  EntityWhoFoundArticle,
-  NewsArticleAggregatorSourceStateContract,
-  ArticleIsRelevant,
-  NewsApiRequestWebsiteDomainContract,
-  WebsiteDomain,
-  ArticleEntityWhoCategorizedArticleContract,
-  ArticleEntityWhoCategorizedArticleContracts02,
-  ArticlesApproved02,
-  ArticleStateContract02,
-  Prompt,
-} = require("@newsnexus/db-models");
+const { sequelize } = db;
 
 import { promisify } from "util";
 import archiver from "archiver";
@@ -42,35 +13,23 @@ import { Parser } from "json2csv";
 const mkdirAsync = promisify(fs.mkdir);
 const writeFileAsync = promisify(fs.writeFile);
 
-const models: Record<string, any> = {
-  User,
-  ArticleKeywordContract,
-  EntityWhoCategorizedArticle,
-  ArtificialIntelligence,
-  State,
-  ArticleStateContract,
-  Report,
-  ArticleReportContract,
-  ArticleReviewed,
-  ArticleApproved,
-  ArticleDuplicateAnalysis,
-  NewsApiRequest,
-  ArticleContents02,
-  NewsRssRequest,
-  Keyword,
-  NewsArticleAggregatorSource,
-  Article,
-  EntityWhoFoundArticle,
-  NewsArticleAggregatorSourceStateContract,
-  ArticleIsRelevant,
-  NewsApiRequestWebsiteDomainContract,
-  WebsiteDomain,
-  ArticleEntityWhoCategorizedArticleContract,
-  ArticleEntityWhoCategorizedArticleContracts02,
-  ArticlesApproved02,
-  ArticleStateContract02,
-  Prompt,
-};
+type ModelRegistry = Record<string, { findAll: Function; bulkCreate: Function }>;
+
+function getModelRegistry(): ModelRegistry {
+  const registry: ModelRegistry = {};
+
+  for (const [name, value] of Object.entries(db)) {
+    if (
+      value &&
+      typeof (value as { findAll?: Function }).findAll === "function" &&
+      typeof (value as { bulkCreate?: Function }).bulkCreate === "function"
+    ) {
+      registry[name] = value as { findAll: Function; bulkCreate: Function };
+    }
+  }
+
+  return registry;
+}
 
 function coerceCsvValue(value: unknown): unknown {
   if (typeof value !== "string") {
@@ -107,6 +66,7 @@ async function readAndAppendDbTables(backupFolderPath: string) {
   logger.info(`Processing CSV files from: ${backupFolderPath}`);
   logger.info(`Sequelize instance: ${sequelize}`);
   let currentTable: string | null = null;
+  const models = getModelRegistry();
   try {
     // Read all CSV files from the backup directory
     const csvFiles = await fs.promises.readdir(backupFolderPath);
@@ -217,6 +177,7 @@ async function createDatabaseBackupZipFile(suffix = ""): Promise<string> {
     await mkdirAsync(backupDir, { recursive: true });
 
     let hasData = false;
+    const models = getModelRegistry();
 
     for (const tableName in models) {
       if (models.hasOwnProperty(tableName)) {
