@@ -111,6 +111,48 @@ describe('articleContentScraper02 routes', () => {
     });
   });
 
+  it('accepts explicit article ids without broad targeting fields', async () => {
+    const enqueueJob = jest.fn().mockResolvedValue({
+      jobId: 'job-ids',
+      status: 'queued'
+    });
+    const buildJobHandler = jest.fn(() => async () => undefined);
+    const router = createArticleContentScraper02Router({
+      queueEngine: {
+        enqueueJob
+      } as never,
+      buildJobHandler
+    });
+    const layer = (router.stack as any[]).find(
+      (entry) => entry.route?.path === '/start-job' && entry.route?.stack?.[0]
+    );
+    const handler = layer?.route?.stack?.[0]?.handle as any;
+    const json = jest.fn();
+    const status = jest.fn().mockReturnValue({ json });
+
+    await handler(
+      {
+        body: {
+          articleIds: [101, 202, 202]
+        }
+      } as any,
+      { status } as any,
+      jest.fn()
+    );
+
+    expect(buildJobHandler).toHaveBeenCalledWith({
+      articleIds: [101, 202],
+      targetArticleThresholdDaysOld: 180,
+      targetArticleStateReviewCount: 100,
+      includeArticlesThatMightHaveBeenStateAssigned: false
+    });
+    expect(enqueueJob).toHaveBeenCalledWith({
+      endpointName: '/article-content-scraper-02/start-job',
+      run: expect.any(Function)
+    });
+    expect(status).toHaveBeenCalledWith(202);
+  });
+
   it('uses the start-job handler exported by the router', async () => {
     const handler = getStartJobHandler();
 

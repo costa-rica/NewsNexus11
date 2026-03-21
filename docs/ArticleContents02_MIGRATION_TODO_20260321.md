@@ -89,7 +89,7 @@ The new scraper has already proven better in testing. The remaining work is repl
 
 ## Phase 4. Assess and migrate `requestGoogleRss`
 
-1. Status: in progress on 2026-03-21.
+1. Status: completed on 2026-03-21.
 
 1. Review the current `requestGoogleRss` storage behavior.
    - File to inspect:
@@ -152,7 +152,7 @@ The new scraper has already proven better in testing. The remaining work is repl
      3. or be left as transitional legacy behavior temporarily
    - Current note:
      1. worker-node `requestGoogleRss` now seeds or scrapes into `ArticleContents02`
-     2. API-side Google RSS storage still needs its own migration decision
+     2. API-side Google RSS storage now seeds `ArticleContents02` and queues targeted follow-up scraping when needed
 
 ## Phase 5. Legacy route and legacy flow retirement
 

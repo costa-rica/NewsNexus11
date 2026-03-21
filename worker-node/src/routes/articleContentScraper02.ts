@@ -37,6 +37,7 @@ export const createArticleContentScraper02Router = (
 
       logger.info('Received ArticleContents02 scraper start request', {
         endpointName: ARTICLE_CONTENT_SCRAPER_02_ENDPOINT,
+        requestedArticleIds: body.articleIds?.length ?? 0,
         targetArticleThresholdDaysOld: body.targetArticleThresholdDaysOld,
         targetArticleStateReviewCount: body.targetArticleStateReviewCount,
         includeArticlesThatMightHaveBeenStateAssigned

@@ -1,4 +1,5 @@
 import express from 'express';
+import axios from 'axios';
 import { authenticateToken } from '../../modules/userAuthentication';
 import { buildQuery, buildRssUrl } from '../../modules/newsOrgs/queryBuilder';
 import { fetchRssItems } from '../../modules/newsOrgs/rssFetcher';
@@ -31,6 +32,17 @@ type AddToDatabaseBody = {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function getWorkerNodeBaseUrl(): string | null {
+  const rawValue = process.env.URL_BASE_NEWS_NEXUS_WORKER_NODE || '';
+  const trimmedValue = rawValue.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  return trimmedValue.replace(/\/+$/, '');
 }
 
 router.post('/make-request', authenticateToken, async (req, res) => {
@@ -164,10 +176,67 @@ router.post('/add-to-database', authenticateToken, async (req, res) => {
       entityWhoFoundArticleId,
     });
 
+    let followUpScrape:
+      | {
+          triggered: boolean;
+          articleIds: number[];
+          jobId?: string;
+          endpointName?: string;
+          status?: string;
+          error?: string;
+        }
+      | undefined;
+
+    if (storageResult.articleIdsNeedingScrape.length > 0) {
+      const workerNodeBaseUrl = getWorkerNodeBaseUrl();
+
+      if (!workerNodeBaseUrl) {
+        followUpScrape = {
+          triggered: false,
+          articleIds: storageResult.articleIdsNeedingScrape,
+          error: 'URL_BASE_NEWS_NEXUS_WORKER_NODE is not configured.'
+        };
+      } else {
+        try {
+          const workerResponse = await axios.post(
+            `${workerNodeBaseUrl}/article-content-scraper-02/start-job`,
+            {
+              articleIds: storageResult.articleIdsNeedingScrape
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          followUpScrape = {
+            triggered: true,
+            articleIds: storageResult.articleIdsNeedingScrape,
+            jobId: workerResponse.data?.jobId,
+            endpointName: workerResponse.data?.endpointName,
+            status: workerResponse.data?.status
+          };
+        } catch (error) {
+          logger.error('Error triggering follow-up ArticleContents02 scrape job:', error);
+          followUpScrape = {
+            triggered: false,
+            articleIds: storageResult.articleIdsNeedingScrape,
+            error: getErrorMessage(error)
+          };
+        }
+      }
+    }
+
     const duplicateCount = storageResult.articlesReceived - storageResult.articlesSaved;
     let message = `Successfully saved ${storageResult.articlesSaved} of ${storageResult.articlesReceived} articles to database`;
     if (duplicateCount > 0) {
       message += ` (${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} skipped)`;
+    }
+    if (followUpScrape?.triggered) {
+      message += ` and queued follow-up scraping for ${followUpScrape.articleIds.length} article${followUpScrape.articleIds.length === 1 ? '' : 's'}`;
+    } else if (followUpScrape && followUpScrape.articleIds.length > 0) {
+      message += `; follow-up scraping was not queued for ${followUpScrape.articleIds.length} article${followUpScrape.articleIds.length === 1 ? '' : 's'}`;
     }
 
     res.status(200).json({
@@ -176,6 +245,8 @@ router.post('/add-to-database', authenticateToken, async (req, res) => {
       articlesReceived: storageResult.articlesReceived,
       articlesSaved: storageResult.articlesSaved,
       articleIds: storageResult.articleIds,
+      articleIdsNeedingScrape: storageResult.articleIdsNeedingScrape,
+      followUpScrape,
       message,
     });
   } catch (error) {

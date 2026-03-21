@@ -82,4 +82,61 @@ describe('article content scraper 02 job handler', () => {
       )
     ).resolves.toBeUndefined();
   });
+
+  it('passes explicit article ids through to article selection', async () => {
+    const selectArticles = jest.fn().mockResolvedValue([
+      {
+        id: 404,
+        title: 'Targeted',
+        description: 'desc',
+        url: 'https://news.google.com/rss/articles/404',
+        publishedDate: '2026-03-20'
+      }
+    ]);
+    const enrichContent02 = jest.fn().mockResolvedValue({
+      articlesConsidered: 1,
+      articlesSkipped: 0,
+      successfulScrapes: 1,
+      failedScrapes: 0,
+      createdRows: 1,
+      updatedRows: 0
+    });
+
+    await expect(
+      runArticleContentScraper02Workflow(
+        {
+          jobId: 'job-ids',
+          signal: new AbortController().signal,
+          articleIds: [404, 505],
+          targetArticleThresholdDaysOld: 30,
+          targetArticleStateReviewCount: 50,
+          includeArticlesThatMightHaveBeenStateAssigned: false
+        },
+        {
+          ensureDb: jest.fn().mockResolvedValue(undefined),
+          selectArticles,
+          enrichContent02
+        }
+      )
+    ).resolves.toBeUndefined();
+
+    expect(selectArticles).toHaveBeenCalledWith({
+      articleIds: [404, 505],
+      targetArticleThresholdDaysOld: 30,
+      targetArticleStateReviewCount: 50,
+      includeArticlesThatMightHaveBeenStateAssigned: false
+    });
+    expect(enrichContent02).toHaveBeenCalledWith({
+      articles: [
+        {
+          id: 404,
+          title: 'Targeted',
+          description: 'desc',
+          url: 'https://news.google.com/rss/articles/404',
+          publishedDate: '2026-03-20'
+        }
+      ],
+      signal: expect.any(Object)
+    });
+  });
 });

@@ -24,6 +24,7 @@ export const runArticleContentScraper02Workflow = async (
   const enrichContent02 = dependencies.enrichContent02 ?? enrichArticleContent02;
 
   const articles = await selectArticles({
+    articleIds: input.articleIds,
     targetArticleThresholdDaysOld: input.targetArticleThresholdDaysOld,
     targetArticleStateReviewCount: input.targetArticleStateReviewCount,
     includeArticlesThatMightHaveBeenStateAssigned:
@@ -33,6 +34,7 @@ export const runArticleContentScraper02Workflow = async (
   logger.info('Starting ArticleContents02 scraper workflow', {
     jobId: input.jobId,
     candidateArticles: articles.length,
+    requestedArticleIds: input.articleIds?.length ?? 0,
     targetArticleThresholdDaysOld: input.targetArticleThresholdDaysOld,
     targetArticleStateReviewCount: input.targetArticleStateReviewCount,
     includeArticlesThatMightHaveBeenStateAssigned:
@@ -59,6 +61,7 @@ export const createArticleContentScraper02JobHandler = (
       {
         jobId: queueContext.jobId,
         signal: queueContext.signal,
+        articleIds: input.articleIds,
         targetArticleThresholdDaysOld: input.targetArticleThresholdDaysOld,
         targetArticleStateReviewCount: input.targetArticleStateReviewCount,
         includeArticlesThatMightHaveBeenStateAssigned:

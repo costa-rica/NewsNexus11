@@ -12,6 +12,7 @@ export interface ArticleAutomationTargetingInput {
   targetArticleThresholdDaysOld: number;
   targetArticleStateReviewCount: number;
   includeArticlesThatMightHaveBeenStateAssigned?: boolean;
+  articleIds?: number[];
 }
 
 export interface TargetArticleRecord {
@@ -40,10 +41,41 @@ const parsePositiveIntegerField = (
   return value;
 };
 
+const parseArticleIdsField = (value: unknown): number[] | null => {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (!Array.isArray(value) || value.length === 0) {
+    logger.warn('Invalid articleIds input field', { value });
+    return null;
+  }
+
+  const normalizedIds = value.filter(
+    (candidate): candidate is number =>
+      typeof candidate === 'number' && Number.isInteger(candidate) && candidate > 0
+  );
+
+  if (normalizedIds.length !== value.length) {
+    logger.warn('Invalid articleIds input values', { value });
+    return null;
+  }
+
+  return [...new Set(normalizedIds)];
+};
+
 export const validateArticleAutomationTargetingInput = (
   body: unknown
 ): ArticleAutomationTargetingInput => {
   const candidate = body as Record<string, unknown>;
+  const articleIds = parseArticleIdsField(candidate?.articleIds);
+
+  if (Array.isArray(candidate?.articleIds) && articleIds !== null) {
+    return {
+      ...ARTICLE_AUTOMATION_DEFAULTS,
+      articleIds
+    };
+  }
 
   const thresholdDays = parsePositiveIntegerField(
     candidate?.targetArticleThresholdDaysOld,
@@ -71,20 +103,49 @@ export const validateArticleAutomationTargetingInput = (
   }
 
   if (details.length > 0) {
+    if (candidate?.articleIds !== undefined && articleIds === null) {
+      details.push({
+        field: 'articleIds',
+        message: 'articleIds must be a non-empty array of positive integers'
+      });
+    }
+
     throw AppError.validation(details);
   }
 
   return {
     targetArticleThresholdDaysOld: thresholdDays!,
-    targetArticleStateReviewCount: reviewCount!
+    targetArticleStateReviewCount: reviewCount!,
+    articleIds: articleIds ?? undefined
   };
 };
 
 export const selectTargetArticles = async ({
+  articleIds,
   includeArticlesThatMightHaveBeenStateAssigned = false,
   targetArticleStateReviewCount,
   targetArticleThresholdDaysOld
 }: ArticleAutomationTargetingInput): Promise<TargetArticleRecord[]> => {
+  if (articleIds && articleIds.length > 0) {
+    const articles = await Article.findAll({
+      where: { id: articleIds },
+      order: [['id', 'DESC']]
+    });
+
+    logger.info('Selected explicit article ids for automation workflow', {
+      requestedArticleIds: articleIds.length,
+      foundArticles: articles.length
+    });
+
+    return articles.map((article) => ({
+      id: article.id,
+      title: article.title ?? '',
+      description: article.description ?? '',
+      url: article.url ?? null,
+      publishedDate: article.publishedDate ?? null
+    }));
+  }
+
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - targetArticleThresholdDaysOld);
   const cutoffDateString = cutoffDate.toISOString().split('T')[0];
