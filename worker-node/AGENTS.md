@@ -200,6 +200,11 @@ Current implementation details:
 - Playwright fallback requires a browser binary in the runtime environment.
 - Use `npx playwright install chromium` in `worker-node/` to install the managed browser binary.
 - On Ubuntu or other multi-user servers, run that install command as the same user that runs the `worker-node` process.
+  use this command:
+
+```bash
+sudo -u limited_user bash -c "cd /home/limited_user/applications/NewsNexus11/worker-node && npx playwright install chromium"
+```
 
 3. HTTP policy
 
