@@ -271,25 +271,25 @@ Phase completion steps:
 
 ## Phase 9 - Add And Expand Test Coverage
 
-- [ ] Add tests for `ArticleContents02` repository behavior.
+- [x] Add tests for `ArticleContents02` repository behavior.
   Run relevant tests after this task.
-- [ ] Add tests for Google classification logic.
+- [x] Add tests for Google classification logic.
   Run relevant tests after this task.
-- [ ] Add tests for publisher URL extraction.
+- [x] Add tests for publisher URL extraction.
   Run relevant tests after this task.
-- [ ] Add tests for direct HTTP success.
+- [x] Add tests for direct HTTP success.
   Run relevant tests after this task.
-- [ ] Add tests for browser fallback success.
+- [x] Add tests for browser fallback success.
   Run relevant tests after this task.
-- [ ] Add tests for blocked Google outcomes.
+- [x] Add tests for blocked Google outcomes.
   Run relevant tests after this task.
-- [ ] Add tests for blocked publisher outcomes.
+- [x] Add tests for blocked publisher outcomes.
   Run relevant tests after this task.
-- [ ] Add tests for no-publisher-url outcomes.
+- [x] Add tests for no-publisher-url outcomes.
   Run relevant tests after this task.
-- [ ] Add tests for route and job integration.
+- [x] Add tests for route and job integration.
   Run relevant tests after this task.
-- [ ] Run the full relevant test suite for `worker-node` and any impacted packages.
+- [x] Run the full relevant test suite for `worker-node` and any impacted packages.
   Run relevant tests after this task.
 
 Phase completion steps:
