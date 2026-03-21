@@ -33,6 +33,12 @@ export interface EnrichArticleContent02Options {
   signal: AbortSignal;
 }
 
+export interface ProcessArticleContent02CandidateOptions {
+  article: ArticleContent02Candidate;
+  signal: AbortSignal;
+  navigationSession?: GoogleNavigationSession;
+}
+
 const createEmptySummary = (): ArticleContent02WorkflowSummary => ({
   articlesConsidered: 0,
   articlesSkipped: 0,
@@ -71,10 +77,16 @@ const createGoogleFailureResult = ({
   publisherStatusCode: null
 });
 
-export const enrichArticleContent02 = async (
-  options: EnrichArticleContent02Options,
+export interface ProcessArticleContent02CandidateResult {
+  skipped: boolean;
+  persistenceAction: 'created' | 'updated' | 'skipped' | null;
+  workflowResult: ArticleContent02WorkflowResult | null;
+}
+
+export const processArticleContent02Candidate = async (
+  options: ProcessArticleContent02CandidateOptions,
   dependencies: EnrichArticleContent02Dependencies = {}
-): Promise<ArticleContent02WorkflowSummary> => {
+): Promise<ProcessArticleContent02CandidateResult> => {
   const createNavigationSession =
     dependencies.createNavigationSession ?? createGoogleNavigationSession;
   const navigateGoogleUrlImpl = dependencies.navigateGoogleUrl ?? navigateGoogleUrl;
@@ -86,6 +98,161 @@ export const enrichArticleContent02 = async (
   const getSkipDecision = dependencies.getSkipDecision ?? getArticleContent02SkipDecision;
   const persistResult = dependencies.persistResult ?? persistArticleContent02Result;
 
+  const article = options.article;
+
+  if (!article.url || article.url.trim() === '') {
+    logger.info('Skipping article content 02 scrape because Google RSS URL is missing', {
+      articleId: article.id
+    });
+    return {
+      skipped: true,
+      persistenceAction: null,
+      workflowResult: null
+    };
+  }
+
+  const skipDecision = await getSkipDecision(article.id);
+  if (skipDecision.shouldSkip) {
+    logger.info('Skipping article content 02 scrape because a usable row already exists', {
+      articleId: article.id,
+      existingArticleContents02Id: skipDecision.existingRow?.id ?? null
+    });
+    return {
+      skipped: true,
+      persistenceAction: null,
+      workflowResult: null
+    };
+  }
+
+  const ownsSession = !options.navigationSession;
+  const navigationSession = options.navigationSession ?? (await createNavigationSession());
+
+  try {
+    let workflowResult: ArticleContent02WorkflowResult;
+
+    try {
+      const googleNavigation = await navigateGoogleUrlImpl(
+        navigationSession.context,
+        article.url,
+        options.signal
+      );
+
+      const googleClassification = classifyGooglePageImpl({
+        finalUrl: googleNavigation.finalUrl,
+        html: googleNavigation.html
+      });
+
+      if (googleClassification.isBlocked) {
+        workflowResult = createGoogleFailureResult({
+          article,
+          googleFinalUrl: googleNavigation.finalUrl,
+          googleStatusCode: googleNavigation.statusCode,
+          details: googleClassification.details,
+          failureType: googleClassification.failureType
+        });
+      } else {
+        const extractedFromFinalUrl = extractPublisherUrlFromFinalUrlImpl(
+          googleNavigation.finalUrl
+        );
+        const extractedFromHtml = extractPublisherUrlImpl({
+          html: googleNavigation.html,
+          baseUrl: googleNavigation.finalUrl || article.url
+        });
+        const extracted =
+          extractedFromFinalUrl.publisherUrl !== null ? extractedFromFinalUrl : extractedFromHtml;
+
+        if (!extracted.publisherUrl) {
+          workflowResult = {
+            articleId: article.id,
+            googleRssUrl: article.url,
+            googleFinalUrl: googleNavigation.finalUrl,
+            publisherUrl: null,
+            publisherFinalUrl: null,
+            title: null,
+            content: null,
+            status: 'fail',
+            failureType: extracted.failureType,
+            details: extracted.details,
+            extractionSource: extracted.extractionSource,
+            bodySource: 'google-page',
+            googleStatusCode: googleNavigation.statusCode,
+            publisherStatusCode: null
+          };
+        } else {
+          const publisherResult = await fetchPublisherPageImpl({
+            publisherUrl: extracted.publisherUrl,
+            browserContext: navigationSession.context,
+            signal: options.signal
+          });
+
+          workflowResult = {
+            articleId: article.id,
+            googleRssUrl: article.url,
+            googleFinalUrl: googleNavigation.finalUrl,
+            publisherUrl: extracted.publisherUrl,
+            publisherFinalUrl: publisherResult.finalUrl,
+            title: publisherResult.title,
+            content: publisherResult.content,
+            status: publisherResult.failureType ? 'fail' : 'success',
+            failureType: publisherResult.failureType,
+            details: publisherResult.details,
+            extractionSource: extracted.extractionSource,
+            bodySource: publisherResult.bodySource,
+            googleStatusCode: googleNavigation.statusCode,
+            publisherStatusCode: publisherResult.statusCode
+          };
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      workflowResult = {
+        articleId: article.id,
+        googleRssUrl: article.url,
+        googleFinalUrl: null,
+        publisherUrl: null,
+        publisherFinalUrl: null,
+        title: null,
+        content: null,
+        status: 'fail',
+        failureType: 'navigation_error',
+        details: message,
+        extractionSource: 'none',
+        bodySource: 'none',
+        googleStatusCode: null,
+        publisherStatusCode: null
+      };
+    }
+
+    const persistenceResult = await persistResult(workflowResult);
+
+    logger.info('Article content 02 workflow result persisted', {
+      articleId: article.id,
+      status: workflowResult.status,
+      failureType: workflowResult.failureType,
+      bodySource: workflowResult.bodySource,
+      extractionSource: workflowResult.extractionSource,
+      persistenceAction: persistenceResult.action
+    });
+
+    return {
+      skipped: false,
+      persistenceAction: persistenceResult.action,
+      workflowResult
+    };
+  } finally {
+    if (ownsSession) {
+      await navigationSession.close();
+    }
+  }
+};
+
+export const enrichArticleContent02 = async (
+  options: EnrichArticleContent02Options,
+  dependencies: EnrichArticleContent02Dependencies = {}
+): Promise<ArticleContent02WorkflowSummary> => {
+  const createNavigationSession =
+    dependencies.createNavigationSession ?? createGoogleNavigationSession;
   const summary = createEmptySummary();
   const navigationSession = await createNavigationSession();
 
@@ -100,144 +267,33 @@ export const enrichArticleContent02 = async (
 
       summary.articlesConsidered += 1;
 
-      if (!article.url || article.url.trim() === '') {
+      const result = await processArticleContent02Candidate(
+        {
+          article,
+          signal: options.signal,
+          navigationSession
+        },
+        dependencies
+      );
+
+      if (result.skipped || !result.workflowResult) {
         summary.articlesSkipped += 1;
-        logger.info('Skipping article content 02 scrape because Google RSS URL is missing', {
-          articleId: article.id
-        });
         continue;
       }
 
-      const skipDecision = await getSkipDecision(article.id);
-      if (skipDecision.shouldSkip) {
-        summary.articlesSkipped += 1;
-        logger.info('Skipping article content 02 scrape because a usable row already exists', {
-          articleId: article.id,
-          existingArticleContents02Id: skipDecision.existingRow?.id ?? null
-        });
-        continue;
-      }
-
-      let workflowResult: ArticleContent02WorkflowResult;
-
-      try {
-        const googleNavigation = await navigateGoogleUrlImpl(
-          navigationSession.context,
-          article.url,
-          options.signal
-        );
-
-        const googleClassification = classifyGooglePageImpl({
-          finalUrl: googleNavigation.finalUrl,
-          html: googleNavigation.html
-        });
-
-        if (googleClassification.isBlocked) {
-          workflowResult = createGoogleFailureResult({
-            article,
-            googleFinalUrl: googleNavigation.finalUrl,
-            googleStatusCode: googleNavigation.statusCode,
-            details: googleClassification.details,
-            failureType: googleClassification.failureType
-          });
-        } else {
-          const extractedFromFinalUrl = extractPublisherUrlFromFinalUrlImpl(
-            googleNavigation.finalUrl
-          );
-          const extractedFromHtml = extractPublisherUrlImpl({
-            html: googleNavigation.html,
-            baseUrl: googleNavigation.finalUrl || article.url
-          });
-          const extracted =
-            extractedFromFinalUrl.publisherUrl !== null ? extractedFromFinalUrl : extractedFromHtml;
-
-          if (!extracted.publisherUrl) {
-            workflowResult = {
-              articleId: article.id,
-              googleRssUrl: article.url,
-              googleFinalUrl: googleNavigation.finalUrl,
-              publisherUrl: null,
-              publisherFinalUrl: null,
-              title: null,
-              content: null,
-              status: 'fail',
-              failureType: extracted.failureType,
-              details: extracted.details,
-              extractionSource: extracted.extractionSource,
-              bodySource: 'google-page',
-              googleStatusCode: googleNavigation.statusCode,
-              publisherStatusCode: null
-            };
-          } else {
-            const publisherResult = await fetchPublisherPageImpl({
-              publisherUrl: extracted.publisherUrl,
-              browserContext: navigationSession.context,
-              signal: options.signal
-            });
-
-            workflowResult = {
-              articleId: article.id,
-              googleRssUrl: article.url,
-              googleFinalUrl: googleNavigation.finalUrl,
-              publisherUrl: extracted.publisherUrl,
-              publisherFinalUrl: publisherResult.finalUrl,
-              title: publisherResult.title,
-              content: publisherResult.content,
-              status: publisherResult.failureType ? 'fail' : 'success',
-              failureType: publisherResult.failureType,
-              details: publisherResult.details,
-              extractionSource: extracted.extractionSource,
-              bodySource: publisherResult.bodySource,
-              googleStatusCode: googleNavigation.statusCode,
-              publisherStatusCode: publisherResult.statusCode
-            };
-          }
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-
-        workflowResult = {
-          articleId: article.id,
-          googleRssUrl: article.url,
-          googleFinalUrl: null,
-          publisherUrl: null,
-          publisherFinalUrl: null,
-          title: null,
-          content: null,
-          status: 'fail',
-          failureType: 'navigation_error',
-          details: message,
-          extractionSource: 'none',
-          bodySource: 'none',
-          googleStatusCode: null,
-          publisherStatusCode: null
-        };
-      }
-
-      const persistenceResult = await persistResult(workflowResult);
-
-      if (workflowResult.status === 'success') {
+      if (result.workflowResult.status === 'success') {
         summary.successfulScrapes += 1;
       } else {
         summary.failedScrapes += 1;
       }
 
-      if (persistenceResult.action === 'created') {
+      if (result.persistenceAction === 'created') {
         summary.createdRows += 1;
       }
 
-      if (persistenceResult.action === 'updated') {
+      if (result.persistenceAction === 'updated') {
         summary.updatedRows += 1;
       }
-
-      logger.info('Article content 02 workflow result persisted', {
-        articleId: article.id,
-        status: workflowResult.status,
-        failureType: workflowResult.failureType,
-        bodySource: workflowResult.bodySource,
-        extractionSource: workflowResult.extractionSource,
-        persistenceAction: persistenceResult.action
-      });
     }
   } finally {
     await navigationSession.close();

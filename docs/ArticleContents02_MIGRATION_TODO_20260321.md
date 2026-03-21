@@ -14,6 +14,8 @@ The new scraper has already proven better in testing. The remaining work is repl
 
 ## Phase 1. Portal-triggered scraper migration
 
+1. Status: completed on 2026-03-21.
+
 1. Update the portal article-content automation UI to target the new worker flow.
    - File to inspect:
      - `portal/src/components/automations/ScrapeArticleContentSection.tsx`
@@ -38,6 +40,8 @@ The new scraper has already proven better in testing. The remaining work is repl
    - Confirm the job status panel reflects the new worker route.
 
 ## Phase 2. State assigner migration
+
+1. Status: completed on 2026-03-21.
 
 1. Replace the state assigner pre-scrape dependency on the old enrichment flow.
    - File to inspect:
@@ -64,6 +68,8 @@ The new scraper has already proven better in testing. The remaining work is repl
 
 ## Phase 3. API compatibility updates
 
+1. Status: completed on 2026-03-21.
+
 1. Review API SQL and route code that still reads from `ArticleContents`.
    - File already identified:
      - `api/src/modules/queriesSql.ts`
@@ -82,6 +88,8 @@ The new scraper has already proven better in testing. The remaining work is repl
    - Confirm article detail screens show the new content source correctly.
 
 ## Phase 4. Assess and migrate `requestGoogleRss`
+
+1. Status: in progress on 2026-03-21.
 
 1. Review the current `requestGoogleRss` storage behavior.
    - File to inspect:
@@ -142,6 +150,9 @@ The new scraper has already proven better in testing. The remaining work is repl
      1. also move to `ArticleContents02`
      2. be deprecated
      3. or be left as transitional legacy behavior temporarily
+   - Current note:
+     1. worker-node `requestGoogleRss` now seeds or scrapes into `ArticleContents02`
+     2. API-side Google RSS storage still needs its own migration decision
 
 ## Phase 5. Legacy route and legacy flow retirement
 

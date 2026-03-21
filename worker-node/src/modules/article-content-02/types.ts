@@ -19,6 +19,7 @@ export type ArticleContent02ExtractionSource =
   | 'none';
 
 export type ArticleContent02BodySource =
+  | 'rss-feed'
   | 'direct-http'
   | 'playwright-publisher'
   | 'google-page'

@@ -1,7 +1,11 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createRequestGoogleRssJobHandler } from '../../src/modules/jobs/requestGoogleRssJob';
+import {
+  createRequestGoogleRssJobHandler,
+  createRssSeedResult,
+  mapRssItems
+} from '../../src/modules/jobs/requestGoogleRssJob';
 
 describe('requestGoogleRss job handler', () => {
   it('fails when spreadsheet file is missing', async () => {
@@ -39,5 +43,78 @@ describe('requestGoogleRss job handler', () => {
     });
 
     await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('maps RSS item content from content:encoded', () => {
+    const items = mapRssItems([
+      {
+        title: ['Example article'],
+        description: ['<a href="https://example.com">Summary text</a>'],
+        link: ['https://news.google.com/rss/articles/abc'],
+        pubDate: ['Fri, 21 Mar 2026 12:00:00 GMT'],
+        source: [{ _: 'Example Source' }],
+        'content:encoded': ['<p>Full article body</p>']
+      }
+    ]);
+
+    expect(items).toEqual([
+      {
+        title: 'Example article',
+        description: 'Summary text',
+        link: 'https://news.google.com/rss/articles/abc',
+        pubDate: 'Fri, 21 Mar 2026 12:00:00 GMT',
+        source: 'Example Source',
+        content: 'Full article body'
+      }
+    ]);
+  });
+
+  it('creates a successful ArticleContents02 seed result when RSS content is usable', () => {
+    const result = createRssSeedResult(42, 'https://news.google.com/rss/articles/abc', {
+      title: 'Example article',
+      content: 'A'.repeat(240)
+    });
+
+    expect(result).toMatchObject({
+      articleId: 42,
+      googleRssUrl: 'https://news.google.com/rss/articles/abc',
+      status: 'success',
+      failureType: null,
+      details: 'Seeded from Google RSS item content',
+      extractionSource: 'none',
+      bodySource: 'rss-feed',
+      content: 'A'.repeat(240)
+    });
+  });
+
+  it('creates a temporary failed seed result when RSS content is too short', () => {
+    const result = createRssSeedResult(42, 'https://news.google.com/rss/articles/abc', {
+      title: 'Example article',
+      content: 'short content'
+    });
+
+    expect(result).toMatchObject({
+      articleId: 42,
+      status: 'fail',
+      failureType: 'short_content',
+      details: 'RSS item content too short; triggering Google-to-publisher scrape',
+      bodySource: 'rss-feed',
+      content: 'short content'
+    });
+  });
+
+  it('creates a temporary failed seed result when RSS content is missing', () => {
+    const result = createRssSeedResult(42, 'https://news.google.com/rss/articles/abc', {
+      title: 'Example article'
+    });
+
+    expect(result).toMatchObject({
+      articleId: 42,
+      status: 'fail',
+      failureType: null,
+      details: 'RSS item content missing; triggering Google-to-publisher scrape',
+      bodySource: 'none',
+      content: null
+    });
   });
 });

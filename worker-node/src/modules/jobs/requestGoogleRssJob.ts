@@ -2,7 +2,6 @@ import ExcelJS from 'exceljs';
 import { parseStringPromise } from 'xml2js';
 import {
   Article,
-  ArticleContent,
   EntityWhoFoundArticle,
   NewsApiRequest,
   NewsArticleAggregatorSource,
@@ -11,6 +10,20 @@ import {
 } from '@newsnexus/db-models';
 import logger from '../logger';
 import { QueueExecutionContext } from '../queue/queueEngine';
+import {
+  GoogleNavigationSession,
+  createGoogleNavigationSession
+} from '../article-content-02/googleNavigator';
+import { processArticleContent02Candidate } from '../article-content-02/enrichment';
+import {
+  getArticleContent02SkipDecision,
+  persistArticleContent02Result
+} from '../article-content-02/persistence';
+import {
+  ArticleContent02Candidate,
+  ArticleContent02WorkflowResult
+} from '../article-content-02/types';
+import { hasUsableArticleContent02 } from '../article-content-02/repository';
 
 interface QueryRow {
   id: number;
@@ -279,27 +292,89 @@ const readQuerySpreadsheet = async (filePath: string): Promise<QueryRow[]> => {
 
 const stripHtml = (input: string): string => input.replace(/<[^>]*>/g, '').trim();
 
+const normalizeWhitespace = (input: string): string => input.replace(/\s+/g, ' ').trim();
+
 const extractAnchorText = (input: string): string | null => {
   const match = input.match(/<a[^>]*>(.*?)<\/a>/i);
   return match?.[1]?.trim() || null;
 };
 
-const mapRssItems = (items: unknown[]): RssItem[] =>
+export const mapRssItems = (items: unknown[]): RssItem[] =>
   items.map((rawItem) => {
     const item = rawItem as Record<string, unknown>;
     const descriptionRaw = String((item.description as string[] | undefined)?.[0] ?? '');
     const anchorText = extractAnchorText(descriptionRaw);
     const description = anchorText || stripHtml(descriptionRaw) || descriptionRaw;
     const sourceValue = (item.source as Array<{ _: string } | string> | undefined)?.[0];
+    const contentEncoded =
+      (item['content:encoded'] as string[] | undefined)?.[0] ??
+      (item.content as string[] | undefined)?.[0] ??
+      '';
 
     return {
       title: (item.title as string[] | undefined)?.[0],
       description,
       link: (item.link as string[] | undefined)?.[0],
       pubDate: (item.pubDate as string[] | undefined)?.[0],
-      source: typeof sourceValue === 'object' ? sourceValue._ : sourceValue
+      source: typeof sourceValue === 'object' ? sourceValue._ : sourceValue,
+      content: normalizeWhitespace(stripHtml(contentEncoded))
     };
   });
+
+const normalizeRssSeedContent = (value: string | undefined): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = normalizeWhitespace(stripHtml(value));
+  return normalized === '' ? null : normalized;
+};
+
+export const createRssSeedResult = (
+  articleId: number,
+  googleRssUrl: string,
+  item: RssItem
+): ArticleContent02WorkflowResult => {
+  const seededContent = normalizeRssSeedContent(item.content);
+
+  if (seededContent && hasUsableArticleContent02(seededContent)) {
+    return {
+      articleId,
+      googleRssUrl,
+      googleFinalUrl: null,
+      publisherUrl: null,
+      publisherFinalUrl: null,
+      title: item.title ?? null,
+      content: seededContent,
+      status: 'success',
+      failureType: null,
+      details: 'Seeded from Google RSS item content',
+      extractionSource: 'none',
+      bodySource: 'rss-feed',
+      googleStatusCode: null,
+      publisherStatusCode: null
+    };
+  }
+
+  return {
+    articleId,
+    googleRssUrl,
+    googleFinalUrl: null,
+    publisherUrl: null,
+    publisherFinalUrl: null,
+    title: item.title ?? null,
+    content: seededContent,
+    status: 'fail',
+    failureType: seededContent ? 'short_content' : null,
+    details: seededContent
+      ? 'RSS item content too short; triggering Google-to-publisher scrape'
+      : 'RSS item content missing; triggering Google-to-publisher scrape',
+    extractionSource: 'none',
+    bodySource: seededContent ? 'rss-feed' : 'none',
+    googleStatusCode: null,
+    publisherStatusCode: null
+  };
+};
 
 const fetchRssItems = async (url: string, signal: AbortSignal): Promise<RssFetchResult> => {
   try {
@@ -405,6 +480,8 @@ const storeRequestAndArticles = async (params: {
   items: RssItem[];
   newsArticleAggregatorSourceId: number;
   entityWhoFoundArticleId: number;
+  signal: AbortSignal;
+  navigationSession: GoogleNavigationSession;
 }): Promise<void> => {
   const dateEndOfRequest = new Date().toISOString().split('T')[0];
 
@@ -444,11 +521,34 @@ const storeRequestAndArticles = async (params: {
 
     savedCount += 1;
 
-    if (item.content) {
-      await ArticleContent.create({
+    const skipDecision = await getArticleContent02SkipDecision(article.id);
+    if (skipDecision.shouldSkip) {
+      logger.info('Skipping requestGoogleRss ArticleContents02 persistence', {
         articleId: article.id,
-        content: item.content
+        existingArticleContents02Id: skipDecision.existingRow?.id ?? null
       });
+      continue;
+    }
+
+    const seedResult = createRssSeedResult(article.id, item.link, item);
+    await persistArticleContent02Result(seedResult);
+
+    if (seedResult.status === 'fail') {
+      const articleCandidate: ArticleContent02Candidate = {
+        id: article.id,
+        title: article.title ?? '',
+        description: article.description ?? '',
+        url: article.url ?? '',
+        publishedDate: article.publishedDate ?? ''
+      };
+
+      await processArticleContent02Candidate(
+        {
+          article: articleCandidate,
+          signal: params.signal,
+          navigationSession: params.navigationSession
+        }
+      );
     }
   }
 
@@ -500,51 +600,58 @@ const runLegacyWorkflow = async (context: RequestGoogleRssJobContext): Promise<v
 
   const { newsArticleAggregatorSourceId, entityWhoFoundArticleId } =
     await ensureAggregatorSourceAndEntity();
+  const navigationSession = await createGoogleNavigationSession();
 
-  const rows = await readQuerySpreadsheet(context.spreadsheetPath);
-  logger.info(`Loaded ${rows.length} query rows from spreadsheet.`);
+  try {
+    const rows = await readQuerySpreadsheet(context.spreadsheetPath);
+    logger.info(`Loaded ${rows.length} query rows from spreadsheet.`);
 
-  for (const row of rows) {
-    if (context.signal.aborted) {
-      return;
+    for (const row of rows) {
+      if (context.signal.aborted) {
+        return;
+      }
+
+      const queryResult = buildQuery(row);
+      if (!queryResult.query) {
+        logger.warn(`Skipping row ${row.id}: empty query.`);
+        continue;
+      }
+
+      const requestUrl = buildRssUrl(queryResult.query);
+      const alreadyRequested = await wasRequestMadeToday(requestUrl);
+      if (alreadyRequested) {
+        logger.info(`Skipping RSS request (id: ${row.id}): already requested today: ${requestUrl}`);
+        continue;
+      }
+
+      const timeRangeNote = queryResult.timeRangeInvalid ? ' - invalid time_range' : '';
+      logger.info(
+        `Requesting RSS (id: ${row.id}, ${queryResult.timeRange}${timeRangeNote}): ${requestUrl}`
+      );
+
+      const response = await fetchRssItems(requestUrl, context.signal);
+      if (response.statusCode === 503) {
+        const message = `HTTP 503 Service Unavailable (id: ${row.id}): ${requestUrl}. Google RSS rate limit likely exceeded. Try increasing MILISECONDS_IN_BETWEEN_REQUESTS (current: ${delayBetweenRequestsMs}ms).`;
+        logger.error(message);
+        throw new Error(message);
+      }
+
+      await storeRequestAndArticles({
+        requestUrl,
+        andString: queryResult.andString,
+        orString: queryResult.orString,
+        status: response.status,
+        items: response.items,
+        newsArticleAggregatorSourceId,
+        entityWhoFoundArticleId,
+        signal: context.signal,
+        navigationSession
+      });
+
+      await delay(delayBetweenRequestsMs, context.signal);
     }
-
-    const queryResult = buildQuery(row);
-    if (!queryResult.query) {
-      logger.warn(`Skipping row ${row.id}: empty query.`);
-      continue;
-    }
-
-    const requestUrl = buildRssUrl(queryResult.query);
-    const alreadyRequested = await wasRequestMadeToday(requestUrl);
-    if (alreadyRequested) {
-      logger.info(`Skipping RSS request (id: ${row.id}): already requested today: ${requestUrl}`);
-      continue;
-    }
-
-    const timeRangeNote = queryResult.timeRangeInvalid ? ' - invalid time_range' : '';
-    logger.info(
-      `Requesting RSS (id: ${row.id}, ${queryResult.timeRange}${timeRangeNote}): ${requestUrl}`
-    );
-
-    const response = await fetchRssItems(requestUrl, context.signal);
-    if (response.statusCode === 503) {
-      const message = `HTTP 503 Service Unavailable (id: ${row.id}): ${requestUrl}. Google RSS rate limit likely exceeded. Try increasing MILISECONDS_IN_BETWEEN_REQUESTS (current: ${delayBetweenRequestsMs}ms).`;
-      logger.error(message);
-      throw new Error(message);
-    }
-
-    await storeRequestAndArticles({
-      requestUrl,
-      andString: queryResult.andString,
-      orString: queryResult.orString,
-      status: response.status,
-      items: response.items,
-      newsArticleAggregatorSourceId,
-      entityWhoFoundArticleId
-    });
-
-    await delay(delayBetweenRequestsMs, context.signal);
+  } finally {
+    await navigationSession.close();
   }
 };
 
