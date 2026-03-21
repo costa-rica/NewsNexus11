@@ -24,7 +24,7 @@ const DEFAULT_ALERT_MODAL_STATE: AlertModalState = {
   variant: "info",
 };
 
-const ARTICLE_CONTENT_SCRAPER_ENDPOINT_NAME = "/article-content-scraper/start-job";
+const ARTICLE_CONTENT_SCRAPER_ENDPOINT_NAME = "/article-content-scraper-02/start-job";
 
 function buildWorkerNodeResponseMessage(result: {
   endpointName?: string;
@@ -117,9 +117,9 @@ export function ScrapeArticleContentSection() {
       setAlertModal({
         message:
           buildWorkerNodeResponseMessage(result) ||
-          "Article content scraper job was queued successfully.",
+          "Article content scraper 02 job was queued successfully.",
         show: true,
-        title: "Article Content Scraper Job Queued",
+        title: "Article Content Scraper 02 Job Queued",
         variant: "success",
       });
       setRefreshSignal((current) => current + 1);
@@ -128,7 +128,7 @@ export function ScrapeArticleContentSection() {
         message:
           error instanceof Error ? error.message : "Unknown error starting job.",
         show: true,
-        title: "Article Content Scraper Request Failed",
+        title: "Article Content Scraper 02 Request Failed",
         variant: "error",
       });
     } finally {
@@ -150,14 +150,14 @@ export function ScrapeArticleContentSection() {
             className="rounded-lg bg-brand-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-600 dark:hover:bg-brand-700"
           >
             {isSubmitting
-              ? "Starting Article Content Scraper..."
-              : "Start Article Content Scraper"}
+              ? "Starting Article Content Scraper 02..."
+              : "Start Article Content Scraper 02"}
           </button>
 
           <WorkerNodeJobStatusPanel
             endpointName={ARTICLE_CONTENT_SCRAPER_ENDPOINT_NAME}
             refreshSignal={refreshSignal}
-            title="Last Article Content Scraper Job"
+            title="Last Article Content Scraper 02 Job"
           />
 
           <ArticleTargetingFields

@@ -267,7 +267,7 @@ router.post('/article-content-scraper/start-job', authenticateToken, async (req,
 
   try {
     const response = await axios.post(
-      `${workerNodeBaseUrl}/article-content-scraper/start-job`,
+      `${workerNodeBaseUrl}/article-content-scraper-02/start-job`,
       req.body,
       {
         headers: {
@@ -278,7 +278,7 @@ router.post('/article-content-scraper/start-job', authenticateToken, async (req,
 
     return res.status(response.status).json(response.data);
   } catch (error: unknown) {
-    logger.error('Error starting article content scraper worker job:', error);
+    logger.error('Error starting article content scraper 02 worker job:', error);
     return forwardWorkerNodeAxiosError(res, error);
   }
 });

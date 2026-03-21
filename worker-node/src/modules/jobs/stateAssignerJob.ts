@@ -12,8 +12,11 @@ import { QueueExecutionContext } from '../queue/queueEngine';
 import { ensureStateAssignerDirectories, StateAssignerDirectories } from '../startup/stateAssignerFiles';
 import ensureDbReady from '../db/ensureDbReady';
 import { selectTargetArticles, TargetArticleRecord } from '../articleTargeting';
-import { enrichArticleContent } from '../article-content/enrichment';
-import { getCanonicalArticleContentRow } from '../article-content/repository';
+import { enrichArticleContent02 } from '../article-content-02/enrichment';
+import {
+  getCanonicalArticleContent02Row,
+  hasUsableArticleContent02
+} from '../article-content-02/repository';
 
 interface StateAssignerArticle {
   id: number;
@@ -47,7 +50,8 @@ export interface ChatGptResponse {
 export interface StateAssignerJobDependencies {
   runLegacyWorkflow?: (context: StateAssignerJobContext) => Promise<void>;
   selectArticles?: typeof selectTargetArticles;
-  enrichContent?: typeof enrichArticleContent;
+  enrichContent02?: typeof enrichArticleContent02;
+  getCanonicalContent02Row?: typeof getCanonicalArticleContent02Row;
 }
 
 interface ProcessStateAssignmentsOptions {
@@ -156,16 +160,24 @@ const syncPromptFilesToDatabase = async (promptsDir: string): Promise<void> => {
 };
 
 const buildStateAssignerArticles = async (
-  targetArticles: TargetArticleRecord[]
+  targetArticles: TargetArticleRecord[],
+  dependencies: Pick<StateAssignerJobDependencies, 'getCanonicalContent02Row'> = {}
 ): Promise<StateAssignerArticle[]> => {
+  const getCanonicalContent02Row =
+    dependencies.getCanonicalContent02Row ?? getCanonicalArticleContent02Row;
+
   return Promise.all(
     targetArticles.map(async (article) => {
-      const articleContent = await getCanonicalArticleContentRow(article.id);
+      const articleContent = await getCanonicalContent02Row(article.id);
+      const content =
+        articleContent && hasUsableArticleContent02(articleContent.content)
+          ? articleContent.content ?? ''
+          : article.description || '';
 
       return {
         id: article.id,
         title: article.title ?? '',
-        content: articleContent?.content || article.description || ''
+        content
       };
     })
   );
@@ -351,7 +363,10 @@ export const processStateAssignmentsWithTimeout = async ({
 
 const runLegacyWorkflow = async (
   context: StateAssignerJobContext,
-  dependencies: Pick<StateAssignerJobDependencies, 'selectArticles' | 'enrichContent'> = {}
+  dependencies: Pick<
+    StateAssignerJobDependencies,
+    'selectArticles' | 'enrichContent02' | 'getCanonicalContent02Row'
+  > = {}
 ): Promise<void> => {
   await ensureDbReady();
   const stateAssignerDirectories = await ensureStateAssignerDirectories(
@@ -360,7 +375,7 @@ const runLegacyWorkflow = async (
   await syncPromptFilesToDatabase(stateAssignerDirectories.promptsDir);
 
   const selectArticles = dependencies.selectArticles ?? selectTargetArticles;
-  const enrichContent = dependencies.enrichContent ?? enrichArticleContent;
+  const enrichContent02 = dependencies.enrichContent02 ?? enrichArticleContent02;
   const entityWhoCategorizesId = await resolveEntityWhoCategorizesId();
   const prompt = await getPrompt();
   const candidateArticles = await selectArticles({
@@ -378,7 +393,7 @@ const runLegacyWorkflow = async (
   });
 
   try {
-    const scrapeSummary = await enrichContent({
+    const scrapeSummary = await enrichContent02({
       articles: candidateArticles,
       signal: context.signal
     });
@@ -394,7 +409,9 @@ const runLegacyWorkflow = async (
     });
   }
 
-  const articles = await buildStateAssignerArticles(candidateArticles);
+  const articles = await buildStateAssignerArticles(candidateArticles, {
+    getCanonicalContent02Row: dependencies.getCanonicalContent02Row
+  });
 
   logger.info(`Starting to process ${articles.length} articles`);
 
@@ -421,7 +438,8 @@ export const createStateAssignerJobHandler = (
     ((context: StateAssignerJobContext) =>
       runLegacyWorkflow(context, {
         selectArticles: dependencies.selectArticles,
-        enrichContent: dependencies.enrichContent
+        enrichContent02: dependencies.enrichContent02,
+        getCanonicalContent02Row: dependencies.getCanonicalContent02Row
       }));
 
   return async (queueContext: QueueExecutionContext): Promise<void> => {

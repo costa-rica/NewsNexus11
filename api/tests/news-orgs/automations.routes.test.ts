@@ -190,7 +190,7 @@ describe("news org automations routes", () => {
   test("POST /automations/article-content-scraper/start-job proxies worker-node response", async () => {
     mockAxios.post.mockResolvedValue({
       data: {
-        endpointName: "/article-content-scraper/start-job",
+        endpointName: "/article-content-scraper-02/start-job",
         jobId: "job-2b",
         status: "queued",
       },
@@ -208,12 +208,12 @@ describe("news org automations routes", () => {
 
     expect(response.status).toBe(202);
     expect(response.body).toEqual({
-      endpointName: "/article-content-scraper/start-job",
+      endpointName: "/article-content-scraper-02/start-job",
       jobId: "job-2b",
       status: "queued",
     });
     expect(mockAxios.post).toHaveBeenCalledWith(
-      "http://worker-node/article-content-scraper/start-job",
+      "http://worker-node/article-content-scraper-02/start-job",
       {
         includeArticlesThatMightHaveBeenStateAssigned: true,
         targetArticleStateReviewCount: 100,
