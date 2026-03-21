@@ -88,7 +88,7 @@ export function ScrapeArticleContentSection() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/automations/article-content-scraper/start-job`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/automations/article-content-scraper-02/start-job`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

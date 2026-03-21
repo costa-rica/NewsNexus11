@@ -16,10 +16,11 @@ def _create_repo(tmp_path) -> AiApproverRepository:
             title TEXT,
             description TEXT
         );
-        CREATE TABLE ArticleContents (
+        CREATE TABLE ArticleContents02 (
             id INTEGER PRIMARY KEY,
             articleId INTEGER,
-            content TEXT
+            content TEXT,
+            status TEXT
         );
         CREATE TABLE ArticleIsRelevants (
             id INTEGER PRIMARY KEY,
@@ -73,8 +74,8 @@ def _create_repo(tmp_path) -> AiApproverRepository:
         ],
     )
     conn.executemany(
-        "INSERT INTO ArticleContents(id, articleId, content) VALUES (?, ?, ?)",
-        [(1, 1, "C1"), (2, 2, "C2")],
+        "INSERT INTO ArticleContents02(id, articleId, content, status) VALUES (?, ?, ?, ?)",
+        [(1, 1, "C1", "success"), (2, 2, "C2", "success")],
     )
     conn.executemany(
         "INSERT INTO ArticleIsRelevants(id, articleId, isRelevant) VALUES (?, ?, ?)",

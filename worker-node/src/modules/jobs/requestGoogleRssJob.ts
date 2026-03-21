@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { parseStringPromise } from 'xml2js';
 import {
+  dropLegacyArticleContentsTable,
   Article,
   EntityWhoFoundArticle,
   NewsApiRequest,
@@ -91,6 +92,7 @@ const ensureDbReady = async (): Promise<void> => {
     initModels();
     await sequelize.authenticate();
     await sequelize.sync();
+    await dropLegacyArticleContentsTable();
   })();
 
   return dbReadyPromise;

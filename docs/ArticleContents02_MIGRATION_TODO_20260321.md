@@ -2,15 +2,15 @@
 
 This TODO tracks the migration from the legacy `ArticleContents` scraping flow to the new `ArticleContents02` Google-to-publisher flow.
 
-The new scraper has already proven better in testing. The remaining work is replacing existing callers, updating compatibility reads, and reviewing older ingestion paths that still write or depend on `ArticleContents`.
+The new scraper has proven better in testing, and the legacy table, route, and old worker modules are now being retired in favor of `ArticleContents02` as the single active content store.
 
 ## Migration goals
 
 1. Replace the portal-triggered article scraper flow with the new `ArticleContents02` worker route.
 2. Replace the state assigner pre-scrape/content-read path with `ArticleContents02`.
-3. Update API read paths that still depend on `ArticleContents`.
+3. Replace legacy API read paths with `ArticleContents02`.
 4. Assess whether `requestGoogleRss` should remain as-is, be partially updated, or be refactored to better align with the new flow.
-5. Retire the old article-content scraper only after all active callers are migrated and validated.
+5. Delete the old article-content scraper route, legacy worker modules, and legacy `ArticleContents` schema after the new flow is validated.
 
 ## Phase 1. Portal-triggered scraper migration
 
@@ -156,7 +156,7 @@ The new scraper has already proven better in testing. The remaining work is repl
 
 ## Phase 5. Legacy route and legacy flow retirement
 
-1. Status: in progress on 2026-03-21.
+1. Status: completed on 2026-03-21.
 
 1. Identify all remaining callers of the old scraper route.
    - Worker route:
@@ -165,9 +165,10 @@ The new scraper has already proven better in testing. The remaining work is repl
      1. `worker-node/src/modules/article-content/*`
    - Audit result:
      1. portal-triggered scraping is already routed to `ArticleContents02`
-     2. API automation proxy already forwards to `/article-content-scraper-02/start-job`
-     3. direct worker-node mounting of `/article-content-scraper` is the remaining active exposure
-     4. legacy worker modules still exist in the repo but are no longer needed by migrated runtime paths
+     2. API automation and portal now use `/article-content-scraper-02/start-job`
+     3. old worker-node mounting has been removed
+     4. legacy worker modules and tests have been deleted
+     5. worker-python AI approver now reads canonical content from `ArticleContents02`
 
 2. Confirm the following are migrated first:
    1. portal-triggered scraper flow
@@ -175,25 +176,23 @@ The new scraper has already proven better in testing. The remaining work is repl
    3. API detail/read compatibility where needed
    - Current note:
      1. these runtime migrations are complete
-     2. API article-details still has a legacy `ArticleContents` fallback read that should be revisited before schema deletion
+     2. API article-details now reads only from `ArticleContents02`
 
 3. Decide whether to keep old `ArticleContents` as:
    1. transitional fallback only
    2. historical data only
    3. removable technical debt
-   - Current recommendation:
-     1. keep it as transitional fallback and historical data until all remaining ingestion paths are migrated
-     2. do not delete the schema yet
    - Current progress:
      1. worker-node old route mount has been removed
-     2. NewsAPI and NewsData.io ingestion paths are being migrated to `ArticleContents02`
-     3. the API article-details legacy fallback read is being removed in the same cleanup wave
+     2. NewsAPI and NewsData.io ingestion now write to `ArticleContents02`
+     3. API article-details no longer falls back to legacy `ArticleContents`
+     4. startup initialization now drops the legacy `ArticleContents` table
 
 4. Remove or deprecate the old route only after rollout is stable.
    - Current implementation order:
      1. remove worker-node app mounting for `/article-content-scraper`
-     2. leave legacy modules in place temporarily for reference until remaining cleanup is complete
-     3. remove old tests/docs after the route retirement is confirmed stable
+     2. delete legacy modules, tests, and endpoint docs
+     3. remove old model exports and drop the legacy `ArticleContents` table
 
 ## Validation checklist
 
@@ -202,7 +201,7 @@ The new scraper has already proven better in testing. The remaining work is repl
 3. State assigner reads content from `ArticleContents02`.
 4. API article detail queries return the new content source correctly.
 5. `requestGoogleRss` has been reviewed and its role is clearly documented.
-6. Old scraper flow is no longer required for active workflows before retirement.
+6. Legacy worker route, legacy worker modules, and the legacy `ArticleContents` table are removed.
 
 ## Recommended implementation order
 
@@ -211,4 +210,4 @@ The new scraper has already proven better in testing. The remaining work is repl
 3. Migrate the state assigner to use `ArticleContents02`.
 4. Update API compatibility reads.
 5. Assess and decide the future of `requestGoogleRss` content persistence.
-6. Retire the old scraper route and old flow only after all of the above are validated.
+6. Delete the legacy route, legacy worker modules, and legacy schema after all of the above are validated.

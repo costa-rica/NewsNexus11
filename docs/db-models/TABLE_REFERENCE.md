@@ -29,7 +29,7 @@ Database table reference for NewsNexus11 (SQLite via Sequelize ORM).
 - belongsTo EntityWhoFoundArticle (via `entityWhoFoundArticleId`)
 - belongsTo NewsApiRequest (via `newsApiRequestId`)
 - belongsTo NewsRssRequest (via `newsRssRequestId`)
-- hasMany ArticleContent, ArticleApproved, ArticlesApproved02, ArticleReviewed, ArticleIsRelevant, ArticleDuplicateAnalysis, ArticleStateContract, ArticleStateContract02, ArticleKeywordContract, ArticleReportContract, ArticleEntityWhoCategorizedArticleContract, ArticleEntityWhoCategorizedArticleContracts02, AiApproverArticleScore
+- hasMany ArticleContents02, ArticleApproved, ArticlesApproved02, ArticleReviewed, ArticleIsRelevant, ArticleDuplicateAnalysis, ArticleStateContract, ArticleStateContract02, ArticleKeywordContract, ArticleReportContract, ArticleEntityWhoCategorizedArticleContract, ArticleEntityWhoCategorizedArticleContracts02, AiApproverArticleScore
 - belongsToMany State (through ArticleStateContract)
 
 ---
@@ -82,17 +82,27 @@ Database table reference for NewsNexus11 (SQLite via Sequelize ORM).
 
 ---
 
-### ArticleContent
+### ArticleContents02
 
-- **Table name**: `ArticleContents`
+- **Table name**: `ArticleContents02`
 
-| Column                | Type    | Constraints        | Notes                            |
-| --------------------- | ------- | ------------------ | -------------------------------- |
-| id                    | INTEGER | PK, Auto Increment |                                  |
-| articleId             | INTEGER | FK, NOT NULL       | → Articles.id                    |
-| content               | STRING  | NOT NULL           | Full article text                |
-| scrapeStatusCheerio   | BOOLEAN | NULL               | Cheerio scraper success status   |
-| scrapeStatusPuppeteer | BOOLEAN | NULL               | Puppeteer scraper success status |
+| Column              | Type    | Constraints        | Notes                                  |
+| ------------------- | ------- | ------------------ | -------------------------------------- |
+| id                  | INTEGER | PK, Auto Increment |                                        |
+| articleId           | INTEGER | FK, NOT NULL       | → Articles.id                          |
+| url                 | TEXT    | NULL               | Resolved publisher URL when available  |
+| googleRssUrl        | TEXT    | NOT NULL           | Original discovery URL                 |
+| googleFinalUrl      | TEXT    | NULL               | Final Google URL after navigation      |
+| publisherFinalUrl   | TEXT    | NULL               | Final publisher URL after redirects    |
+| title               | TEXT    | NULL               | Stored title snapshot                  |
+| content             | TEXT    | NULL               | Stored article body                    |
+| status              | STRING  | NOT NULL           | `success` or `fail`                    |
+| failureType         | STRING  | NULL               | Failure classification                 |
+| details             | TEXT    | NOT NULL           | Diagnostic details                     |
+| extractionSource    | STRING  | NOT NULL           | How the publisher URL was determined   |
+| bodySource          | STRING  | NOT NULL           | Where the saved content came from      |
+| googleStatusCode    | INTEGER | NULL               | Google navigation response status      |
+| publisherStatusCode | INTEGER | NULL               | Publisher fetch response status        |
 
 **Relationships**:
 

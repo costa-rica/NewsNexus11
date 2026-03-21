@@ -49,7 +49,7 @@ jest.mock("@newsnexus/db-models", () => ({
   ArticleApproved: {},
   EntityWhoFoundArticle: {},
   ArticleStateContract: {},
-  ArticleContent: {},
+  ArticleContents02: {},
   ArtificialIntelligence: {},
   ArticleReviewed: {},
   EntityWhoCategorizedArticle: {},

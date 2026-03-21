@@ -1,4 +1,4 @@
-import { initModels, sequelize } from '@newsnexus/db-models';
+import { dropLegacyArticleContentsTable, initModels, sequelize } from '@newsnexus/db-models';
 
 let dbReadyPromise: Promise<void> | null = null;
 
@@ -11,6 +11,7 @@ export const ensureDbReady = async (): Promise<void> => {
     initModels();
     await sequelize.authenticate();
     await sequelize.sync();
+    await dropLegacyArticleContentsTable();
   })();
 
   return dbReadyPromise;

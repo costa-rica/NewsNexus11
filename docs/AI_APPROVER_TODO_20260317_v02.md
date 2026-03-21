@@ -82,7 +82,7 @@
   - skip any article that already has at least one row in `AiApproverArticleScores`
 - [x] Filter by `stateId` values from `ArticleStateContract02` when `stateIds` are provided.
 - [x] Load article content using the existing pattern:
-  - prefer `ArticleContents`
+  - prefer `ArticleContents02`
   - fall back to article description if needed
 - [x] Use `gpt-4o-mini` for v1 AI approver calls.
 - [x] Send all active prompt versions through the inner loop for each eligible article.

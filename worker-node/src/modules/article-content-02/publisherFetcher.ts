@@ -1,10 +1,10 @@
 import type { BrowserContext, Page, Response } from 'playwright';
 import logger from '../logger';
-import { ARTICLE_CONTENT_MIN_LENGTH } from '../article-content/config';
 import {
   ARTICLE_CONTENT_02_DEFAULT_HEADERS,
   ARTICLE_CONTENT_02_DESKTOP_USER_AGENT,
   ARTICLE_CONTENT_02_PUBLISHER_FETCH_RETRY_COUNT,
+  ARTICLE_CONTENT_02_MIN_CONTENT_LENGTH,
   ARTICLE_CONTENT_02_PUBLISHER_MIN_HTML_LENGTH,
   ARTICLE_CONTENT_02_PUBLISHER_NAVIGATION_TIMEOUT_MS,
   ARTICLE_CONTENT_02_PUBLISHER_POST_LOAD_WAIT_MS
@@ -43,7 +43,7 @@ const looksIncomplete = (html: string): boolean => {
 };
 
 const hasUsableParsedContent = (content: string | null | undefined): boolean =>
-  typeof content === 'string' && content.trim().length >= ARTICLE_CONTENT_MIN_LENGTH;
+  typeof content === 'string' && content.trim().length >= ARTICLE_CONTENT_02_MIN_CONTENT_LENGTH;
 
 const toParsedResult = ({
   html,

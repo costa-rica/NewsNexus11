@@ -10,7 +10,6 @@ import {
 } from "./AiApproverPromptVersion";
 import { initArticle, Article } from "./Article";
 import { initArticleApproved, ArticleApproved } from "./ArticleApproved";
-import { initArticleContent, ArticleContent } from "./ArticleContent";
 import { initArticleContents02, ArticleContents02 } from "./ArticleContents02";
 import {
 	initArticleDuplicateAnalysis,
@@ -86,7 +85,6 @@ export function initModels() {
 	initAiApproverPromptVersion();
 	initArticle();
 	initArticleApproved();
-	initArticleContent();
 	initArticleContents02();
 	initArticleDuplicateAnalysis();
 	initArticleEntityWhoCategorizedArticleContract();
@@ -121,7 +119,6 @@ export function initModels() {
 		AiApproverPromptVersion,
 		Article,
 		ArticleApproved,
-		ArticleContent,
 		ArticleContents02,
 		ArticleDuplicateAnalysis,
 		ArticleEntityWhoCategorizedArticleContract,
@@ -156,7 +153,6 @@ export {
 	AiApproverPromptVersion,
 	Article,
 	ArticleApproved,
-	ArticleContent,
 	ArticleContents02,
 	ArticleDuplicateAnalysis,
 	ArticleEntityWhoCategorizedArticleContract,
@@ -183,3 +179,7 @@ export {
 	User,
 	WebsiteDomain,
 };
+
+export async function dropLegacyArticleContentsTable(): Promise<void> {
+	await sequelize.query('DROP TABLE IF EXISTS "ArticleContents";');
+}

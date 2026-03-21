@@ -81,7 +81,7 @@ The following tables are available for querying:
 - ArticleReportContract, ArticleEntityWhoCategorizedArticleContract
 - ArticleEntityWhoCategorizedArticleContracts02
 - ArticleApproved, ArticlesApproved02, ArticleReviewed, ArticleIsRelevant
-- ArticleContent, ArticleDuplicateAnalysis
+- ArticleContents02, ArticleDuplicateAnalysis
 - Report, NewsApiRequest, NewsRssRequest
 - NewsArticleAggregatorSource, NewsArticleAggregatorSourceStateContract
 - NewsApiRequestWebsiteDomainContract, Prompt

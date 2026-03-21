@@ -111,9 +111,21 @@ class AiApproverRepository:
             SELECT
                 a.id,
                 a.title,
-                COALESCE(ac.content, a.description, '') AS content
+                COALESCE(
+                    (
+                        SELECT ac2.content
+                        FROM ArticleContents02 ac2
+                        WHERE ac2.articleId = a.id
+                        ORDER BY
+                            CASE WHEN ac2.status = 'success' THEN 2 ELSE 0 END DESC,
+                            LENGTH(TRIM(COALESCE(ac2.content, ''))) DESC,
+                            ac2.id DESC
+                        LIMIT 1
+                    ),
+                    a.description,
+                    ''
+                ) AS content
             FROM Articles a
-            LEFT JOIN ArticleContents ac ON ac.articleId = a.id
             WHERE {where_clause}
             ORDER BY a.id DESC
             LIMIT ?

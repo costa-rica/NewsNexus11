@@ -187,7 +187,7 @@ describe("news org automations routes", () => {
     });
   });
 
-  test("POST /automations/article-content-scraper/start-job proxies worker-node response", async () => {
+  test("POST /automations/article-content-scraper-02/start-job proxies worker-node response", async () => {
     mockAxios.post.mockResolvedValue({
       data: {
         endpointName: "/article-content-scraper-02/start-job",
@@ -199,7 +199,7 @@ describe("news org automations routes", () => {
 
     const app = buildApp();
     const response = await request(app)
-      .post("/automations/article-content-scraper/start-job")
+      .post("/automations/article-content-scraper-02/start-job")
       .send({
         includeArticlesThatMightHaveBeenStateAssigned: true,
         targetArticleStateReviewCount: 100,
@@ -227,7 +227,7 @@ describe("news org automations routes", () => {
     );
   });
 
-  test("POST /automations/article-content-scraper/start-job returns worker-node unavailable message on connection refusal", async () => {
+  test("POST /automations/article-content-scraper-02/start-job returns worker-node unavailable message on connection refusal", async () => {
     mockAxios.isAxiosError.mockReturnValue(true);
     mockAxios.post.mockRejectedValue({
       code: "ECONNREFUSED",
@@ -237,7 +237,7 @@ describe("news org automations routes", () => {
 
     const app = buildApp();
     const response = await request(app)
-      .post("/automations/article-content-scraper/start-job")
+      .post("/automations/article-content-scraper-02/start-job")
       .send({
         targetArticleStateReviewCount: 100,
         targetArticleThresholdDaysOld: 180,

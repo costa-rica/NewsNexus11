@@ -61,7 +61,7 @@ No test frameworks are configured for db-models, portal, or worker-python.
 - `_associations.ts` — all foreign keys and relationships (centralized)
 - `_index.ts` — calls all init functions, sets up associations, exports everything
 - Consuming apps call `initModels()` then `sequelize.sync()`
-- ~30 models: Article, ArticleApproved, ArticleContent, ArticleDuplicateAnalysis, User, Report, State, Keyword, plus many-to-many contract tables
+- ~30 models: Article, ArticleApproved, ArticleContents02, ArticleDuplicateAnalysis, User, Report, State, Keyword, plus many-to-many contract tables
 
 ### api
 

@@ -259,7 +259,7 @@ router.post('/state-assigner/start-job', authenticateToken, async (req, res) => 
   }
 });
 
-router.post('/article-content-scraper/start-job', authenticateToken, async (req, res) => {
+router.post('/article-content-scraper-02/start-job', authenticateToken, async (req, res) => {
   const workerNodeBaseUrl = getRequiredWorkerNodeBaseUrl(res);
   if (!workerNodeBaseUrl) {
     return;

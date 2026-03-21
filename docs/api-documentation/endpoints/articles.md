@@ -424,7 +424,7 @@ curl --location 'http://localhost:3000/articles/add-article' \
 Delete an article and all associated records.
 
 - Requires authentication (JWT token)
-- Cascades deletion to ArticleApproveds, ArticleIsRelevant, ArticleStateContract, ArticleContent
+- Cascades deletion to ArticleApproveds, ArticleIsRelevant, ArticleStateContract, ArticleContents02
 
 ### Parameters
 

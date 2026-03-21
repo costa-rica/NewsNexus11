@@ -60,7 +60,7 @@ const modelNames = [
   "ArticleApproved",
   "ArticleDuplicateAnalysis",
   "NewsApiRequest",
-  "ArticleContent",
+  "ArticleContents02",
   "NewsRssRequest",
   "Keyword",
   "NewsArticleAggregatorSource",

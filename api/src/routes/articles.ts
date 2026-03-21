@@ -9,7 +9,7 @@ const {
   ArticleApproved,
   EntityWhoFoundArticle,
   ArticleStateContract,
-  ArticleContent,
+  ArticleContents02,
   ArtificialIntelligence,
   ArticleReviewed,
   EntityWhoCategorizedArticle,
@@ -744,7 +744,7 @@ router.delete(
     await ArticleStateContract.destroy({
       where: { articleId },
     });
-    await ArticleContent.destroy({
+    await ArticleContents02.destroy({
       where: { articleId },
     });
     res.json({ result: true, status: `articleId ${articleId} deleted` });

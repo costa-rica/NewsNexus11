@@ -126,11 +126,12 @@ export async function initializeDatabase(): Promise<void> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { initModels, sequelize } = require("@newsnexus/db-models");
+    const { initModels, sequelize, dropLegacyArticleContentsTable } = require("@newsnexus/db-models");
 
     initModels();
     await sequelize.authenticate();
     await sequelize.sync();
+    await dropLegacyArticleContentsTable();
   })();
 
   return databaseInitialization;

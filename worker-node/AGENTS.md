@@ -48,18 +48,19 @@ The service is organized so routes stay thin and workflow logic lives in modules
 4. Shared article targeting and scraping helpers
 
 - `src/modules/articleTargeting.ts`
-- `src/modules/article-content/config.ts`
-- `src/modules/article-content/types.ts`
-- `src/modules/article-content/scraper.ts`
-- `src/modules/article-content/repository.ts`
-- `src/modules/article-content/enrichment.ts`
+- `src/modules/article-content-02/config.ts`
+- `src/modules/article-content-02/types.ts`
+- `src/modules/article-content-02/googleNavigator.ts`
+- `src/modules/article-content-02/publisherFetcher.ts`
+- `src/modules/article-content-02/repository.ts`
+- `src/modules/article-content-02/enrichment.ts`
 
 5. Job modules
 
 - `src/modules/jobs/requestGoogleRssJob.ts`
 - `src/modules/jobs/semanticScorerJob.ts`
 - `src/modules/jobs/stateAssignerJob.ts`
-- `src/modules/jobs/articleContentScraperJob.ts`
+- `src/modules/jobs/articleContentScraper02Job.ts`
 
 6. Route modules
 
@@ -68,7 +69,7 @@ The service is organized so routes stay thin and workflow logic lives in modules
 - `src/routes/requestGoogleRss.ts`
 - `src/routes/semanticScorer.ts`
 - `src/routes/stateAssigner.ts`
-- `src/routes/articleContentScraper.ts`
+- `src/routes/articleContentScraper02.ts`
 
 ## Queue model
 
@@ -172,32 +173,32 @@ Important behavior:
 - If scraping fails, the job logs that failure and continues.
 - If durable article content is still unavailable, it falls back to `article.description`.
 
-### article-content-scraper
+### article-content-scraper-02
 
 Summary:
 
-- Selects the same bounded article window shape used by state assigner.
-- Scrapes article content into `ArticleContents`.
-- Reuses the same enrichment logic that state assigner calls internally.
+- Selects the same bounded article window shape used by state assigner or accepts explicit `articleIds`.
+- Scrapes article content into `ArticleContents02`.
+- Reuses the same enrichment logic that state assigner and Google RSS follow-up scraping call internally.
 
 Key files:
 
-1. `src/routes/articleContentScraper.ts`
-2. `src/modules/jobs/articleContentScraperJob.ts`
-3. `src/modules/article-content/`
+1. `src/routes/articleContentScraper02.ts`
+2. `src/modules/jobs/articleContentScraper02Job.ts`
+3. `src/modules/article-content-02/`
 
 Current implementation details:
 
-1. Cheerio-first with Puppeteer fallback
+1. Direct HTTP first with Playwright fallback
 
-- Cheerio runs first.
-- If Cheerio fails or returns content shorter than `200` characters, Puppeteer fallback is attempted.
-- `scrapeStatusCheerio` and `scrapeStatusPuppeteer` should reflect which layers were attempted and which one succeeded.
+- Direct HTTP runs first.
+- If direct HTTP fails or returns weak publisher content, Playwright fallback is attempted.
+- `details`, `bodySource`, and `failureType` should reflect which layers were attempted and which one succeeded.
 
-2. Puppeteer runtime requirement
+2. Playwright runtime requirement
 
-- Puppeteer fallback requires a browser binary in the runtime environment.
-- Use `npm run puppeteer:browsers:install` in `worker-node/` to install the managed Chrome binary.
+- Playwright fallback requires a browser binary in the runtime environment.
+- Use `npx playwright install chromium` in `worker-node/` to install the managed browser binary.
 - On Ubuntu or other multi-user servers, run that install command as the same user that runs the `worker-node` process.
 
 3. HTTP policy
@@ -214,8 +215,9 @@ Current implementation details:
 
 5. Persistence rules
 
-- Update the existing canonical `ArticleContents` row first.
-- Create a new row only when none exists.
+- Persist into `ArticleContents02`.
+- Skip articles that already have a usable successful `ArticleContents02` row.
+- Update an existing non-success canonical row when present.
 - Duplicate rows are handled defensively with deterministic canonical-row selection.
 
 ## Database expectations
@@ -241,9 +243,9 @@ Current implementation details:
 
 4. Article content caveat
 
-- `ArticleContents` may contain duplicate rows for one `articleId`.
+- `ArticleContents02` may contain multiple attempt rows for one `articleId`.
 - Do not assume a schema-level uniqueness guarantee unless future schema work adds it.
-- Use the canonical-row helper logic already present in `src/modules/article-content/repository.ts`.
+- Use the canonical-row helper logic already present in `src/modules/article-content-02/repository.ts`.
 
 ## Environment variables
 
@@ -287,7 +289,7 @@ These rules matter more than style preferences because they preserve the project
 3. Reuse shared targeting and enrichment logic
 
 - If two workflows need the same candidate article selection, centralize it.
-- If two workflows need the same article-content behavior, reuse `src/modules/article-content/`.
+- If two workflows need the same article-content behavior, reuse `src/modules/article-content-02/`.
 
 4. Respect cooperative cancellation
 
@@ -372,7 +374,7 @@ When adding a new workflow:
 1. Importing models before DB initialization assumptions are understood.
 2. Creating duplicate queue patterns instead of using `globalQueueEngine`.
 3. Putting validation or env resolution deep inside workflow code instead of the route boundary.
-4. Forgetting that `ArticleContents` may have duplicates.
+4. Forgetting that `ArticleContents02` may have multiple attempt rows.
 5. Making state-assigner changes without considering the pre-scrape step.
 6. Changing endpoint names that the portal latest-job panels depend on.
 
@@ -385,8 +387,8 @@ If you are new to `worker-node`, start here:
 3. `src/modules/queue/queueEngine.ts`
 4. `src/routes/stateAssigner.ts`
 5. `src/modules/jobs/stateAssignerJob.ts`
-6. `src/routes/articleContentScraper.ts`
-7. `src/modules/article-content/enrichment.ts`
+6. `src/routes/articleContentScraper02.ts`
+7. `src/modules/article-content-02/enrichment.ts`
 8. `docs/worker-node-api-documentation/API_REFERENCE.md`
 9. `docs/requirements/REQUIREMENTS.md`
 10. `docs/requirements/REQUIREMENTS_TODO.md`

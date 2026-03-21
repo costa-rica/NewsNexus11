@@ -1,5 +1,5 @@
 import { ArticleContents02 } from '@newsnexus/db-models';
-import { ARTICLE_CONTENT_MIN_LENGTH } from '../article-content/config';
+import { ARTICLE_CONTENT_02_MIN_CONTENT_LENGTH } from './config';
 import {
   ArticleContent02BodySource,
   ArticleContent02ExtractionSource,
@@ -136,7 +136,7 @@ export const toArticleContent02StoredRow = (
 };
 
 export const hasUsableArticleContent02 = (content: string | null | undefined): boolean =>
-  normalizeStoredContent(content).length >= ARTICLE_CONTENT_MIN_LENGTH;
+  normalizeStoredContent(content).length >= ARTICLE_CONTENT_02_MIN_CONTENT_LENGTH;
 
 export const hasSuccessfulArticleContent02 = (
   row: ArticleContents02Model | null

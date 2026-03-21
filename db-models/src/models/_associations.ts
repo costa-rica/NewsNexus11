@@ -2,7 +2,6 @@ import { AiApproverArticleScore } from "./AiApproverArticleScore";
 import { AiApproverPromptVersion } from "./AiApproverPromptVersion";
 import { Article } from "./Article";
 import { ArticleApproved } from "./ArticleApproved";
-import { ArticleContent } from "./ArticleContent";
 import { ArticleContents02 } from "./ArticleContents02";
 import { ArticleDuplicateAnalysis } from "./ArticleDuplicateAnalysis";
 import { ArticleEntityWhoCategorizedArticleContract } from "./ArticleEntityWhoCategorizedArticleContract";
@@ -124,9 +123,6 @@ export function applyAssociations(): void {
 
 	Article.hasMany(ArticleKeywordContract, { foreignKey: "articleId" });
 	ArticleKeywordContract.belongsTo(Article, { foreignKey: "articleId" });
-
-	Article.hasMany(ArticleContent, { foreignKey: "articleId" });
-	ArticleContent.belongsTo(Article, { foreignKey: "articleId" });
 
 	Article.hasMany(ArticleContents02, { foreignKey: "articleId" });
 	ArticleContents02.belongsTo(Article, { foreignKey: "articleId" });

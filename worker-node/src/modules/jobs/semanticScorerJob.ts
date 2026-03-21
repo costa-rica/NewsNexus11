@@ -6,6 +6,7 @@ import {
   ArticleApproved,
   ArticleEntityWhoCategorizedArticleContract,
   ArtificialIntelligence,
+  dropLegacyArticleContentsTable,
   EntityWhoCategorizedArticle,
   initModels,
   sequelize
@@ -75,6 +76,7 @@ const ensureDbReady = async (): Promise<void> => {
     initModels();
     await sequelize.authenticate();
     await sequelize.sync();
+    await dropLegacyArticleContentsTable();
   })();
 
   return dbReadyPromise;
