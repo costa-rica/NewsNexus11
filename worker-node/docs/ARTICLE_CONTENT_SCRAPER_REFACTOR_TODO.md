@@ -106,19 +106,19 @@ Phase completion steps:
 
 ## Phase 2 - Add `ArticleContents02` To `db-models`
 
-- [ ] Add `db-models/src/models/ArticleContents02.ts`.
+- [x] Add `db-models/src/models/ArticleContents02.ts`.
   Run relevant tests after this task.
-- [ ] Define the Sequelize model for `ArticleContents02` with the approved fields.
+- [x] Define the Sequelize model for `ArticleContents02` with the approved fields.
   Run relevant tests after this task.
-- [ ] Register `ArticleContents02` in `db-models/src/models/_index.ts`.
+- [x] Register `ArticleContents02` in `db-models/src/models/_index.ts`.
   Run relevant tests after this task.
-- [ ] Add associations in `db-models/src/models/_associations.ts`.
+- [x] Add associations in `db-models/src/models/_associations.ts`.
   Run relevant tests after this task.
-- [ ] Add `Article.hasMany(ArticleContents02)` and `ArticleContents02.belongsTo(Article)`.
+- [x] Add `Article.hasMany(ArticleContents02)` and `ArticleContents02.belongsTo(Article)`.
   Run relevant tests after this task.
-- [ ] Verify the new model is exported everywhere needed by `worker-node`.
+- [x] Verify the new model is exported everywhere needed by `worker-node`.
   Run relevant tests after this task.
-- [ ] Build `db-models` successfully.
+- [x] Build `db-models` successfully.
   Run relevant tests after this task.
 
 Phase completion steps:
@@ -130,19 +130,19 @@ Phase completion steps:
 
 ## Phase 3 - Add Worker-Node Repository And Types
 
-- [ ] Create a new `worker-node` repository module for `ArticleContents02`.
+- [x] Create a new `worker-node` repository module for `ArticleContents02`.
   Run relevant tests after this task.
-- [ ] Add create helpers for new scrape-attempt rows.
+- [x] Add create helpers for new scrape-attempt rows.
   Run relevant tests after this task.
-- [ ] Add update helpers for completed scrape-attempt rows.
+- [x] Add update helpers for completed scrape-attempt rows.
   Run relevant tests after this task.
-- [ ] Add read helpers for loading prior `ArticleContents02` rows by `articleId`.
+- [x] Add read helpers for loading prior `ArticleContents02` rows by `articleId`.
   Run relevant tests after this task.
-- [ ] Define canonical or latest-row selection logic if needed for skip behavior.
+- [x] Define canonical or latest-row selection logic if needed for skip behavior.
   Run relevant tests after this task.
-- [ ] Create new workflow result types for the Google-to-publisher pipeline.
+- [x] Create new workflow result types for the Google-to-publisher pipeline.
   Run relevant tests after this task.
-- [ ] Keep the new result types separate from the legacy article-content scraper types.
+- [x] Keep the new result types separate from the legacy article-content scraper types.
   Run relevant tests after this task.
 
 Phase completion steps:
@@ -154,15 +154,15 @@ Phase completion steps:
 
 ## Phase 4 - Build Google Navigation
 
-- [ ] Add a new Google navigation module for browser-first navigation.
+- [x] Add a new Google navigation module for browser-first navigation.
   Run relevant tests after this task.
-- [ ] Use a real browser flow suitable for Google URL handling.
+- [x] Use a real browser flow suitable for Google URL handling.
   Run relevant tests after this task.
-- [ ] Reuse one browser context per job run when practical.
+- [x] Reuse one browser context per job run when practical.
   Run relevant tests after this task.
-- [ ] Capture the Google input URL, final browser URL, response status when available, and returned HTML.
+- [x] Capture the Google input URL, final browser URL, response status when available, and returned HTML.
   Run relevant tests after this task.
-- [ ] Add conservative retry logic for transient Google navigation failures.
+- [x] Add conservative retry logic for transient Google navigation failures.
   Run relevant tests after this task.
 - [ ] Keep processing sequential in the first version.
   Run relevant tests after this task.
