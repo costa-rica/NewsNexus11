@@ -798,32 +798,18 @@ async function sqlQueryArticleDetails(
       a.title,
       a.description,
       a.url,
-      COALESCE(
-        (
-          SELECT ac2.content
-          FROM "ArticleContents02" ac2
-          WHERE ac2."articleId" = a.id
-            AND ac2.status = 'success'
-            AND ac2.content IS NOT NULL
-            AND TRIM(ac2.content) <> ''
-          ORDER BY
-            CASE WHEN LENGTH(TRIM(ac2.content)) >= 200 THEN 1 ELSE 0 END DESC,
-            LENGTH(TRIM(ac2.content)) DESC,
-            ac2.id DESC
-          LIMIT 1
-        ),
-        (
-          SELECT ac.content
-          FROM "ArticleContents" ac
-          WHERE ac."articleId" = a.id
-            AND ac.content IS NOT NULL
-            AND TRIM(ac.content) <> ''
-          ORDER BY
-            CASE WHEN LENGTH(TRIM(ac.content)) >= 200 THEN 1 ELSE 0 END DESC,
-            LENGTH(TRIM(ac.content)) DESC,
-            ac.id DESC
-          LIMIT 1
-        )
+      (
+        SELECT ac2.content
+        FROM "ArticleContents02" ac2
+        WHERE ac2."articleId" = a.id
+          AND ac2.status = 'success'
+          AND ac2.content IS NOT NULL
+          AND TRIM(ac2.content) <> ''
+        ORDER BY
+          CASE WHEN LENGTH(TRIM(ac2.content)) >= 200 THEN 1 ELSE 0 END DESC,
+          LENGTH(TRIM(ac2.content)) DESC,
+          ac2.id DESC
+        LIMIT 1
       ) AS "articleContent",
       asc."stateId" AS "humanStateId",
       s1.name AS "humanStateName",

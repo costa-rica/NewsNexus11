@@ -9,7 +9,7 @@ All endpoints are prefixed with `/article-content-scraper-02`.
 Creates a queued job for the new browser-first article-content scraping flow.
 
 - Does not require authentication
-- Uses the same request body shape as `/article-content-scraper/start-job`
+- Accepts the legacy broad-targeting request body shape and the newer targeted `articleIds` body shape
 - Validates required request body fields are positive integers
 - Returns `202` when the job is accepted into the queue
 
@@ -43,10 +43,12 @@ Allowed `extractionSource` values:
 
 Allowed `bodySource` values:
 
-1. `direct-http`
-2. `playwright-publisher`
-3. `google-page`
-4. `none`
+1. `rss-feed`
+2. `aggregator-feed`
+3. `direct-http`
+4. `playwright-publisher`
+5. `google-page`
+6. `none`
 
 ### Parameters
 
@@ -55,6 +57,7 @@ Body fields:
 1. `targetArticleThresholdDaysOld` (required, positive integer)
 2. `targetArticleStateReviewCount` (required, positive integer)
 3. `includeArticlesThatMightHaveBeenStateAssigned` (optional, boolean)
+4. `articleIds` (optional, non-empty array of positive integers)
 
 ### Sample Request
 
@@ -104,6 +107,5 @@ curl --location --request POST 'http://localhost:3002/article-content-scraper-02
 
 ### Notes for testing
 
-1. This route does not replace `/article-content-scraper/start-job`.
-2. The old scraper route remains available during validation.
-3. The new route is intended for side-by-side testing while the legacy flow is still present.
+1. This is the active worker-node article-content scraping route.
+2. It supports both broad article selection and targeted follow-up scraping by explicit `articleIds`.

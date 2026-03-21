@@ -20,6 +20,7 @@ export type ArticleContent02ExtractionSource =
 
 export type ArticleContent02BodySource =
   | 'rss-feed'
+  | 'aggregator-feed'
   | 'direct-http'
   | 'playwright-publisher'
   | 'google-page'

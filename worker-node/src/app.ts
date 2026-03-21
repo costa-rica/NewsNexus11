@@ -4,7 +4,6 @@ import queueInfoRouter from './routes/queueInfo';
 import requestGoogleRssRouter from './routes/requestGoogleRss';
 import semanticScorerRouter from './routes/semanticScorer';
 import stateAssignerRouter from './routes/stateAssigner';
-import articleContentScraperRouter from './routes/articleContentScraper';
 import articleContentScraper02Router from './routes/articleContentScraper02';
 import logger from './modules/logger';
 import { errorHandler, notFoundHandler } from './modules/middleware/errorHandlers';
@@ -39,7 +38,6 @@ export const createApp = (): express.Express => {
   app.use('/request-google-rss', requestGoogleRssRouter);
   app.use('/semantic-scorer', semanticScorerRouter);
   app.use('/state-assigner', stateAssignerRouter);
-  app.use('/article-content-scraper', articleContentScraperRouter);
   app.use('/article-content-scraper-02', articleContentScraper02Router);
   app.use(notFoundHandler);
   app.use(errorHandler);

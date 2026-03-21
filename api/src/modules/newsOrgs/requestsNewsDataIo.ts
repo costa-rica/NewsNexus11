@@ -1,6 +1,5 @@
 import {
   Article,
-  ArticleContent,
   EntityWhoFoundArticle,
   NewsApiRequest,
   NewsApiRequestWebsiteDomainContract,
@@ -9,6 +8,7 @@ import {
 } from "@newsnexus/db-models";
 import { writeResponseDataFromNewsAggregator } from "../common";
 import logger from "../logger";
+import { upsertArticleContents02Seed } from "./articleContents02Seed";
 import {
   normalizeExternalJsonResponse,
   normalizeNewsDataIoResultsPayload,
@@ -47,9 +47,17 @@ export async function storeNewsDataIoArticles(
         newsApiRequestId: newsApiRequest.id,
       });
 
-      await ArticleContent.create({
+      await upsertArticleContents02Seed({
         articleId: newArticle.id,
+        discoveryUrl: article.link,
+        resolvedUrl: article.link,
+        title: article.title,
         content: article.content,
+        bodySource: "aggregator-feed",
+        extractionSource: "final-url",
+        successDetails: "Seeded from NewsData.io article content",
+        missingDetails: "NewsData.io article content missing",
+        shortDetails: "NewsData.io article content too short",
       });
       countOfArticlesSavedToDbFromRequest += 1;
     }

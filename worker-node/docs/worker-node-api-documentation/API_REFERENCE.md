@@ -12,7 +12,6 @@ This file is the top-level reference index for engineers and service consumers.
 - [request-google-rss](./endpoints/request-google-rss.md)
 - [semantic-scorer](./endpoints/semantic-scorer.md)
 - [state-assigner](./endpoints/state-assigner.md)
-- [article-content-scraper](./endpoints/article-content-scraper.md)
 - [article-content-scraper-02](./endpoints/article-content-scraper-02.md)
 
 ## Documentation conventions

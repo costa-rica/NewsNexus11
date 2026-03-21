@@ -1,14 +1,13 @@
 import {
   Article,
-  ArticleContents02,
   EntityWhoFoundArticle,
   NewsApiRequest,
   NewsArticleAggregatorSource,
 } from "@newsnexus/db-models";
 import logger from "../logger";
+import { upsertArticleContents02Seed } from "./articleContents02Seed";
 
 export const GOOGLE_NEWS_RSS_ORG_NAME = "Google News RSS";
-const ARTICLE_CONTENT_MIN_LENGTH = 200;
 
 export type GoogleRssStorageItem = {
   title?: string;
@@ -76,109 +75,6 @@ type StoreRequestAndArticlesResult = {
   articleIdsNeedingScrape: number[];
 };
 
-const normalizeWhitespace = (input: string): string => input.replace(/\s+/g, " ").trim();
-
-const stripHtml = (input: string): string => input.replace(/<[^>]*>/g, "").trim();
-
-const normalizeSeedContent = (value?: string | null): string | null => {
-  if (!value) {
-    return null;
-  }
-
-  const normalized = normalizeWhitespace(stripHtml(value));
-  return normalized === "" ? null : normalized;
-};
-
-const hasUsableContent = (value?: string | null): boolean => {
-  const normalized = normalizeSeedContent(value);
-  return (normalized?.length ?? 0) >= ARTICLE_CONTENT_MIN_LENGTH;
-};
-
-const hasSuccessfulArticleContents02 = async (articleId: number): Promise<boolean> => {
-  const rows = await ArticleContents02.findAll({
-    where: { articleId },
-    order: [["id", "DESC"]],
-  });
-
-  return rows.some(
-    (row) => row.status === "success" && hasUsableContent(row.content),
-  );
-};
-
-const getCanonicalArticleContents02Row = async (articleId: number) => {
-  const rows = await ArticleContents02.findAll({
-    where: { articleId },
-    order: [["id", "DESC"]],
-  });
-
-  if (rows.length === 0) {
-    return null;
-  }
-
-  const sorted = [...rows].sort((left, right) => {
-    const leftContentLength = normalizeSeedContent(left.content)?.length ?? 0;
-    const rightContentLength = normalizeSeedContent(right.content)?.length ?? 0;
-    const leftStatusRank = left.status === "success" ? 2 : leftContentLength > 0 ? 1 : 0;
-    const rightStatusRank = right.status === "success" ? 2 : rightContentLength > 0 ? 1 : 0;
-
-    if (leftStatusRank !== rightStatusRank) {
-      return rightStatusRank - leftStatusRank;
-    }
-
-    if (leftContentLength !== rightContentLength) {
-      return rightContentLength - leftContentLength;
-    }
-
-    return right.id - left.id;
-  });
-
-  return sorted[0] ?? null;
-};
-
-const upsertArticleContents02Seed = async (
-  articleId: number,
-  googleRssUrl: string,
-  item: GoogleRssStorageItem,
-): Promise<"skip" | "success" | "needs-scrape"> => {
-  if (await hasSuccessfulArticleContents02(articleId)) {
-    return "skip";
-  }
-
-  const normalizedContent = normalizeSeedContent(item.content);
-  const seedPayload = {
-    url: null,
-    googleRssUrl,
-    googleFinalUrl: null,
-    publisherFinalUrl: null,
-    title: item.title ?? null,
-    content: normalizedContent,
-    status: hasUsableContent(normalizedContent) ? "success" : "fail",
-    failureType: normalizedContent ? "short_content" : null,
-    details: hasUsableContent(normalizedContent)
-      ? "Seeded from Google RSS item content"
-      : normalizedContent
-        ? "RSS item content too short; triggering Google-to-publisher scrape"
-        : "RSS item content missing; triggering Google-to-publisher scrape",
-    extractionSource: "none",
-    bodySource: normalizedContent ? "rss-feed" : "none",
-    googleStatusCode: null,
-    publisherStatusCode: null,
-  };
-
-  const canonicalRow = await getCanonicalArticleContents02Row(articleId);
-
-  if (canonicalRow && canonicalRow.status !== "success") {
-    await canonicalRow.update(seedPayload);
-  } else {
-    await ArticleContents02.create({
-      articleId,
-      ...seedPayload,
-    });
-  }
-
-  return hasUsableContent(normalizedContent) ? "success" : "needs-scrape";
-};
-
 export async function storeRequestAndArticles(
   params: StoreRequestAndArticlesInput,
 ): Promise<StoreRequestAndArticlesResult> {
@@ -235,7 +131,16 @@ export async function storeRequestAndArticles(
     savedCount += 1;
     articleIds.push(article.id);
 
-    const seedResult = await upsertArticleContents02Seed(article.id, item.link, item);
+    const seedResult = await upsertArticleContents02Seed({
+      articleId: article.id,
+      discoveryUrl: item.link,
+      title: item.title,
+      content: item.content,
+      bodySource: "rss-feed",
+      successDetails: "Seeded from Google RSS item content",
+      missingDetails: "RSS item content missing; triggering Google-to-publisher scrape",
+      shortDetails: "RSS item content too short; triggering Google-to-publisher scrape"
+    });
     if (seedResult === "needs-scrape") {
       articleIdsNeedingScrape.push(article.id);
     }
