@@ -229,17 +229,17 @@ Phase completion steps:
 
 ## Phase 7 - Persist `ArticleContents02` Rows
 
-- [ ] Save successful scrape results to `ArticleContents02`.
+- [x] Save successful scrape results to `ArticleContents02`.
   Run relevant tests after this task.
-- [ ] Save failed scrape results to `ArticleContents02` whenever there is enough diagnostic information to preserve.
+- [x] Save failed scrape results to `ArticleContents02` whenever there is enough diagnostic information to preserve.
   Run relevant tests after this task.
-- [ ] Persist both `url` and `googleRssUrl`.
+- [x] Persist both `url` and `googleRssUrl`.
   Run relevant tests after this task.
-- [ ] Persist `status`, `failureType`, `details`, `extractionSource`, and `bodySource`.
+- [x] Persist `status`, `failureType`, `details`, `extractionSource`, and `bodySource`.
   Run relevant tests after this task.
-- [ ] Persist final title and content when available.
+- [x] Persist final title and content when available.
   Run relevant tests after this task.
-- [ ] Decide and implement skip behavior for articles that already have a usable `ArticleContents02` success row.
+- [x] Decide and implement skip behavior for articles that already have a usable `ArticleContents02` success row.
   Run relevant tests after this task.
 
 Phase completion steps:
