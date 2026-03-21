@@ -14,9 +14,9 @@ NewsNexus11 is a monorepo for a news aggregation and analysis platform. It has n
 | **api**           | `/api`           | Express 5 + TypeScript                                              | REST API for articles, auth, analysis workflows        |
 | **portal**        | `/portal`        | Next.js 16 (App Router, Turbopack) + Redux Toolkit + TailwindCSS v4 | Frontend dashboard                                     |
 | **worker-python** | `/worker-python` | Flask 3                                                             | Queues Python microservices (deduper, location scorer) |
-| **worker-node**   | `/worker-node`   | —                                                                   | Placeholder, not yet implemented                       |
+| **worker-node**   | `/worker-node`   | Express 5 + TypeScript                                              | Queue-backed Node workflows and article scraping       |
 
-**Dependency graph:** `portal → (HTTP) → api → db-models → SQLite ← worker-python`
+**Dependency graph:** `portal → (HTTP) → api → db-models → SQLite ← worker-python` and `portal → (HTTP) → api → worker-node → db-models`
 
 ## Build & Dev Commands
 
@@ -33,6 +33,7 @@ cd db-models && npm run dev          # tsc --watch
 cd api && npm run dev                # tsx watch, port 3000
 cd portal && npm run dev             # next dev, port 3001
 cd worker-python && source venv/bin/activate && flask run  # port 5000
+cd worker-node && npm run dev                              # port 3002 by default
 ```
 
 ## Testing & Linting
@@ -48,6 +49,10 @@ cd api && npx jest path/to/test.ts
 
 # Portal lint (ESLint — strict, no `any` allowed)
 cd portal && npm run lint
+
+# Worker-node build/tests
+cd worker-node && npm run build
+cd worker-node && npm test
 ```
 
 No test frameworks are configured for db-models, portal, or worker-python.
@@ -90,6 +95,14 @@ No test frameworks are configured for db-models, portal, or worker-python.
 - In-memory job storage (resets on restart); job output streams to terminal
 - Shares the same SQLite database as api
 
+### worker-node
+
+- Express worker service with queue-backed job starter routes
+- Owns `request-google-rss`, `semantic-scorer`, `state-assigner`, and `article-content-scraper-02`
+- Uses `ArticleContents02` as the single article-content table
+- `requestGoogleRss` now seeds or follows up into `ArticleContents02`
+- Portal and state assigner both rely on the new `article-content-scraper-02` flow
+
 ## Environment Variables
 
 Each package reads from its own `.env`. Key variables:
@@ -99,6 +112,7 @@ Each package reads from its own `.env`. Key variables:
 - `NEXT_PUBLIC_API_BASE_URL` — portal's API endpoint
 - `NEXT_PUBLIC_MODE` — set to `"workstation"` to prefill login form in dev
 - `PATH_TO_PYTHON_VENV`, `PATH_TO_MICROSERVICE_DEDUPER`, `PATH_TO_MICROSERVICE_LOCATION_SCORER` — worker-python paths
+- `PATH_AND_FILENAME_FOR_QUERY_SPREADSHEET_AUTOMATED`, `PATH_TO_STATE_ASSIGNER_FILES`, `KEY_OPEN_AI` — important worker-node workflow settings
 
 ## Production
 

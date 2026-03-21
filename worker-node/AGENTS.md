@@ -13,7 +13,7 @@ Today, `worker-node` is responsible for:
 1. request-google-rss
 2. semantic-scorer
 3. state-assigner
-4. article-content-scraper
+4. article-content-scraper-02
 5. queue inspection and cancellation
 
 The most important thing to understand is that this project is not a general-purpose API. It is a worker runtime with thin HTTP routes in front of a single shared queue.
@@ -119,7 +119,10 @@ Summary:
 
 - Reads spreadsheet-driven query definitions.
 - Requests Google News RSS feeds.
-- Normalizes and stores articles through `@newsnexus/db-models`.
+- Stores new `Articles` through `@newsnexus/db-models`.
+- Seeds `ArticleContents02` directly when RSS provides usable content.
+- Triggers the same Google-to-publisher scraping flow immediately when RSS content is missing or too short.
+- Does not overwrite an existing canonical `ArticleContents02` row for an article.
 
 Key files:
 
@@ -216,12 +219,12 @@ sudo -u limited_user bash -c "cd /home/limited_user/applications/NewsNexus11/wor
 4. Content rules
 
 - Content shorter than `200` characters is treated as failed scrape.
-- Blank or too-short stored content is eligible for enrichment.
+- New follow-up scraping from `requestGoogleRss` is only allowed during the same first-run ingestion path when a temporary seed row was just created.
 
 5. Persistence rules
 
 - Persist into `ArticleContents02`.
-- Skip articles that already have a usable successful `ArticleContents02` row.
+- Skip portal and state-assigner re-scrapes when any canonical `ArticleContents02` row already exists.
 - Update an existing non-success canonical row when present.
 - Duplicate rows are handled defensively with deterministic canonical-row selection.
 
@@ -251,6 +254,7 @@ sudo -u limited_user bash -c "cd /home/limited_user/applications/NewsNexus11/wor
 - `ArticleContents02` may contain multiple attempt rows for one `articleId`.
 - Do not assume a schema-level uniqueness guarantee unless future schema work adds it.
 - Use the canonical-row helper logic already present in `src/modules/article-content-02/repository.ts`.
+- Current scraper policy is conservative: once a canonical row exists, later standalone or state-assigner scraping should skip that article.
 
 ## Environment variables
 
@@ -380,7 +384,8 @@ When adding a new workflow:
 2. Creating duplicate queue patterns instead of using `globalQueueEngine`.
 3. Putting validation or env resolution deep inside workflow code instead of the route boundary.
 4. Forgetting that `ArticleContents02` may have multiple attempt rows.
-5. Making state-assigner changes without considering the pre-scrape step.
+5. Assuming failed `ArticleContents02` rows are still eligible for rescrape from portal or state assigner. They are not, unless the code is intentionally changed.
+6. Making state-assigner changes without considering the pre-scrape step.
 6. Changing endpoint names that the portal latest-job panels depend on.
 
 ## Recommended first-read files

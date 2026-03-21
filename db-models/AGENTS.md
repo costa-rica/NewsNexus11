@@ -43,6 +43,7 @@ This project currently has no test framework configured. When adding tests, refe
 - `src/models/_index.ts`: Model initialization and exports
 - `src/models/_associations.ts`: All database relationships and foreign keys
 - Each model follows the pattern: `src/models/ModelName.ts`
+- `ArticleContents02` is the active article-content table. The legacy `ArticleContents` model and table have been removed from this package.
 
 ### Database Configuration
 
@@ -95,13 +96,10 @@ Complex many-to-many and foreign key relationships are centrally managed in `_as
 This module is designed to be imported into other applications:
 
 ```typescript
-import db from "@newsnexus/db-models";
-const { Article, User, sequelize } = db;
+import { Article, User, initModels, sequelize } from "@newsnexus/db-models";
 
-// Initialize models in consuming app
-import { initModels } from "@newsnexus/db-models";
 initModels();
-sequelize.sync();
+await sequelize.sync();
 ```
 
 ## Key Considerations
