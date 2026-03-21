@@ -225,6 +225,20 @@
    - Do not force a strict one-row-per-article rule immediately.
    - It is useful to allow multiple attempts and then define a canonical row selection strategy, similar to what the current repository already does for `ArticleContents`.
 
+7. Suggested allowed `extractionSource` values
+   - `final-url`
+   - `canonical`
+   - `og:url`
+   - `json-ld`
+   - `fallback-link`
+   - `none`
+
+8. Suggested allowed `bodySource` values
+   - `direct-http`
+   - `playwright-publisher`
+   - `google-page`
+   - `none`
+
 ## Why A New Table Is Better Than Expanding `ArticleContents`
 
 1. Existing consumers already treat `ArticleContents` as a relatively simple content store.

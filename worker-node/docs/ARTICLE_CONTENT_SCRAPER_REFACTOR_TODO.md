@@ -28,6 +28,24 @@ The new table and flow should include:
 9. `extractionSource`
 10. `bodySource`
 
+The allowed values should be locked up front for consistency.
+
+Approved `extractionSource` values:
+
+1. `final-url`
+2. `canonical`
+3. `og:url`
+4. `json-ld`
+5. `fallback-link`
+6. `none`
+
+Approved `bodySource` values:
+
+1. `direct-http`
+2. `playwright-publisher`
+3. `google-page`
+4. `none`
+
 The engineer or agent should complete this work phase by phase.
 
 At the end of each phase:
@@ -57,6 +75,20 @@ Do not move to the next phase until the current phase is complete, tested, and c
 - [ ] Confirm `url` will store the discovered publisher URL and `googleRssUrl` will store the original Google URL.
   Run relevant tests after this task.
 - [ ] Confirm `details`, `extractionSource`, and `bodySource` are required for the new workflow.
+  Run relevant tests after this task.
+- [ ] Confirm the exact allowed `extractionSource` values:
+  1. `final-url`
+  2. `canonical`
+  3. `og:url`
+  4. `json-ld`
+  5. `fallback-link`
+  6. `none`
+  Run relevant tests after this task.
+- [ ] Confirm the exact allowed `bodySource` values:
+  1. `direct-http`
+  2. `playwright-publisher`
+  3. `google-page`
+  4. `none`
   Run relevant tests after this task.
 - [ ] Confirm whether raw HTML will be stored in SQLite or omitted from the first version.
   Run relevant tests after this task.
