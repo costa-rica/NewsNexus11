@@ -191,11 +191,20 @@ export function ScrapeArticleContentSection() {
                   <span className="inline-flex h-6 w-6 items-center justify-center overflow-visible rounded-full text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                     <InfoIcon className="h-5 w-5 overflow-visible" />
                   </span>
-                  <span className="pointer-events-none invisible absolute left-1/2 top-full z-10 mt-2 w-72 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-normal text-white opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100 dark:bg-gray-700">
-                    When checked, this scraper includes articles that may already
-                    have AI state assignments, but still excludes articles that
-                    have any ArticleApproveds row and articles with
-                    ArticleIsRelevants.isRelevant = false.
+                  <span className="pointer-events-none invisible absolute left-1/2 top-full z-10 mt-2 w-80 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-normal text-white opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100 dark:bg-gray-700">
+                    <span className="block">When checked:</span>
+                    <ul className="mt-2 list-disc space-y-1 pl-4">
+                      <li>Articles that may already have AI state assignments are included.</li>
+                      <li>Articles with any ArticleApproveds row are still excluded.</li>
+                      <li>
+                        Articles with ArticleIsRelevants.isRelevant = false are still
+                        excluded.
+                      </li>
+                      <li>
+                        Articles that already have any ArticleContents02 row are still
+                        skipped and will not be re-scraped.
+                      </li>
+                    </ul>
                   </span>
                 </div>
               </div>
