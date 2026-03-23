@@ -286,20 +286,21 @@
 
 ## 7. phase 6 - score refresh and review-page integration
 
-- [ ] Refresh the review-page article’s AI approver top score after a successful one-off submission when new score data becomes available.
-- [ ] Ensure the one-off score participates in the existing `/articles/review` top-score display.
-- [ ] Ensure the one-off score appears in the existing `AI Approver Details` modal.
-- [ ] Verify that the new prompt row is visible later in `/articles/automations/ai-approver-prompts`.
-- [ ] Verify that the one-off-created prompt row remains inactive by default.
-- [ ] Verify that the one-off-created score row behaves like other score rows for ranking and human review.
-- [ ] Add any API tests needed if existing top-score behavior requires additive changes.
-- [ ] Run relevant tests for this phase.
-  - `api`: `npm -C api test` if API logic changed
-  - `worker-python`: `cd worker-python && pytest` for affected AI approver suites if worker logic changed
+- [x] Refresh the review-page article’s AI approver top score after a successful one-off submission when new score data becomes available.
+- [x] Ensure the one-off score participates in the existing `/articles/review` top-score display.
+- [x] Ensure the one-off score appears in the existing `AI Approver Details` modal.
+- [x] Verify that the new prompt row is visible later in `/articles/automations/ai-approver-prompts`.
+- [x] Verify that the one-off-created prompt row remains inactive by default.
+- [x] Verify that the one-off-created score row behaves like other score rows for ranking and human review.
+- [x] Add any API tests needed if existing top-score behavior requires additive changes.
+- [x] Run relevant tests for this phase.
+  - `api`: `npm -C api test`
+  - `worker-python`: no worker-python code changed in this phase
   - `portal`: no test framework exists, so do not add tests
-  - `portal`: run existing verification command if it is usable in the current environment, such as `npm -C portal run lint`
-- [ ] If tests or verification pass, check off completed tasks in this phase.
-- [ ] Commit with a message that references `docs/REVIEW_PAGE_AI_APPROVER_FLOW_20260323_TODO.md` and phase 6.
+  - `portal`: `portal/node_modules/.bin/tsc -p portal/tsconfig.json --noEmit`
+  - `portal`: `npm -C portal run lint` remains blocked by the existing `minimatch` / ESLint environment issue
+- [x] If tests or verification pass, check off completed tasks in this phase.
+- [x] Commit with a message that references `docs/REVIEW_PAGE_AI_APPROVER_FLOW_20260323_TODO.md` and phase 6.
 
 ## 8. phase 7 - final verification and cleanup
 

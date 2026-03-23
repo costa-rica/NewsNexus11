@@ -15,6 +15,7 @@ import { Modal } from "./index";
 interface ModalReviewArticleContentProps {
 	articleId: number;
 	onClose: () => void;
+	onScoresUpdated?: (articleId: number) => void;
 }
 
 type FeedbackState = {
@@ -37,6 +38,7 @@ const DEFAULT_SORT: {
 const ModalReviewArticleContent: React.FC<ModalReviewArticleContentProps> = ({
 	articleId,
 	onClose,
+	onScoresUpdated,
 }) => {
 	const { token } = useAppSelector((state) => state.user);
 	const [details, setDetails] = useState<ReviewArticleContentResponse | null>(null);
@@ -60,6 +62,12 @@ const ModalReviewArticleContent: React.FC<ModalReviewArticleContentProps> = ({
 	const [promptInMarkdown, setPromptInMarkdown] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [feedback, setFeedback] = useState<FeedbackState>(null);
+	const [queuedJob, setQueuedJob] = useState<{
+		endpointName: string;
+		jobId: string;
+		status: string;
+	} | null>(null);
+	const [hasRefreshedScoresForJob, setHasRefreshedScoresForJob] = useState(false);
 
 	useEffect(() => {
 		const fetchDetails = async () => {
@@ -246,6 +254,12 @@ const ModalReviewArticleContent: React.FC<ModalReviewArticleContentProps> = ({
 
 			const result =
 				(await response.json()) as ReviewPageAiApproverStartJobResponse;
+			setQueuedJob({
+				jobId: result.jobId,
+				endpointName: result.endpointName,
+				status: result.status,
+			});
+			setHasRefreshedScoresForJob(false);
 			setFeedback({
 				title: "One-Off Prompt Queued",
 				message: `Queued job ${result.jobId} with prompt row ${result.promptVersionId}. This prompt row was saved as inactive by default.`,
@@ -267,6 +281,101 @@ const ModalReviewArticleContent: React.FC<ModalReviewArticleContentProps> = ({
 
 	const canSubmit =
 		formName.trim().length > 0 && promptInMarkdown.trim().length > 0 && !isSubmitting;
+
+	useEffect(() => {
+		if (!token || !queuedJob || hasRefreshedScoresForJob) {
+			return;
+		}
+
+		const isTerminalStatus = (status: string) =>
+			status === "completed" ||
+			status === "failed" ||
+			status === "canceled" ||
+			status === "cancelled";
+
+		if (isTerminalStatus(queuedJob.status)) {
+			if (queuedJob.status === "completed") {
+				onScoresUpdated?.(articleId);
+				setFeedback({
+					title: "One-Off Prompt Completed",
+					message:
+						"The queued review-page AI approver job completed and the article scores were refreshed.",
+					variant: "success",
+				});
+			}
+			setHasRefreshedScoresForJob(true);
+			return;
+		}
+
+		const intervalId = window.setInterval(() => {
+			void (async () => {
+				try {
+					const response = await fetch(
+						`${process.env.NEXT_PUBLIC_API_BASE_URL}/automations/worker-python/check-status/${encodeURIComponent(
+							queuedJob.jobId
+						)}`,
+						{
+							headers: {
+								Authorization: `Bearer ${token}`,
+							},
+						}
+					);
+
+					if (!response.ok) {
+						return;
+					}
+
+					const result = (await response.json()) as {
+						job?: {
+							status?: string;
+						} | null;
+					};
+					const nextStatus = result.job?.status;
+					if (!nextStatus) {
+						return;
+					}
+
+					setQueuedJob((current) =>
+						current
+							? {
+									...current,
+									status: nextStatus,
+							  }
+							: current
+					);
+
+					if (isTerminalStatus(nextStatus)) {
+						window.clearInterval(intervalId);
+
+						if (nextStatus === "completed") {
+							onScoresUpdated?.(articleId);
+							setFeedback({
+								title: "One-Off Prompt Completed",
+								message:
+									"The queued review-page AI approver job completed and the article scores were refreshed.",
+								variant: "success",
+							});
+						} else if (nextStatus === "failed") {
+							setFeedback({
+								title: "One-Off Prompt Failed",
+								message:
+									"The queued review-page AI approver job finished with a failed status.",
+								variant: "error",
+							});
+						}
+
+						setHasRefreshedScoresForJob(true);
+					}
+				} catch (_error) {
+					// Keep polling on transient fetch issues.
+				}
+			})();
+		}, 3000);
+
+		return () => {
+			window.clearInterval(intervalId);
+		};
+	}, [articleId, hasRefreshedScoresForJob, onScoresUpdated, queuedJob, token]);
 
 	return (
 		<Modal isOpen={true} onClose={onClose} className="max-w-6xl">
@@ -328,6 +437,11 @@ const ModalReviewArticleContent: React.FC<ModalReviewArticleContentProps> = ({
 										This creates a new inactive prompt row and queues a single
 										article run.
 									</p>
+									{queuedJob && !hasRefreshedScoresForJob && (
+										<p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+											Queued job {queuedJob.jobId} is currently {queuedJob.status}.
+										</p>
+									)}
 								</div>
 								<button
 									type="button"

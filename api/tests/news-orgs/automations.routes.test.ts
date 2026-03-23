@@ -405,6 +405,36 @@ describe("news org automations routes", () => {
     );
   });
 
+  test("GET /automations/worker-python/check-status/:jobId proxies worker job status", async () => {
+    mockAxios.get.mockResolvedValue({
+      data: {
+        job: {
+          endpointName: "/ai-approver/review-page/start-job",
+          jobId: "job-review-1",
+          status: "completed",
+        },
+      },
+      status: 200,
+    });
+
+    const app = buildApp();
+    const response = await request(app).get(
+      "/automations/worker-python/check-status/job-review-1",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      job: {
+        endpointName: "/ai-approver/review-page/start-job",
+        jobId: "job-review-1",
+        status: "completed",
+      },
+    });
+    expect(mockAxios.get).toHaveBeenCalledWith(
+      "http://worker-python/queue-info/check-status/job-review-1",
+    );
+  });
+
   test("POST /automations/worker-python/cancel-job/:jobId proxies cancel response", async () => {
     mockAxios.post.mockResolvedValue({
       data: {

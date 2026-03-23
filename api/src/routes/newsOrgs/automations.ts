@@ -383,6 +383,32 @@ router.get('/worker-python/latest-job', authenticateToken, async (req, res) => {
   }
 });
 
+router.get('/worker-python/check-status/:jobId', authenticateToken, async (req, res) => {
+  const workerPythonBaseUrl = getRequiredWorkerPythonBaseUrl(res);
+  if (!workerPythonBaseUrl) {
+    return;
+  }
+
+  const jobId = Array.isArray(req.params.jobId) ? req.params.jobId[0] : req.params.jobId;
+  if (typeof jobId !== 'string' || jobId.trim() === '') {
+    return res.status(400).json({
+      result: false,
+      message: 'jobId route parameter is required.',
+    });
+  }
+
+  try {
+    const response = await axios.get(
+      `${workerPythonBaseUrl}/queue-info/check-status/${encodeURIComponent(jobId.trim())}`
+    );
+
+    return res.status(response.status).json(response.data);
+  } catch (error: unknown) {
+    logger.error('Error retrieving worker-python job status:', error);
+    return forwardAxiosError(res, error);
+  }
+});
+
 router.post('/worker-python/cancel-job/:jobId', authenticateToken, async (req, res) => {
   const workerPythonBaseUrl = getRequiredWorkerPythonBaseUrl(res);
   if (!workerPythonBaseUrl) {
