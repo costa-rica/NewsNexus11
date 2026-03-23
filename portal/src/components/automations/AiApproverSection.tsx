@@ -212,7 +212,7 @@ export function AiApproverSection() {
               </button>
 
               <Link
-                href="/analysis/ai-approver-prompts"
+                href="/articles/automations/ai-approver-prompts"
                 className="rounded-lg border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 Manage Agent Prompts
