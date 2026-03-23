@@ -88,6 +88,19 @@ function buildReviewPagePromptDescription(userId: number, articleId: number): st
   return `userId:${userId}, articleId:${articleId}, date:${formatPromptDescriptionDate(new Date())}`;
 }
 
+function isEligibleTopScoreRow(row: {
+  isHumanApproved?: boolean | null;
+  resultStatus?: string | null;
+  score?: number | null;
+}): boolean {
+  return (
+    row.isHumanApproved !== false &&
+    row.resultStatus === "completed" &&
+    typeof row.score === "number" &&
+    Number.isFinite(row.score)
+  );
+}
+
 router.get("/prompts", authenticateToken, async (_req: Request, res: Response) => {
   try {
     const prompts = await AiApproverPromptVersion.findAll({
@@ -463,9 +476,7 @@ router.get(
           : null,
       }));
 
-      const topEligible = scoreRows.find(
-        (row: any) => row.isHumanApproved !== false,
-      );
+      const topEligible = scoreRows.find((row: any) => isEligibleTopScoreRow(row));
 
       return res.status(200).json({
         result: true,
@@ -513,7 +524,7 @@ router.post(
       const topScoresByArticleId = new Map<number, Record<string, unknown>>();
       for (const row of rows) {
         const rowAny = row as any;
-        if (rowAny.isHumanApproved === false) {
+        if (!isEligibleTopScoreRow(rowAny)) {
           continue;
         }
         if (topScoresByArticleId.has(rowAny.articleId)) {
@@ -580,14 +591,14 @@ router.patch(
         ],
       });
 
-      const topEligible = articleScores.find(
-        (row: any) => row.isHumanApproved !== false,
+      const topEligible = articleScores.find((row: any) =>
+        isEligibleTopScoreRow(row),
       );
       if (!topEligible || topEligible.id !== scoreRow.id) {
         return res.status(409).json({
           result: false,
           message:
-            "Human validation can only be applied to the current highest non-rejected score row.",
+            "Human validation can only be applied to the current highest eligible completed score row.",
         });
       }
 

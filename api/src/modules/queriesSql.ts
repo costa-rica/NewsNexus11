@@ -494,11 +494,10 @@ async function sqlQueryArticlesForWithRatingsRoute(
       aa."userId" AS "ArticleApproved.userId",
       aa."articleId" AS "ArticleApproved.articleId",
       aa."isApproved" AS "ArticleApproved.isApproved",
-      EXISTS (
-        SELECT 1
-        FROM "ArticleContents02" ac2
-        WHERE ac2."articleId" = a.id
-      ) AS "hasArticleContent",
+      CASE
+        WHEN ac2_lookup."articleId" IS NOT NULL THEN true
+        ELSE false
+      END AS "hasArticleContent",
       s.id AS "stateId",
       s.id AS "States.id",
       s.name AS "States.name",
@@ -527,6 +526,10 @@ async function sqlQueryArticlesForWithRatingsRoute(
 
     LEFT JOIN "NewsApiRequests" nar ON nar.id = a."newsApiRequestId"
     LEFT JOIN "NewsArticleAggregatorSources" nas ON nas.id = nar."newsArticleAggregatorSourceId"
+    LEFT JOIN (
+      SELECT DISTINCT ac2."articleId"
+      FROM "ArticleContents02" ac2
+    ) ac2_lookup ON ac2_lookup."articleId" = a.id
 
     LEFT JOIN "ArticleRevieweds" ar ON ar."articleId" = a.id
 

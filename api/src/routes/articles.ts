@@ -977,6 +977,7 @@ router.post(
         publishedDate: article.publishedDate,
         publicationName: article.publicationName,
         url: article.url,
+        hasArticleContent: Boolean(article.hasArticleContent),
         States: article.States,
         statesStringCommaSeparated,
         isRelevant,

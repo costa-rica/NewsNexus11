@@ -396,6 +396,25 @@ describe("analysis ai approver routes", () => {
     expect(response.body.scores).toHaveLength(2);
   });
 
+  test("GET /analysis/ai-approver/article/:articleId ignores invalid rows when choosing top eligible id", async () => {
+    mockAiApproverArticleScore.findAll.mockResolvedValue([
+      buildScoreRow({
+        id: 13,
+        resultStatus: "invalid_response",
+        score: null,
+        isHumanApproved: null,
+      }),
+      buildScoreRow({ id: 14, score: 0.95, isHumanApproved: null }),
+    ]);
+
+    const app = buildApp();
+    const response = await request(app).get("/analysis/ai-approver/article/77");
+
+    expect(response.status).toBe(200);
+    expect(response.body.result).toBe(true);
+    expect(response.body.topEligibleScoreId).toBe(14);
+  });
+
   test("POST /analysis/ai-approver/top-scores validates request body", async () => {
     const app = buildApp();
     const response = await request(app)
@@ -429,6 +448,33 @@ describe("analysis ai approver routes", () => {
       id: 23,
       articleId: 88,
       score: 0.7,
+    });
+  });
+
+  test("POST /analysis/ai-approver/top-scores ignores invalid rows ahead of completed scores", async () => {
+    mockAiApproverArticleScore.findAll.mockResolvedValue([
+      buildScoreRow({
+        id: 24,
+        articleId: 77,
+        resultStatus: "invalid_response",
+        score: null,
+        isHumanApproved: null,
+      }),
+      buildScoreRow({ id: 25, articleId: 77, score: 0.95, isHumanApproved: null }),
+    ]);
+
+    const app = buildApp();
+    const response = await request(app)
+      .post("/analysis/ai-approver/top-scores")
+      .send({ articleIds: [77] });
+
+    expect(response.status).toBe(200);
+    expect(response.body.result).toBe(true);
+    expect(response.body.topScores["77"]).toMatchObject({
+      id: 25,
+      articleId: 77,
+      score: 0.95,
+      resultStatus: "completed",
     });
   });
 
