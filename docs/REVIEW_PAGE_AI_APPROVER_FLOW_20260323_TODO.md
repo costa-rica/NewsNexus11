@@ -304,7 +304,7 @@
 
 ## 8. phase 7 - final verification and cleanup
 
-- [ ] Verify the full end-to-end one-off review-page flow:
+- [x] Verify the full end-to-end one-off review-page flow:
   - content icon appears only when `ArticleContents02` exists
   - modal opens with read-only title and content
   - blank prompt can be entered manually
@@ -316,21 +316,23 @@
   - score row is inserted
   - top score updates when available
   - details modal shows the one-off score row
-- [ ] Verify article-content fallback behavior inside the one-off worker flow:
+- [x] Verify article-content fallback behavior inside the one-off worker flow:
   - use `ArticleContents02` when found
   - use article description when `ArticleContents02` is not found
-- [ ] Verify existing active-prompt batch AI approver flow still works unchanged.
-- [ ] Verify the new dedicated content endpoint does not break current review-page behavior.
-- [ ] Update related documentation if implementation details changed materially from this TODO.
-- [ ] Run final relevant tests for this phase.
+- [x] Verify existing active-prompt batch AI approver flow still works unchanged.
+- [x] Verify the new dedicated content endpoint does not break current review-page behavior.
+- [x] Update related documentation if implementation details changed materially from this TODO.
+- [x] Run final relevant tests for this phase.
   - `api`: `npm -C api test`
-  - `worker-python`: `cd worker-python && pytest`
+  - `worker-python`: `cd worker-python && venv/bin/python -m pytest`
   - `portal`: no test framework exists, so do not add tests
-  - `portal`: run existing verification command if it is usable in the current environment, such as `npm -C portal run lint`
-- [ ] If tests or verification pass, check off completed tasks in this phase.
-- [ ] Commit with a message that references `docs/REVIEW_PAGE_AI_APPROVER_FLOW_20260323_TODO.md` and phase 7.
+  - `portal`: `portal/node_modules/.bin/tsc -p portal/tsconfig.json --noEmit`
+  - `portal`: `npm -C portal run lint` remains blocked by the existing `minimatch` / ESLint environment issue
+- [x] If tests or verification pass, check off completed tasks in this phase.
+- [x] Commit with a message that references `docs/REVIEW_PAGE_AI_APPROVER_FLOW_20260323_TODO.md` and phase 7.
 
 ## 9. notes
 
 - No new schema change is expected at this time. If implementation reveals a schema gap, stop and update this TODO before proceeding.
 - The current portal lint command may need environment/package cleanup before it can be relied on as phase verification. Do not create a new portal test framework to compensate.
+- Final verification cleanup included stabilizing one pre-existing worker-python startup-env integration test so the full `worker-python` pytest suite reflects current behavior reliably.

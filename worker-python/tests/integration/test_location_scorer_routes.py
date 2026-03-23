@@ -131,8 +131,10 @@ def test_start_job_rejects_unknown_fields(client) -> None:
 def test_main_import_fails_when_location_scorer_env_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    import dotenv
     import src.main as main_module
 
+    monkeypatch.setattr(dotenv, "load_dotenv", lambda *args, **kwargs: False)
     monkeypatch.delenv("NAME_AI_ENTITY_LOCATION_SCORER", raising=False)
 
     with pytest.raises(SystemExit):
