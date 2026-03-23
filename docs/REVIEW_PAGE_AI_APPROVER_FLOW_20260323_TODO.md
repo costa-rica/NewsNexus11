@@ -240,23 +240,24 @@
 
 ## 5. phase 4 - portal review table icon and modal shell
 
-- [ ] Extend the review-page data flow so the bottom table knows whether each article has at least one `ArticleContents02` row.
-- [ ] Add a new article-content icon to the review table.
-- [ ] Show the icon only when `ArticleContents02` exists for that article.
-- [ ] Ensure the table’s `id` sorting remains unchanged.
-- [ ] Implement the new icon as a separate non-sorting display column or an equivalent non-invasive UI element.
-- [ ] Add click behavior to open a new review-page modal for the article-content one-off AI approver flow.
-- [ ] Build the modal shell using existing portal modal patterns.
-- [ ] Fetch article title and content from the new dedicated API endpoint when the modal opens.
-- [ ] Render the article title in the modal.
-- [ ] Render the content as read-only.
-- [ ] Add loading, empty, and error states for the modal content request.
-- [ ] Add portal type updates needed for the new modal payloads.
-- [ ] Run relevant verification for this phase.
+- [x] Extend the review-page data flow so the bottom table knows whether each article has at least one `ArticleContents02` row.
+- [x] Add a new article-content icon to the review table.
+- [x] Show the icon only when `ArticleContents02` exists for that article.
+- [x] Ensure the table’s `id` sorting remains unchanged.
+- [x] Implement the new icon as a separate non-sorting display column or an equivalent non-invasive UI element.
+- [x] Add click behavior to open a new review-page modal for the article-content one-off AI approver flow.
+- [x] Build the modal shell using existing portal modal patterns.
+- [x] Fetch article title and content from the new dedicated API endpoint when the modal opens.
+- [x] Render the article title in the modal.
+- [x] Render the content as read-only.
+- [x] Add loading, empty, and error states for the modal content request.
+- [x] Add portal type updates needed for the new modal payloads.
+- [x] Run relevant verification for this phase.
   - `portal`: no test framework exists, so do not add tests
-  - `portal`: run existing verification command if it is usable in the current environment, such as `npm -C portal run lint`
-- [ ] If tests or verification pass, check off completed tasks in this phase.
-- [ ] Commit with a message that references `docs/REVIEW_PAGE_AI_APPROVER_FLOW_20260323_TODO.md` and phase 4.
+  - `portal`: `portal/node_modules/.bin/tsc -p portal/tsconfig.json --noEmit`
+  - `portal`: `npm -C portal run lint` remains blocked by the existing `minimatch` / ESLint environment issue
+- [x] If tests or verification pass, check off completed tasks in this phase.
+- [x] Commit with a message that references `docs/REVIEW_PAGE_AI_APPROVER_FLOW_20260323_TODO.md` and phase 4.
 
 ## 6. phase 5 - portal one-off prompt form and prompt-picker table
 

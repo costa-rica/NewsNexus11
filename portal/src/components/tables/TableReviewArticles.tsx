@@ -37,6 +37,7 @@ interface TableReviewArticlesProps {
 	onDeleteArticle?: (article: Article) => void;
 	onStateAssignmentClick?: (articleId: number) => void;
 	onAiApproverClick?: (articleId: number) => void;
+	onArticleContentClick?: (articleId: number) => void;
 }
 
 const TableReviewArticles: React.FC<TableReviewArticlesProps> = ({
@@ -52,6 +53,7 @@ const TableReviewArticles: React.FC<TableReviewArticlesProps> = ({
 	onDeleteArticle,
 	onStateAssignmentClick,
 	onAiApproverClick,
+	onArticleContentClick,
 }) => {
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
@@ -200,6 +202,46 @@ const TableReviewArticles: React.FC<TableReviewArticlesProps> = ({
 			// Add remaining common columns (only for review page)
 			if (showReviewedColumn || showRelevantColumn) {
 				allColumns.push(
+					columnHelper.display({
+						id: "articleContent",
+						header: "Content",
+						enableSorting: false,
+						cell: ({ row }) => {
+							if (!row.original.hasArticleContent) {
+								return (
+									<div className="text-center text-xs text-gray-400">N/A</div>
+								);
+							}
+
+							return (
+								<div className="flex justify-center">
+									<button
+										type="button"
+										onClick={() => onArticleContentClick?.(row.original.id)}
+										className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-brand-500 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-brand-300"
+										title="Open article content"
+									>
+										<svg
+											viewBox="0 0 24 24"
+											className="h-5 w-5"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="1.8"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											aria-hidden="true"
+										>
+											<path d="M7 3.75h7l4.25 4.25V20.25H7z" />
+											<path d="M14 3.75v4.5h4.5" />
+											<path d="M9.5 11.25h6" />
+											<path d="M9.5 14.25h6" />
+											<path d="M9.5 17.25h4" />
+										</svg>
+									</button>
+								</div>
+							);
+						},
+					}),
 					columnHelper.accessor(
 						(row) => row.requestQueryString?.toString() ?? "",
 						{
@@ -384,6 +426,7 @@ const TableReviewArticles: React.FC<TableReviewArticlesProps> = ({
 			onDeleteArticle,
 			onStateAssignmentClick,
 			onAiApproverClick,
+			onArticleContentClick,
 			showReviewedColumn,
 			showRelevantColumn,
 			showDeleteColumn,

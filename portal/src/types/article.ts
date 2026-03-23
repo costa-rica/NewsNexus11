@@ -32,7 +32,17 @@ export interface Article {
 	aiApproverTopPromptVersionId?: number | null;
 	aiApproverTopPromptName?: string | null;
 	aiApproverTopResultStatus?: string | null;
+	hasArticleContent?: boolean;
 	stateAssignment?: StateAssignment | null;
+}
+
+export interface ReviewArticleContentResponse {
+	result: boolean;
+	articleId: number;
+	title: string;
+	hasArticleContent: boolean;
+	content: string | null;
+	contentSource: string | null;
 }
 
 export interface AiApproverPromptVersion {

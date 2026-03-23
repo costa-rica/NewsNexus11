@@ -20,6 +20,7 @@ import { Modal } from "@/components/ui/modal";
 import { ModalInformationOk } from "@/components/ui/modal/ModalInformationOk";
 import ModalStateAssignerDetails from "@/components/ui/modal/ModalStateAssignerDetails";
 import ModalAiApproverDetails from "@/components/ui/modal/ModalAiApproverDetails";
+import ModalReviewArticleContent from "@/components/ui/modal/ModalReviewArticleContent";
 
 type AiApproverTopScoreMap = Record<
 	string,
@@ -40,6 +41,8 @@ export default function ReviewArticles() {
 	const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 	const [stateAssignerArticleId, setStateAssignerArticleId] = useState<number | null>(null);
 	const [aiApproverArticleId, setAiApproverArticleId] = useState<number | null>(null);
+	const [reviewArticleContentArticleId, setReviewArticleContentArticleId] =
+		useState<number | null>(null);
 	const userReducer = useAppSelector((s) => s.user);
 	const [loadingComponents, setLoadingComponents] = useState({
 		table01: false,
@@ -878,6 +881,7 @@ export default function ReviewArticles() {
 				onToggleRelevant={handleClickIsRelevant}
 				onStateAssignmentClick={setStateAssignerArticleId}
 				onAiApproverClick={setAiApproverArticleId}
+				onArticleContentClick={setReviewArticleContentArticleId}
 			/>
 
 			{/* Alert Modal */}
@@ -909,6 +913,13 @@ export default function ReviewArticles() {
 					articleId={aiApproverArticleId}
 					onClose={() => setAiApproverArticleId(null)}
 					onScoresUpdated={handleAiApproverArticleUpdate}
+				/>
+			)}
+
+			{reviewArticleContentArticleId && (
+				<ModalReviewArticleContent
+					articleId={reviewArticleContentArticleId}
+					onClose={() => setReviewArticleContentArticleId(null)}
 				/>
 			)}
 		</div>

@@ -494,6 +494,11 @@ async function sqlQueryArticlesForWithRatingsRoute(
       aa."userId" AS "ArticleApproved.userId",
       aa."articleId" AS "ArticleApproved.articleId",
       aa."isApproved" AS "ArticleApproved.isApproved",
+      EXISTS (
+        SELECT 1
+        FROM "ArticleContents02" ac2
+        WHERE ac2."articleId" = a.id
+      ) AS "hasArticleContent",
       s.id AS "stateId",
       s.id AS "States.id",
       s.name AS "States.name",
@@ -551,6 +556,7 @@ async function sqlQueryArticlesForWithRatingsRoute(
       isRelevant,
       approvalCreatedAt,
       publicationName,
+      hasArticleContent,
 
       // NewsApiRequest
       "NewsApiRequest.id": narId,
@@ -592,6 +598,7 @@ async function sqlQueryArticlesForWithRatingsRoute(
         publicationName,
         isRelevant,
         approvalCreatedAt,
+        hasArticleContent: Boolean(hasArticleContent),
         NewsApiRequest: {
           id: narId,
           createdAt: narCreatedAt,
