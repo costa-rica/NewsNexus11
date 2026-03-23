@@ -45,6 +45,20 @@ class AiApproverRepository:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    def get_prompt_version_by_id(self, prompt_version_id: int) -> dict[str, Any] | None:
+        conn = self.get_connection()
+        row = conn.execute(
+            """
+            SELECT id, name, description, promptInMarkdown, isActive
+            FROM AiApproverPromptVersions
+            WHERE id = ?
+            LIMIT 1
+            """,
+            (prompt_version_id,),
+        ).fetchone()
+
+        return dict(row) if row is not None else None
+
     def get_eligible_articles(
         self,
         *,
@@ -134,6 +148,45 @@ class AiApproverRepository:
         ).fetchall()
 
         return [dict(row) for row in rows]
+
+    def get_article_for_prompt_run(self, article_id: int) -> dict[str, Any] | None:
+        conn = self.get_connection()
+        row = conn.execute(
+            """
+            SELECT
+                a.id,
+                a.title,
+                COALESCE(
+                    (
+                        SELECT ac2.content
+                        FROM ArticleContents02 ac2
+                        WHERE ac2.articleId = a.id
+                        ORDER BY
+                            CASE WHEN ac2.status = 'success' THEN 2 ELSE 0 END DESC,
+                            LENGTH(TRIM(COALESCE(ac2.content, ''))) DESC,
+                            ac2.id DESC
+                        LIMIT 1
+                    ),
+                    a.description,
+                    ''
+                ) AS content,
+                CASE
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM ArticleContents02 ac2
+                        WHERE ac2.articleId = a.id
+                    ) THEN 'article-contents-02'
+                    WHEN LENGTH(TRIM(COALESCE(a.description, ''))) > 0 THEN 'article-description'
+                    ELSE 'none'
+                END AS contentSource
+            FROM Articles a
+            WHERE a.id = ?
+            LIMIT 1
+            """,
+            (article_id,),
+        ).fetchone()
+
+        return dict(row) if row is not None else None
 
     def insert_score_row(
         self,

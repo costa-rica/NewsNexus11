@@ -6,6 +6,7 @@ import json
 from typing import Any
 
 from src.modules.ai_approver.client import AiApproverOpenAIClient
+from src.modules.ai_approver.errors import AiApproverProcessorError
 from src.modules.ai_approver.repository import AiApproverRepository
 
 
@@ -114,4 +115,93 @@ class AiApproverOrchestrator:
             "articleCount": len(articles),
             "attemptCount": attempts,
             "usage": usage_totals,
+        }
+
+    def run_single_score(
+        self,
+        *,
+        article_id: int,
+        prompt_version_id: int,
+        job_id: str | None,
+        should_cancel,
+    ) -> dict[str, Any]:
+        if should_cancel():
+            raise RuntimeError("AI approver pipeline cancelled")
+
+        prompt_version = self.repository.get_prompt_version_by_id(prompt_version_id)
+        if prompt_version is None:
+            raise AiApproverProcessorError(
+                f"Prompt version {prompt_version_id} was not found"
+            )
+
+        article = self.repository.get_article_for_prompt_run(article_id)
+        if article is None:
+            raise AiApproverProcessorError(f"Article {article_id} was not found")
+
+        usage_totals = {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+        }
+
+        prompt = build_prompt(
+            prompt_version["promptInMarkdown"],
+            article.get("title", ""),
+            article.get("content", ""),
+        )
+
+        try:
+            response = self.client.score_article(prompt)
+            payload = response.get("payload", {})
+            usage = response.get("usage", {})
+            for key in usage_totals:
+                value = usage.get(key)
+                if isinstance(value, int):
+                    usage_totals[key] += value
+
+            score = payload.get("score")
+            reason = payload.get("reason")
+            if isinstance(score, (int, float)) and isinstance(reason, str) and reason.strip():
+                self.repository.insert_score_row(
+                    article_id=article_id,
+                    prompt_version_id=prompt_version_id,
+                    result_status="completed",
+                    score=float(score),
+                    reason=reason.strip(),
+                    error_code=None,
+                    error_message=None,
+                    job_id=job_id,
+                )
+            else:
+                self.repository.insert_score_row(
+                    article_id=article_id,
+                    prompt_version_id=prompt_version_id,
+                    result_status="invalid_response",
+                    score=None,
+                    reason=None,
+                    error_code=str(payload.get("errorCode") or "invalid_response"),
+                    error_message=str(
+                        payload.get("errorMessage")
+                        or f"Unsupported payload: {json.dumps(payload)}"
+                    ),
+                    job_id=job_id,
+                )
+        except Exception as exc:
+            self.repository.insert_score_row(
+                article_id=article_id,
+                prompt_version_id=prompt_version_id,
+                result_status="failed",
+                score=None,
+                reason=None,
+                error_code="execution_failed",
+                error_message=str(exc),
+                job_id=job_id,
+            )
+
+        return {
+            "promptCount": 1,
+            "articleCount": 1,
+            "attemptCount": 1,
+            "usage": usage_totals,
+            "contentSource": article.get("contentSource", "none"),
         }

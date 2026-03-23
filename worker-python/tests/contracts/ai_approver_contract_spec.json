@@ -4,7 +4,20 @@
       "path": "/ai-approver/start-job",
       "method": "POST",
       "expected_status": 202,
-      "required_json_keys": ["jobId", "status", "endpointName"]
+      "required_json_keys": ["jobId", "status", "endpointName"],
+      "request_json": {
+        "limit": 3
+      }
+    },
+    {
+      "path": "/ai-approver/review-page/start-job",
+      "method": "POST",
+      "expected_status": 202,
+      "required_json_keys": ["jobId", "status", "endpointName"],
+      "request_json": {
+        "articleId": 77,
+        "promptVersionId": 456
+      }
     }
   ]
 }

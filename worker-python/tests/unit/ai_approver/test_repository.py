@@ -133,6 +133,18 @@ def test_get_active_prompt_versions(tmp_path) -> None:
     assert prompts[0]["id"] == 1
 
 
+def test_get_prompt_version_by_id_returns_prompt_row(tmp_path) -> None:
+    repo = _create_repo(tmp_path)
+    try:
+        prompt = repo.get_prompt_version_by_id(1)
+    finally:
+        repo.close()
+
+    assert prompt is not None
+    assert prompt["id"] == 1
+    assert prompt["promptInMarkdown"] == "# T1"
+
+
 def test_get_eligible_articles_filters_by_existing_scores_and_state(tmp_path) -> None:
     repo = _create_repo(tmp_path)
     try:
@@ -160,3 +172,29 @@ def test_get_eligible_articles_excludes_not_relevant_and_any_human_decision(tmp_
         repo.close()
 
     assert [row["id"] for row in rows] == [1]
+
+
+def test_get_article_for_prompt_run_prefers_article_contents_02(tmp_path) -> None:
+    repo = _create_repo(tmp_path)
+    try:
+        article = repo.get_article_for_prompt_run(1)
+    finally:
+        repo.close()
+
+    assert article is not None
+    assert article["id"] == 1
+    assert article["content"] == "C1"
+    assert article["contentSource"] == "article-contents-02"
+
+
+def test_get_article_for_prompt_run_falls_back_to_article_description(tmp_path) -> None:
+    repo = _create_repo(tmp_path)
+    try:
+        article = repo.get_article_for_prompt_run(5)
+    finally:
+        repo.close()
+
+    assert article is not None
+    assert article["id"] == 5
+    assert article["content"] == "D5"
+    assert article["contentSource"] == "article-description"

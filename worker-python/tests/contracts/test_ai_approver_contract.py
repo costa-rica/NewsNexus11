@@ -37,13 +37,27 @@ def test_ai_approver_contract_runtime_matches_spec(
 
         return _run
 
+    def fake_review_page_runner(article_id: int, prompt_version_id: int):
+        def _run(context) -> None:
+            return None
+
+        return _run
+
     monkeypatch.setattr(ai_approver_routes, "create_ai_approver_runner", fake_runner)
+    monkeypatch.setattr(
+        ai_approver_routes,
+        "create_review_page_ai_approver_runner",
+        fake_review_page_runner,
+    )
 
     spec = json.loads(Path("tests/contracts/ai_approver_contract_spec.json").read_text())
 
     with TestClient(app) as client:
         for endpoint in spec["endpoints"]:
-            response = client.post(endpoint["path"], json={"limit": 3})
+            response = client.post(
+                endpoint["path"],
+                json=endpoint.get("request_json", {"limit": 3}),
+            )
             assert response.status_code == endpoint["expected_status"]
             body = response.json()
             for required_key in endpoint["required_json_keys"]:

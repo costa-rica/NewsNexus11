@@ -208,24 +208,24 @@
 
 ## 4. phase 3 - worker-python one-off AI approver route and execution flow
 
-- [ ] Add a new worker-python route dedicated to the one-off review-page AI approver flow.
-- [ ] Do not reuse the existing active-prompts batch route for this feature.
-- [ ] Reuse the queue/job-status pattern already used by worker-python routes.
-- [ ] Add request validation for the one-off worker route.
-- [ ] Add repository support to load one prompt row by `promptVersionId`.
-- [ ] Add repository support to load one article by `articleId`.
-- [ ] Add repository support to load article content with this rule:
+- [x] Add a new worker-python route dedicated to the one-off review-page AI approver flow.
+- [x] Do not reuse the existing active-prompts batch route for this feature.
+- [x] Reuse the queue/job-status pattern already used by worker-python routes.
+- [x] Add request validation for the one-off worker route.
+- [x] Add repository support to load one prompt row by `promptVersionId`.
+- [x] Add repository support to load one article by `articleId`.
+- [x] Add repository support to load article content with this rule:
   - prefer canonical `ArticleContents02`
   - if none found, fall back to `Articles.description`
-- [ ] Ensure the one-off workflow sends only the newly created prompt row to OpenAI.
-- [ ] Ensure the one-off workflow does not iterate over all active prompts.
-- [ ] Ensure the one-off workflow inserts a score row into `AiApproverArticleScores`.
-- [ ] Preserve current score persistence semantics for:
+- [x] Ensure the one-off workflow sends only the newly created prompt row to OpenAI.
+- [x] Ensure the one-off workflow does not iterate over all active prompts.
+- [x] Ensure the one-off workflow inserts a score row into `AiApproverArticleScores`.
+- [x] Preserve current score persistence semantics for:
   - `completed`
   - `invalid_response`
   - `failed`
-- [ ] Ensure job/result metadata is sufficient for portal feedback and troubleshooting.
-- [ ] Add worker-python tests for:
+- [x] Ensure job/result metadata is sufficient for portal feedback and troubleshooting.
+- [x] Add worker-python tests for:
   - route validation
   - prompt lookup by id
   - article content fallback behavior
@@ -233,10 +233,10 @@
   - invalid-response handling
   - failure handling
   - queue-job response behavior
-- [ ] Run relevant tests for this phase.
+- [x] Run relevant tests for this phase.
   - `worker-python`: `cd worker-python && pytest tests/unit/ai_approver tests/integration/test_ai_approver_routes.py tests/contracts/test_ai_approver_contract.py`
-- [ ] If tests pass, check off completed tasks in this phase.
-- [ ] Commit with a message that references `docs/REVIEW_PAGE_AI_APPROVER_FLOW_20260323_TODO.md` and phase 3.
+- [x] If tests pass, check off completed tasks in this phase.
+- [x] Commit with a message that references `docs/REVIEW_PAGE_AI_APPROVER_FLOW_20260323_TODO.md` and phase 3.
 
 ## 5. phase 4 - portal review table icon and modal shell
 
