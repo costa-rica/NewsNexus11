@@ -26,6 +26,8 @@ import {
 } from '../article-content-02/types';
 import { hasUsableArticleContent02 } from '../article-content-02/repository';
 
+export const DEFAULT_REQUEST_GOOGLE_RSS_REPEAT_WINDOW_HOURS = 72;
+
 interface QueryRow {
   id: number;
   and_keywords: string;
@@ -62,11 +64,17 @@ interface RssFetchResult {
 export interface RequestGoogleRssJobContext {
   jobId: string;
   spreadsheetPath: string;
+  doNotRepeatRequestsWithinHours: number;
   signal: AbortSignal;
 }
 
 export interface RequestGoogleRssJobDependencies {
   runLegacyWorkflow?: (context: RequestGoogleRssJobContext) => Promise<void>;
+}
+
+export interface RequestGoogleRssJobInput {
+  spreadsheetPath: string;
+  doNotRepeatRequestsWithinHours: number;
 }
 
 const REQUIRED_HEADERS = [
@@ -463,15 +471,20 @@ const ensureAggregatorSourceAndEntity = async (): Promise<{
   };
 };
 
-const wasRequestMadeToday = async (url: string): Promise<boolean> => {
-  const today = new Date().toISOString().split('T')[0];
+const wasRequestMadeRecently = async (url: string, doNotRepeatRequestsWithinHours: number): Promise<boolean> => {
   const existing = await NewsApiRequest.findOne({
     where: {
-      url,
-      dateEndOfRequest: today
-    }
+      url
+    },
+    order: [['createdAt', 'DESC']]
   });
-  return existing !== null;
+
+  if (!existing) {
+    return false;
+  }
+
+  const thresholdTime = Date.now() - doNotRepeatRequestsWithinHours * 60 * 60 * 1000;
+  return existing.createdAt.getTime() >= thresholdTime;
 };
 
 const storeRequestAndArticles = async (params: {
@@ -583,7 +596,8 @@ const delay = async (ms: number, signal: AbortSignal): Promise<void> => {
 const runLegacyWorkflow = async (context: RequestGoogleRssJobContext): Promise<void> => {
   logWorkflowStart('Request Google RSS', {
     jobId: context.jobId,
-    spreadsheetPath: context.spreadsheetPath
+    spreadsheetPath: context.spreadsheetPath,
+    doNotRepeatRequestsWithinHours: context.doNotRepeatRequestsWithinHours
   });
 
   const delayBetweenRequestsMs = (() => {
@@ -626,9 +640,14 @@ const runLegacyWorkflow = async (context: RequestGoogleRssJobContext): Promise<v
       }
 
       const requestUrl = buildRssUrl(queryResult.query);
-      const alreadyRequested = await wasRequestMadeToday(requestUrl);
+      const alreadyRequested = await wasRequestMadeRecently(
+        requestUrl,
+        context.doNotRepeatRequestsWithinHours
+      );
       if (alreadyRequested) {
-        logger.info(`Skipping RSS request (id: ${row.id}): already requested today: ${requestUrl}`);
+        logger.info(
+          `Skipping RSS request (id: ${row.id}): already requested within the last ${context.doNotRepeatRequestsWithinHours} hours: ${requestUrl}`
+        );
         continue;
       }
 
@@ -664,17 +683,18 @@ const runLegacyWorkflow = async (context: RequestGoogleRssJobContext): Promise<v
 };
 
 export const createRequestGoogleRssJobHandler = (
-  spreadsheetPath: string,
+  input: RequestGoogleRssJobInput,
   dependencies: RequestGoogleRssJobDependencies = {}
 ) => {
   const workflowRunner = dependencies.runLegacyWorkflow ?? runLegacyWorkflow;
 
   return async (queueContext: QueueExecutionContext): Promise<void> => {
-    await verifySpreadsheetFileExists(spreadsheetPath);
+    await verifySpreadsheetFileExists(input.spreadsheetPath);
 
     await workflowRunner({
       jobId: queueContext.jobId,
-      spreadsheetPath,
+      spreadsheetPath: input.spreadsheetPath,
+      doNotRepeatRequestsWithinHours: input.doNotRepeatRequestsWithinHours,
       signal: queueContext.signal
     });
   };

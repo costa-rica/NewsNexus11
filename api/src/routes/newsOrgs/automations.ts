@@ -211,7 +211,7 @@ router.post(
   }
 );
 
-router.post('/request-google-rss/start-job', authenticateToken, async (_req, res) => {
+router.post('/request-google-rss/start-job', authenticateToken, async (req, res) => {
   const workerNodeBaseUrl = getRequiredWorkerNodeBaseUrl(res);
   if (!workerNodeBaseUrl) {
     return;
@@ -220,7 +220,7 @@ router.post('/request-google-rss/start-job', authenticateToken, async (_req, res
   try {
     const response = await axios.post(
       `${workerNodeBaseUrl}/request-google-rss/start-job`,
-      {},
+      req.body,
       {
         headers: {
           'Content-Type': 'application/json',

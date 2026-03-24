@@ -46,9 +46,11 @@ describe("news org automations routes", () => {
     });
 
     const app = buildApp();
-    const response = await request(app).post(
-      "/automations/request-google-rss/start-job",
-    );
+    const response = await request(app)
+      .post("/automations/request-google-rss/start-job")
+      .send({
+        doNotRepeatRequestsWithinHours: 72,
+      });
 
     expect(response.status).toBe(202);
     expect(response.body).toEqual({
@@ -58,7 +60,9 @@ describe("news org automations routes", () => {
     });
     expect(mockAxios.post).toHaveBeenCalledWith(
       "http://worker-node/request-google-rss/start-job",
-      {},
+      {
+        doNotRepeatRequestsWithinHours: 72,
+      },
       {
         headers: {
           "Content-Type": "application/json",

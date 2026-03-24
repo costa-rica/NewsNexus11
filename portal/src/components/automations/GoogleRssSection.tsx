@@ -24,6 +24,7 @@ const DEFAULT_ALERT_MODAL_STATE: AlertModalState = {
 
 const GOOGLE_RSS_FILE_NAME = "AutomatedRequestsGoogleNewsRss04.xlsx";
 const GOOGLE_RSS_ENDPOINT_NAME = "/request-google-rss/start-job";
+const DEFAULT_DO_NOT_REPEAT_REQUESTS_WITHIN_HOURS = "72";
 
 function buildWorkerNodeResponseMessage(result: {
   endpointName?: string;
@@ -70,6 +71,8 @@ export function GoogleRssSection() {
   const { token } = useAppSelector((state) => state.user);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshSignal, setRefreshSignal] = useState(0);
+  const [doNotRepeatRequestsWithinHours, setDoNotRepeatRequestsWithinHours] =
+    useState(DEFAULT_DO_NOT_REPEAT_REQUESTS_WITHIN_HOURS);
   const [alertModal, setAlertModal] = useState<AlertModalState>(
     DEFAULT_ALERT_MODAL_STATE,
   );
@@ -86,7 +89,9 @@ export function GoogleRssSection() {
             "Content-Type": "application/json",
           },
           method: "POST",
-          body: JSON.stringify({}),
+          body: JSON.stringify({
+            doNotRepeatRequestsWithinHours: Number(doNotRepeatRequestsWithinHours),
+          }),
         },
       );
 
@@ -145,6 +150,28 @@ export function GoogleRssSection() {
             refreshSignal={refreshSignal}
             title="Last Google RSS Job"
           />
+
+          <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+            <label
+              htmlFor="doNotRepeatRequestsWithinHours"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Do not repeat requests that occurred in the last ___ hours
+            </label>
+            <input
+              id="doNotRepeatRequestsWithinHours"
+              type="number"
+              min="0"
+              step="1"
+              value={doNotRepeatRequestsWithinHours}
+              onChange={(e) => setDoNotRepeatRequestsWithinHours(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Default is 72 hours. Matching Google RSS requests newer than this
+              window will be skipped. Set this to 0 to allow all requests to run.
+            </p>
+          </div>
 
           <FixedAutomationSpreadsheetControls fileName={GOOGLE_RSS_FILE_NAME} />
         </div>

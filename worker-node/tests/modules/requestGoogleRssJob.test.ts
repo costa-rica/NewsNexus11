@@ -4,12 +4,16 @@ import path from 'node:path';
 import {
   createRequestGoogleRssJobHandler,
   createRssSeedResult,
+  DEFAULT_REQUEST_GOOGLE_RSS_REPEAT_WINDOW_HOURS,
   mapRssItems
 } from '../../src/modules/jobs/requestGoogleRssJob';
 
 describe('requestGoogleRss job handler', () => {
   it('fails when spreadsheet file is missing', async () => {
-    const handler = createRequestGoogleRssJobHandler('/path/that/does/not/exist.xlsx');
+    const handler = createRequestGoogleRssJobHandler({
+      spreadsheetPath: '/path/that/does/not/exist.xlsx',
+      doNotRepeatRequestsWithinHours: DEFAULT_REQUEST_GOOGLE_RSS_REPEAT_WINDOW_HOURS
+    });
 
     await expect(
       handler({
@@ -27,7 +31,13 @@ describe('requestGoogleRss job handler', () => {
     await fs.writeFile(spreadsheetPath, 'mock spreadsheet data', 'utf8');
 
     const runLegacyWorkflow = jest.fn(async () => undefined);
-    const handler = createRequestGoogleRssJobHandler(spreadsheetPath, { runLegacyWorkflow });
+    const handler = createRequestGoogleRssJobHandler(
+      {
+        spreadsheetPath,
+        doNotRepeatRequestsWithinHours: 24
+      },
+      { runLegacyWorkflow }
+    );
 
     await handler({
       jobId: 'job-2',
@@ -39,6 +49,7 @@ describe('requestGoogleRss job handler', () => {
     expect(runLegacyWorkflow).toHaveBeenCalledWith({
       jobId: 'job-2',
       spreadsheetPath,
+      doNotRepeatRequestsWithinHours: 24,
       signal: expect.any(Object)
     });
 

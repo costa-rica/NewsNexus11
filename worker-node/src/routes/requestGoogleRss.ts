@@ -1,14 +1,20 @@
 import { Router } from 'express';
 import { AppError } from '../modules/errors/appError';
 import { QueueJobHandler } from '../modules/queue/queueEngine';
-import { createRequestGoogleRssJobHandler, verifySpreadsheetFileExists } from '../modules/jobs/requestGoogleRssJob';
+import {
+  createRequestGoogleRssJobHandler,
+  DEFAULT_REQUEST_GOOGLE_RSS_REPEAT_WINDOW_HOURS,
+  RequestGoogleRssJobInput,
+  verifySpreadsheetFileExists
+} from '../modules/jobs/requestGoogleRssJob';
 import { globalQueueEngine } from '../modules/queue/globalQueue';
 import { GlobalQueueEngine } from '../modules/queue/queueEngine';
+import logger from '../modules/logger';
 
 interface RequestGoogleRssRouteDependencies {
   queueEngine: GlobalQueueEngine;
   env: NodeJS.ProcessEnv;
-  buildJobHandler: (spreadsheetPath: string) => QueueJobHandler;
+  buildJobHandler: (input: RequestGoogleRssJobInput) => QueueJobHandler;
 }
 
 const resolveSpreadsheetPathFromEnv = (env: NodeJS.ProcessEnv): string => {
@@ -25,6 +31,35 @@ const resolveSpreadsheetPathFromEnv = (env: NodeJS.ProcessEnv): string => {
   return value.trim();
 };
 
+const resolveDoNotRepeatRequestsWithinHours = (body: unknown): number => {
+  const rawValue =
+    typeof body === 'object' && body !== null && 'doNotRepeatRequestsWithinHours' in body
+      ? body.doNotRepeatRequestsWithinHours
+      : undefined;
+
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return DEFAULT_REQUEST_GOOGLE_RSS_REPEAT_WINDOW_HOURS;
+  }
+
+  const parsed =
+    typeof rawValue === 'number'
+      ? rawValue
+      : typeof rawValue === 'string'
+        ? Number.parseInt(rawValue, 10)
+        : Number.NaN;
+
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw AppError.validation([
+      {
+        field: 'doNotRepeatRequestsWithinHours',
+        message: 'doNotRepeatRequestsWithinHours must be a non-negative integer'
+      }
+    ]);
+  }
+
+  return parsed;
+};
+
 export const createRequestGoogleRssRouter = (
   dependencies: RequestGoogleRssRouteDependencies = {
     queueEngine: globalQueueEngine,
@@ -35,15 +70,32 @@ export const createRequestGoogleRssRouter = (
   const router = Router();
   const { queueEngine, env, buildJobHandler } = dependencies;
 
-  router.post('/start-job', async (_req, res, next) => {
+  router.post('/start-job', async (req, res, next) => {
     try {
       const endpointName = '/request-google-rss/start-job';
       const spreadsheetPath = resolveSpreadsheetPathFromEnv(env);
+      const doNotRepeatRequestsWithinHours = resolveDoNotRepeatRequestsWithinHours(req.body);
       await verifySpreadsheetFileExists(spreadsheetPath);
+
+      logger.info('Received Request Google RSS start request', {
+        endpointName,
+        spreadsheetPath,
+        doNotRepeatRequestsWithinHours
+      });
 
       const enqueueResult = await queueEngine.enqueueJob({
         endpointName,
-        run: buildJobHandler(spreadsheetPath)
+        run: buildJobHandler({
+          spreadsheetPath,
+          doNotRepeatRequestsWithinHours
+        })
+      });
+
+      logger.info('Queued Request Google RSS job', {
+        endpointName,
+        jobId: enqueueResult.jobId,
+        status: enqueueResult.status,
+        doNotRepeatRequestsWithinHours
       });
 
       return res.status(202).json({
