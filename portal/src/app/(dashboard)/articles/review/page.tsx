@@ -450,21 +450,21 @@ export default function ReviewArticles() {
 			console.log("Fetched approved article data:", result);
 			console.log("Fetched selected article content:", contentResult);
 
-			const selectedContent =
-				contentResult.hasArticleContent && typeof contentResult.content === "string"
-					? contentResult.content
-					: null;
-
 			if (result.article && result.article.id) {
 				setSelectedArticle({
 					...result.article,
 					...article,
 					approved: result.result,
-					content: selectedContent ?? result.content,
+					content: result.content ?? article.description,
 					isApproved: true, // Mark as approved
 				});
 				updateStateArrayWithArticleState(result.article);
 			} else {
+				const selectedContent =
+					contentResult.hasArticleContent && typeof contentResult.content === "string"
+						? contentResult.content
+						: null;
+
 				setSelectedArticle({
 					...article,
 					content: selectedContent ?? article.description,
