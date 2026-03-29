@@ -15,6 +15,7 @@ NewsNexus11 is a monorepo for a news aggregation and analysis platform. It has n
 | **portal**        | `/portal`        | Next.js 16 (App Router, Turbopack) + Redux Toolkit + TailwindCSS v4 | Frontend dashboard                                     |
 | **worker-python** | `/worker-python` | Flask 3                                                             | Queues Python microservices (deduper, location scorer) |
 | **worker-node**   | `/worker-node`   | Express 5 + TypeScript                                              | Queue-backed Node workflows and article scraping       |
+| **db-manager**    | `/db-manager`    | TypeScript CLI + Winston + Sequelize 6                              | Database maintenance (article cleanup, backup, import) |
 
 **Dependency graph:** `portal → (HTTP) → api → db-models → SQLite ← worker-python` and `portal → (HTTP) → api → worker-node → db-models`
 
@@ -55,7 +56,7 @@ cd worker-node && npm run build
 cd worker-node && npm test
 ```
 
-No test frameworks are configured for db-models, portal, or worker-python.
+No test frameworks are configured for db-models, portal, or worker-python. db-manager uses Jest (146 tests).
 
 ## Architecture Details
 

@@ -123,6 +123,25 @@ npm start -- --delete_articles 90
 npm start -- --delete_articles=90
 ```
 
+- **Run in background on production (Ubuntu):** Use `nohup` so the process survives logout. Output is logged to the Winston log file, so stdout/stderr can be discarded. Capture the PID to check on it later.
+
+```bash
+# Step 1 — Cache your sudo password
+sudo -v
+
+# Step 2 — Start the job in the background
+nohup sudo -u limited_user npm start -- --delete_articles > /dev/null 2>&1 &
+
+# Step 3 — Get the PID
+echo $!
+
+# Check if still running
+ps -p <PID> -o pid,stat,etime,cmd
+
+# Follow logs
+tail -f /home/limited_user/logs/NewsNexus11DbManager.log
+```
+
 ### Trim Oldest Articles
 
 Delete the N oldest eligible articles by published date:
