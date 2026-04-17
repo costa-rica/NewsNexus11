@@ -167,6 +167,9 @@ Each package reads from its own `.env`. Key variables:
   - new API proxy route and validation
   - added tests for the new route
 - If the staged changes span portal, api, and worker code, the body should mention each area that changed.
+- include a "co-authored-by:" at the end of the commit, with the ai agent name and model being used.
+  - Do not include `<noreply@anthropic.com>`
+  - keep it all lower case
 
 #### Types for Ideal Format
 
